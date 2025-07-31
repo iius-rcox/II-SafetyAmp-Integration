@@ -1,10 +1,9 @@
 import os
 import pyodbc
-import json
-from pathlib import Path
 from datetime import datetime
 from config import settings
 from utils.logger import get_logger
+from .vista_data_manager import vista_data_manager
 
 logger = get_logger("viewpoint")
 
@@ -17,9 +16,6 @@ class ViewpointAPI:
             "Trusted_Connection=yes;"
             "Encrypt=no;"
         )
-        base_dir = Path(__file__).resolve().parent
-        self.employee_json_path = base_dir / "vista_employee_data.json"
-        self.job_list_json_path = base_dir / "vista_job_list.json"
 
     def _get_connection(self):
         return pyodbc.connect(self.conn_str)
@@ -158,23 +154,21 @@ class ViewpointAPI:
                     emp["Job"] = recent_job_map[emp_id]
         return employees
 
-    def save_to_json(self, data, path):
-        with open(path, "w") as f:
-            json.dump(data, f, indent=2, default=str)
-
     def get_employees(self):
         with self._get_connection() as conn:
             cursor = conn.cursor()
             recent_job_map = self.fetch_recent_jobs(cursor)
             employees = self.build_employee_json(cursor, recent_job_map)
-            self.save_to_json(employees, self.employee_json_path)
+            # Store in memory instead of file
+            vista_data_manager.set_employee_data(employees)
             return employees
 
     def get_jobs(self):
         with self._get_connection() as conn:
             cursor = conn.cursor()
             jobs = self.fetch_job_list(cursor)
-            self.save_to_json(jobs, self.job_list_json_path)
+            # Store in memory instead of file
+            vista_data_manager.set_job_data(jobs)
             return jobs
 
     def get_departments(self):
