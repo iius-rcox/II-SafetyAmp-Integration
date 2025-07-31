@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: n8n
+  labels:
+    app.kubernetes.io/name: n8n
+    app.kubernetes.io/component: automation
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: safety-amp
+  labels:
+    app.kubernetes.io/name: safety-amp
+    app.kubernetes.io/component: integration
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: samsara
+  labels:
+    app.kubernetes.io/name: samsara
+    app.kubernetes.io/component: integration
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ingress-nginx
+  labels:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/component: ingress-controller
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cert-manager
+  labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/component: certificate-management

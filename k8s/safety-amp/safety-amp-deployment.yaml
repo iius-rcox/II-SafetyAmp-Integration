@@ -1,0 +1,217 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: safety-amp-secrets
+  namespace: safety-amp
+  labels:
+    app: safety-amp
+type: Opaque
+stringData:
+  # API Keys and sensitive configurations
+  SAFETY_AMP_API_KEY: "your-safety-amp-api-key-here"
+  DATABASE_URL: "your-database-connection-string-here"
+  # Azure Service Principal for authentication
+  AZURE_CLIENT_ID: "your-azure-client-id"
+  AZURE_CLIENT_SECRET: "your-azure-client-secret"
+  AZURE_TENANT_ID: "your-azure-tenant-id"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: safety-amp-config
+  namespace: safety-amp
+  labels:
+    app: safety-amp
+data:
+  # Application configuration
+  LOG_LEVEL: "INFO"
+  ENVIRONMENT: "development"
+  SYNC_INTERVAL: "300"  # 5 minutes
+  BATCH_SIZE: "100"
+  RETRY_ATTEMPTS: "3"
+  RETRY_DELAY: "30"
+  HEALTH_CHECK_PORT: "8080"
+  METRICS_PORT: "9090"
+  # Safety Amp specific settings
+  SAFETY_AMP_BASE_URL: "https://api.safetyamp.com"
+  SAFETY_AMP_TIMEOUT: "30"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: safety-amp-agent
+  namespace: safety-amp
+  labels:
+    app: safety-amp
+    component: agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: safety-amp
+      component: agent
+  template:
+    metadata:
+      labels:
+        app: safety-amp
+        component: agent
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: safety-amp-agent
+        # Update this image to your actual SafetyAmp Python agent image
+        image: your-registry/safety-amp-agent:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: health
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: LOG_LEVEL
+        - name: ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: ENVIRONMENT
+        - name: SYNC_INTERVAL
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: SYNC_INTERVAL
+        - name: BATCH_SIZE
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: BATCH_SIZE
+        - name: RETRY_ATTEMPTS
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: RETRY_ATTEMPTS
+        - name: RETRY_DELAY
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: RETRY_DELAY
+        - name: HEALTH_CHECK_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: HEALTH_CHECK_PORT
+        - name: METRICS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: METRICS_PORT
+        - name: SAFETY_AMP_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: SAFETY_AMP_BASE_URL
+        - name: SAFETY_AMP_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: SAFETY_AMP_TIMEOUT
+        - name: SAFETY_AMP_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: safety-amp-secrets
+              key: SAFETY_AMP_API_KEY
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: safety-amp-secrets
+              key: DATABASE_URL
+        - name: AZURE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: safety-amp-secrets
+              key: AZURE_CLIENT_ID
+        - name: AZURE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: safety-amp-secrets
+              key: AZURE_CLIENT_SECRET
+        - name: AZURE_TENANT_ID
+          valueFrom:
+            secretKeyRef:
+              name: safety-amp-secrets
+              key: AZURE_TENANT_ID
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 5
+        # Add volume mounts if needed for data persistence
+        # volumeMounts:
+        # - name: data-volume
+        #   mountPath: /app/data
+      # Add volumes if needed
+      # volumes:
+      # - name: data-volume
+      #   persistentVolumeClaim:
+      #     claimName: safety-amp-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: safety-amp-service
+  namespace: safety-amp
+  labels:
+    app: safety-amp
+    component: agent
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: health
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: metrics
+  selector:
+    app: safety-amp
+    component: agent
+---
+# Optional: Create a PVC if the agent needs persistent storage
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: safety-amp-data
+#   namespace: safety-amp
+#   labels:
+#     app: safety-amp
+# spec:
+#   accessModes:
+#     - ReadWriteOnce
+#   storageClassName: managed-csi
+#   resources:
+#     requests:
+#       storage: 5Gi
