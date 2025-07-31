@@ -20572,3 +20572,327 @@
 [2025-05-21 16:00:38] [INFO] [samsara]: Fetching all vehicles from Samsara API...
 [2025-05-21 16:00:39] [INFO] [samsara]: Retrieved 58 vehicles from Samsara.
 [2025-05-21 16:00:39] [INFO] [sync_assets]: Fetching users from SafetyAmp...
+[2025-07-31 16:05:58] [INFO] [vista_data_manager]: Loaded 2 employees into memory
+[2025-07-31 16:05:58] [INFO] [vista_data_manager]: Loaded 2 employees into memory
+[2025-07-31 16:05:58] [INFO] [vista_data_manager]: Loaded 2 jobs into memory
+[2025-07-31 16:05:58] [INFO] [vista_data_manager]: Loaded 2 employees into memory
+[2025-07-31 16:05:58] [INFO] [vista_data_manager]: Loaded 2 employees into memory
+[2025-07-31 16:05:58] [INFO] [vista_data_manager]: Loaded 2 jobs into memory
+[2025-07-31 16:28:11] [INFO] [sync_departments]: Fetching department data from Viewpoint...
+[2025-07-31 16:28:45] [INFO] [sync_departments]: Fetching department data from Viewpoint...
+[2025-07-31 16:28:46] [INFO] [sync_departments]: Retrieved 33 department records from Viewpoint.
+[2025-07-31 16:28:46] [INFO] [sync_departments]: Fetching existing clusters from SafetyAmp...
+[2025-07-31 16:28:47] [INFO] [sync_departments]: Retrieved 45 existing clusters from SafetyAmp.
+[2025-07-31 16:29:55] [INFO] [sync_departments]: Starting department cluster sync...
+[2025-07-31 16:31:17] [INFO] [sync_departments]: Department cluster sync complete.
+[2025-07-31 16:31:23] [INFO] [sync_jobs]: Fetching existing sites from SafetyAmp...
+[2025-07-31 16:31:33] [INFO] [sync_jobs]: Retrieved 946 existing sites.
+[2025-07-31 16:31:33] [INFO] [sync_jobs]: Fetching jobs from Viewpoint...
+[2025-07-31 16:31:34] [INFO] [vista_data_manager]: Loaded 732 jobs into memory
+[2025-07-31 16:31:34] [INFO] [sync_jobs]: Retrieved 732 jobs from Viewpoint.
+[2025-07-31 16:31:34] [INFO] [sync_jobs]: Fetching site clusters from SafetyAmp...
+[2025-07-31 16:31:34] [INFO] [sync_jobs]: Built department-to-cluster map with 33 entries.
+[2025-07-31 16:31:38] [INFO] [sync_jobs]: Starting job site sync...
+[2025-07-31 16:31:49] [INFO] [sync_jobs]: Created site: 30833. - Enterprise Navitas Orin Plant 8 Newberry Stabilizer HT under cluster 758
+[2025-07-31 16:31:49] [INFO] [sync_jobs]: Created site: 30834. - Orin Plant 8 Newberry Stabilizer HT Houston TX under cluster 766
+[2025-07-31 16:31:49] [INFO] [sync_jobs]: Created site: 30835. - BWC Tank 321-324 Dock Line Houston TX under cluster 758
+[2025-07-31 16:31:50] [INFO] [sync_jobs]: Created site: 30836. - BWC Dock 15, 16 & 19 New Lines Texas City, TX under cluster 758
+[2025-07-31 16:31:50] [INFO] [sync_jobs]: Created site: 30837. - BWC Texas City Control Panels HT Houston TX under cluster 766
+[2025-07-31 16:31:50] [INFO] [sync_jobs]: Created site: 30838. - Trasor Corp 50/60 Circuit Panels Broken Arrow OK under cluster 766
+[2025-07-31 16:31:51] [INFO] [sync_jobs]: Created site: 30839. - Exyte Module Heat Trace Lake Charles LA under cluster 758
+[2025-07-31 16:31:51] [INFO] [sync_jobs]: Created site: 30840. - Tres Port Power Denim Tank Lines Repair Victoria TX under cluster 758
+[2025-07-31 16:31:52] [INFO] [sync_jobs]: Created site: 30841. - BWC Texas City Control Panels Houston TX under cluster 766
+[2025-07-31 16:31:52] [INFO] [sync_jobs]: Created site: 30842. - Golden Triangle Polymers Project Orange TX under cluster 758
+[2025-07-31 16:31:53] [INFO] [sync_jobs]: Created site: 30843. - Reynolds Grizzly Project Houston TX under cluster 766
+[2025-07-31 16:31:53] [INFO] [sync_jobs]: Created site: 30844. - Wilsher 6 Circuit Panel Houston TX under cluster 766
+[2025-07-31 16:31:53] [INFO] [sync_jobs]: Created site: 41981. - Linde Praxair Gate 1 #493 Support Crew Scaff under cluster 764
+[2025-07-31 16:31:54] [INFO] [sync_jobs]: Created site: 41982. - Linde #493 PSV Access & MCC Building Door Access Scaff under cluster 764
+[2025-07-31 16:31:54] [INFO] [sync_jobs]: Created site: 41983. - Linde Praxair Gate 1 #493 PSV9000 PSV6200 PSV6750 Scaff under cluster 764
+[2025-07-31 16:31:54] [INFO] [sync_jobs]: Created site: 41984. - Westlake S TE 2 Furnace Scaff under cluster 764
+[2025-07-31 16:31:55] [INFO] [sync_jobs]: Created site: 41985. - WL Sulphur Brine Yard Underground Piping Asbestos Abatement under cluster 763
+[2025-07-31 16:31:55] [INFO] [sync_jobs]: Created site: 41986. - Westlake S PV-105 Scaff & Insul Removable for Sketching under cluster 764
+[2025-07-31 16:31:55] [INFO] [sync_jobs]: Created site: 41987. - Westlake S Reflux Drum Piping EDC Coatings under cluster 764
+[2025-07-31 16:31:56] [INFO] [sync_jobs]: Created site: 41988. - Westlake S PT Still Tower C-4 Ladder Cages Coatings under cluster 764
+[2025-07-31 16:32:24] [INFO] [sync_jobs]: Created site: 41989. - Linde #493 Tail Gas Comp & Coalescer Scaff under cluster 764
+[2025-07-31 16:32:25] [INFO] [sync_jobs]: Created site: 41990. - Westlake S #5 Rx Start Up Support Insul & Scaff under cluster 764
+[2025-07-31 16:32:25] [INFO] [sync_jobs]: Created site: 41991. - Advancion D15115 Coatings Sulphur LA under cluster 763
+[2025-07-31 16:32:26] [INFO] [sync_jobs]: Created site: 41992. - Westlake S HCL Header Block Valve Scaff under cluster 764
+[2025-07-31 16:32:26] [INFO] [sync_jobs]: Created site: 41993. - Westlake S #6 Blower Scaff under cluster 764
+[2025-07-31 16:32:26] [INFO] [sync_jobs]: Created site: 41994. - Indorama E-303 Component Coatings Sulphur LA under cluster 764
+[2025-07-31 16:32:27] [INFO] [sync_jobs]: Created site: 41995. - Indorama Tank-2 UTY-5 Piping Coatings under cluster 764
+[2025-07-31 16:32:27] [INFO] [sync_jobs]: Created site: 41996. - Indorama Piping Pkg 1"WW-03105-96JA-N Sulphur LA under cluster 764
+[2025-07-31 16:32:27] [INFO] [sync_jobs]: Created site: 41997. - Valero Refining St Charles E14169 Coatings Sulphur LA under cluster 763
+[2025-07-31 16:32:28] [INFO] [sync_jobs]: Created site: 41998. - Valero Refining E14128-29 Coatings Sulphur LA under cluster 763
+[2025-07-31 16:32:28] [INFO] [sync_jobs]: Created site: 41999. - HF Sinclair 446265 Coatings Sulphur LA under cluster 763
+[2025-07-31 16:32:28] [INFO] [sync_jobs]: Created site: 42000. - Citgo Lemont 448212-13 Coatings Sulphur LA under cluster 763
+[2025-07-31 16:32:29] [INFO] [sync_jobs]: Created site: 42001. - Westlake S PV-302 Hot H2O Header 1st Effect Scaff under cluster 764
+[2025-07-31 16:32:29] [INFO] [sync_jobs]: Created site: 42002. - Westlake S PV-505 N Cyclone Feed Pump Piping Scaff under cluster 764
+[2025-07-31 16:32:29] [INFO] [sync_jobs]: Created site: 42003. - Westlake S #5 Entrainment Scaff under cluster 764
+[2025-07-31 16:32:30] [INFO] [sync_jobs]: Created site: 42004. - Westlake S Day Tank Scaff under cluster 764
+[2025-07-31 16:32:30] [INFO] [sync_jobs]: Created site: 42005. - WL A Plant Transit Water Line Abatement under cluster 763
+[2025-07-31 16:32:31] [INFO] [sync_jobs]: Created site: 42006. - Westlake S TAR Scaff under cluster 764
+[2025-07-31 16:32:31] [INFO] [sync_jobs]: Created site: 42007. - Westlake S Addl Tie-In Cell Liquor Line Scaff under cluster 764
+[2025-07-31 16:32:31] [INFO] [sync_jobs]: Created site: 42008. - Westlake S Demo TE2 Exchanger and Piping Scaff under cluster 763
+[2025-07-31 16:32:32] [INFO] [sync_jobs]: Created site: 42009. - Valero Refining E14170 Coatings Sulphur LA under cluster 763
+[2025-07-31 16:32:32] [INFO] [sync_jobs]: Created site: 42010. - Westlake S B4390 RBM912 Cable Tray Alt Rt Plt C Scaff under cluster 763
+[2025-07-31 16:32:32] [INFO] [sync_jobs]: Created site: 42011. - Lyondell Basell D052-3016b Compressor Piping Coating WL LA under cluster 763
+[2025-07-31 16:32:33] [INFO] [sync_jobs]: Created site: 42012. - Lyondell Basell D052-3022b Compressor Piping Coating WL LA under cluster 763
+[2025-07-31 16:32:33] [INFO] [sync_jobs]: Created site: 42013. - Lyondell Basell D052-3018b Compressor Piping Coating WL LA under cluster 763
+[2025-07-31 16:32:34] [INFO] [sync_jobs]: Created site: 42014. - Lyondell Basell D052-3016b Compressor Piping Coating WL LA under cluster 763
+[2025-07-31 16:32:34] [INFO] [sync_jobs]: Created site: 42015. - Westlake S Pre Tar Insul under cluster 764
+[2025-07-31 16:32:34] [INFO] [sync_jobs]: Created site: 42016. - BP Cherry Point E14172 Coating Sulphur LA under cluster 763
+[2025-07-31 16:32:35] [INFO] [sync_jobs]: Created site: 42017. - Westlake S #3 DH Still Feed Tank Scaff under cluster 763
+[2025-07-31 16:32:35] [INFO] [sync_jobs]: Created site: 42018. - WL Brine Field Overcoating Well 13 Flow Lines Starks LA under cluster 763
+[2025-07-31 16:32:36] [INFO] [sync_jobs]: Created site: 42019. - Westlake S High Pressure HCL Header Scaff under cluster 764
+[2025-07-31 16:32:36] [INFO] [sync_jobs]: Created site: 42020. - Westlake S ST2 Nitrogen Coatings under cluster 763
+[2025-07-31 16:32:36] [INFO] [sync_jobs]: Created site: 42021. - Westlake N S-501 Condensate Piping Westlake LA under cluster 764
+[2025-07-31 16:32:37] [INFO] [sync_jobs]: Created site: 42022. - Westlake S Ethylene Clearing Header Scaff under cluster 764
+[2025-07-31 16:32:37] [INFO] [sync_jobs]: Created site: 42023. - Indorama Cooling Tower Coating Sulphur LA under cluster 764
+[2025-07-31 16:32:37] [INFO] [sync_jobs]: Created site: 42024. - Resin Systems Interior Shell Abrasive Blast Sulphur LA under cluster 763
+[2025-07-31 16:32:37] [INFO] [sync_jobs]: Created site: 42025. - Resin Systems Interior Shell Abrasive Blast Sulphur LA under cluster 763
+[2025-07-31 16:32:38] [INFO] [sync_jobs]: Created site: 42026. - Westlake S FT-2026 Brine Flow Trans Insul under cluster 764
+[2025-07-31 16:32:38] [INFO] [sync_jobs]: Created site: 42027. - Westlake S TAR Insul under cluster 764
+[2025-07-31 16:32:38] [INFO] [sync_jobs]: Created site: 42028. - Westlake S BAT Aqueous Line Coatings under cluster 764
+[2025-07-31 16:32:39] [INFO] [sync_jobs]: Created site: 42029. - Gator Services Company Equipment Coating Sulphur LA under cluster 763
+[2025-07-31 16:32:39] [INFO] [sync_jobs]: Created site: 42030. - Linde Surge Tanks V-700A-F Coatings Sulphur LA under cluster 764
+[2025-07-31 16:32:39] [INFO] [sync_jobs]: Created site: 42031. - Indorama Shop Coatings RNP5838798E8CCC Sulphur, LA under cluster 764
+[2025-07-31 16:32:39] [INFO] [sync_jobs]: Created site: 42032. - PBF Delaware City Refinery Shop Coatings D15016-Sulphur,LA under cluster 763
+[2025-07-31 16:32:40] [INFO] [sync_jobs]: Created site: 42033. - Indorama Shop Pipe Package Coatings Sulphur LA under cluster 764
+[2025-07-31 16:32:40] [INFO] [sync_jobs]: Created site: 42034. - Westlake S 1st Eff Condensate Ph 2 Insul & Scaff under cluster 764
+[2025-07-31 16:32:40] [INFO] [sync_jobs]: Created site: 42035. - Westlake S 025 Gate Scaff under cluster 764
+[2025-07-31 16:32:41] [INFO] [sync_jobs]: Created site: 42036. - Westlake S Trans Heavies Coatings and Scaff under cluster 763
+[2025-07-31 16:32:41] [INFO] [sync_jobs]: Created site: 42037. - Westlake S Sputnik Tank Scaff under cluster 763
+[2025-07-31 16:32:41] [INFO] [sync_jobs]: Created site: 42038. - Westlake S ECB Removal Still II - Full Proj under cluster 764
+[2025-07-31 16:32:41] [INFO] [sync_jobs]: Created site: 42039. - Starks Brine Field Line Replacement Asbestos Disp Starks LA under cluster 763
+[2025-07-31 16:32:42] [INFO] [sync_jobs]: Created site: 42040. - Indorama Shop Pipe Package Coatings Sulphur LA under cluster 764
+[2025-07-31 16:32:42] [INFO] [sync_jobs]: Created site: 42041. - Westlake PLC Change Out Per Tri Scaff Hooch under cluster 764
+[2025-07-31 16:32:42] [INFO] [sync_jobs]: Created site: 42042. - Lyondell Basell C52 3001A Comp Piping Coatings WL LA under cluster 763
+[2025-07-31 16:32:43] [INFO] [sync_jobs]: Created site: 42043. - Westlake Petro 2026 Styrene Maint. T/A Planning Sulphur LA under cluster 764
+[2025-07-31 16:32:43] [INFO] [sync_jobs]: Created site: 42044. - Westlake S VC Furnace Gas Line Coatings & Scaff under cluster 764
+[2025-07-31 16:32:43] [INFO] [sync_jobs]: Created site: 42045. - Excel M110124 Comp Lube Oil Deluge Pipig Sulphur LA under cluster 763
+[2025-07-31 16:32:43] [INFO] [sync_jobs]: Created site: 42046. - Westlake S Single Pan Insul under cluster 764
+[2025-07-31 16:32:44] [INFO] [sync_jobs]: Created site: 42047. - Honeywell U-391 Interior Coatings Orange TX under cluster 763
+[2025-07-31 16:32:45] [INFO] [sync_jobs]: Created site: 42048. - Grey Rock Steam Piping Insulation Lake Charles LA under cluster 763
+[2025-07-31 16:33:25] [INFO] [sync_jobs]: Created site: 42049. - Westlake S 025 Gate Scaff under cluster 764
+[2025-07-31 16:33:26] [INFO] [sync_jobs]: Created site: 42050. - Biolab 250011 Plak Rebuild Sulphur LA under cluster 763
+[2025-07-31 16:33:26] [INFO] [sync_jobs]: Created site: 42051. - Pelican Power Insulation Blankets Sulphur LA under cluster 763
+[2025-07-31 16:33:26] [INFO] [sync_jobs]: Created site: 42052. - Westlake S Steam Line off WR Kettle Insulation under cluster 764
+[2025-07-31 16:33:27] [INFO] [sync_jobs]: Created site: 42053. - Westlake S Vent Stack Auto Valve Scaff under cluster 764
+[2025-07-31 16:33:27] [INFO] [sync_jobs]: Created site: 42054. - Westlake S PV-519 Utility Steam Pipe Sketching Scaff under cluster 764
+[2025-07-31 16:33:27] [INFO] [sync_jobs]: Created site: 42055. - Ohmstede 544509 510 Shop Coatings Coatings Sulphur LA under cluster 763
+[2025-07-31 16:33:28] [INFO] [sync_jobs]: Created site: 42056. - Westlake S Central Condensate Hooch Scaff under cluster 764
+[2025-07-31 16:33:28] [INFO] [sync_jobs]: Created site: 42057. - Westlake S 401 Tank Sight Glass Scaff under cluster 764
+[2025-07-31 16:33:28] [INFO] [sync_jobs]: Created site: 42058. - Westlake S Covered Roadway Roof Demo Scaff under cluster 764
+[2025-07-31 16:33:28] [INFO] [sync_jobs]: Created site: 42059. - Westlake S Presswash FT-4053 Scaff under cluster 764
+[2025-07-31 16:33:29] [INFO] [sync_jobs]: Created site: 42060. - Westlake S ST 8 Insul & Scaff under cluster 764
+[2025-07-31 16:33:29] [INFO] [sync_jobs]: Created site: 42061. - Indorama Steam Condensate Coatings Sulphur LA under cluster 764
+[2025-07-31 16:33:29] [INFO] [sync_jobs]: Created site: 42062. - Indorama Tank-2 Revision Coatings Sulphur LA under cluster 764
+[2025-07-31 16:33:29] [INFO] [sync_jobs]: Created site: 42063. - Citgo-Lake Charles D15060 1 Channel Cover Coating Sulphur LA under cluster 763
+[2025-07-31 16:33:30] [INFO] [sync_jobs]: Created site: 42064. - WR Grace Pipe Nipple & Stack Lead Abatement Sulphur LA under cluster 763
+[2025-07-31 16:33:30] [INFO] [sync_jobs]: Created site: 42065. - Westlake S ECB Bottoms Discharge Spool Project under cluster 764
+[2025-07-31 16:33:30] [INFO] [sync_jobs]: Created site: 42066. - Westlake S EDC Furnace #2 Outlet Insul under cluster 763
+[2025-07-31 16:33:31] [INFO] [sync_jobs]: Created site: 42067. - Westlake S Sulfuric Acid Tank Coating & Scaff under cluster 763
+[2025-07-31 16:33:31] [INFO] [sync_jobs]: Created site: 42068. - Shell Norco D14189 Coatings Sulphur LA under cluster 763
+[2025-07-31 16:33:32] [INFO] [sync_jobs]: Created site: 42069. - Westlake S TE II Extended PreTA Addl Manpower 25 under cluster 764
+[2025-07-31 16:33:32] [INFO] [sync_jobs]: Created site: 42070. - Westlake S DC RX Cooler Nozzle Flanges Coatings under cluster 764
+[2025-07-31 16:33:32] [INFO] [sync_jobs]: Created site: 42071. - ControlWorx Equip Relocation Insul Rem Sulphur LA under cluster 763
+[2025-07-31 16:33:33] [INFO] [sync_jobs]: Created site: 42072. - Westlake S ECB Tower Skirt Inspection Insul & Scaff under cluster 764
+[2025-07-31 16:33:33] [INFO] [sync_jobs]: Created site: 42073. - Targa Resources E15041 Coating Sulphur LA under cluster 763
+[2025-07-31 16:33:33] [INFO] [sync_jobs]: Created site: 42074. - Lyondell Basell E15005 Coating Sulphur LA under cluster 763
+[2025-07-31 16:33:33] [INFO] [sync_jobs]: Created site: 42075. - Westlake S E Intermediate Caustic Tank Scaff under cluster 764
+[2025-07-31 16:33:34] [INFO] [sync_jobs]: Created site: 42076. - Westlake S C-Caustic Filter Feed Leak Insul & Scaff under cluster 764
+[2025-07-31 16:33:34] [INFO] [sync_jobs]: Created site: 42077. - WR Grace Air Gap Chilled Water Surge Tank Insul Sulphur LA under cluster 763
+[2025-07-31 16:33:34] [INFO] [sync_jobs]: Created site: 42078. - Westlake S Skirt Piping Flanges Blast & Coat under cluster 764
+[2025-07-31 16:33:35] [INFO] [sync_jobs]: Created site: 42079. - Westlake S Catalyst Switches 2 & 5 RXs Scaff under cluster 764
+[2025-07-31 16:33:35] [INFO] [sync_jobs]: Created site: 42080. - WR Grace PSV 62240 Removal & Replacement Insul Sulphur LA under cluster 763
+[2025-07-31 16:33:35] [INFO] [sync_jobs]: Created site: 42081. - Westlake S Tank 60-2408 Sodium Fornate Tank Coating under cluster 764
+[2025-07-31 16:33:35] [INFO] [sync_jobs]: Created site: 42082. - Westlake S E DCE Flasher Condensate Header Scaff under cluster 764
+[2025-07-31 16:33:36] [INFO] [sync_jobs]: Created site: 42083. - Indorama LP 55# Steam & Steam Drain Piping Coating Sulphur under cluster 764
+[2025-07-31 16:33:36] [INFO] [sync_jobs]: Created site: 42084. - Westlake S Remove DH Still Float Chamber Scaff under cluster 764
+[2025-07-31 16:33:36] [INFO] [sync_jobs]: Created site: 42085. - Westlake S Dowtherm Nozzle Replacement Scaff under cluster 763
+[2025-07-31 16:33:37] [INFO] [sync_jobs]: Created site: 42086. - ControlWorx Internal 16" EUT Blast Sulphur LA under cluster 763
+[2025-07-31 16:33:37] [INFO] [sync_jobs]: Created site: 42087. - Westlake S ALJB 405 Scaff under cluster 763
+[2025-07-31 16:33:37] [INFO] [sync_jobs]: Created site: 42088. - Westlake S E & W Transfer Pump Scaff under cluster 763
+[2025-07-31 16:33:37] [INFO] [sync_jobs]: Created site: 42089. - Agrilectric Outage Access Scaff July 2025 LC LA under cluster 763
+[2025-07-31 16:33:38] [INFO] [sync_jobs]: Created site: 42090. - BP Products North America E14154 Shop Coating Sulphur LA under cluster 763
+[2025-07-31 16:33:38] [INFO] [sync_jobs]: Created site: 42091. - Lotte Chemical Compressor Lube Oil Deluge Bolt Coating under cluster 763
+[2025-07-31 16:33:38] [INFO] [sync_jobs]: Created site: 42092. - WR Grace XP Calciner Flue Gas Duct Refractor Insp & Repairs under cluster 763
+[2025-07-31 16:33:39] [INFO] [sync_jobs]: Created site: 42093. - BP Whiting E14152 Coatings Sulphur LA under cluster 763
+[2025-07-31 16:33:39] [INFO] [sync_jobs]: Created site: 42094. - Westlake S #4 OHC Refridge Condenser Scaff under cluster 764
+[2025-07-31 16:33:39] [INFO] [sync_jobs]: Created site: 42095. - Indorama P-26A Suction Piping & P-66 TK-21 Piping Sulphur LA under cluster 764
+[2025-07-31 16:33:40] [INFO] [sync_jobs]: Created site: 42096. - Westlake S High Pressure HCL Header 2 Scaff under cluster 764
+[2025-07-31 16:33:40] [INFO] [sync_jobs]: Created site: 42097. - Westlake S Tank 60-2652 Backwash Collection Tank Support under cluster 764
+[2025-07-31 16:33:41] [INFO] [sync_jobs]: Created site: 42098. - Westlake S #4 York Refrigeration Outage Support under cluster 764
+[2025-07-31 16:33:41] [INFO] [sync_jobs]: Created site: 42099. - Indorama Deathanizer #3 Bottom Pump Insulation Blankets under cluster 764
+[2025-07-31 16:33:42] [INFO] [sync_jobs]: Created site: 42100. - Sulphur Sheet Metal 32' Gooseneck Trailer Sulphur LA under cluster 763
+[2025-07-31 16:33:42] [INFO] [sync_jobs]: Created site: 42101. - Westlake S Machine Shop Air Upgrade Coat & Scaff under cluster 763
+[2025-07-31 16:33:42] [INFO] [sync_jobs]: Created site: 42102. - Westlake S #4 OHC Refridge Condenser Insulation under cluster 764
+[2025-07-31 16:33:42] [INFO] [sync_jobs]: Created site: 42103. - Lyondell Basell Sump Pump Field Coating WL LA under cluster 763
+[2025-07-31 16:33:43] [INFO] [sync_jobs]: Created site: 42104. - Westlake S VCM OHC Condenser Scaff under cluster 764
+[2025-07-31 16:33:43] [INFO] [sync_jobs]: Created site: 52775. - Buckeye Tank 7442 Chime Removal Marrero LA under cluster 774
+[2025-07-31 16:33:43] [INFO] [sync_jobs]: Created site: 52776. - Buckeye Tank 738 Insulation Repairs Marrero LA under cluster 774
+[2025-07-31 16:33:44] [INFO] [sync_jobs]: Created site: 52777. - Gulf Island Services Genesis Terminal Work Houma LA under cluster 774
+[2025-07-31 16:33:44] [INFO] [sync_jobs]: Created site: 52778. - Williams Station 125 Plain Unit 5 Insul Monroe GA under cluster 774
+[2025-07-31 16:34:27] [INFO] [sync_jobs]: Created site: 52779. - Buckeye TK 7410 Insul Repairs Marrero LA under cluster 774
+[2025-07-31 16:34:27] [INFO] [sync_jobs]: Created site: 52780. - Marathon Petroleum Loading Arm Blankets Garyville LA under cluster 774
+[2025-07-31 16:34:27] [INFO] [sync_jobs]: Created site: 52781. - Williams Paradis NGL Drum Insul Paint Scaff Paradis LA under cluster 774
+[2025-07-31 16:34:28] [INFO] [sync_jobs]: Created site: 52782. - Plains Pipeline T-5400 Signs and Placards St James LA under cluster 774
+[2025-07-31 16:34:28] [INFO] [sync_jobs]: Created site: 52783. - Williams Comp Discharge Line Insul Larose LA under cluster 774
+[2025-07-31 16:34:28] [INFO] [sync_jobs]: Created site: 52784. - Bunge Destrehan Primary Aspirators Insul Destrehan LA under cluster 774
+[2025-07-31 16:34:29] [INFO] [sync_jobs]: Created site: 52785. - Koch Taft 2025 TA Insulation Hahnville LA under cluster 774
+[2025-07-31 16:34:29] [INFO] [sync_jobs]: Created site: 52786. - Marathon Asphalt Leak Repairs Garyville LA under cluster 774
+[2025-07-31 16:34:29] [INFO] [sync_jobs]: Created site: 52787. - Allpax Maintenance Insulation 2025 Covington LA under cluster 774
+[2025-07-31 16:34:30] [INFO] [sync_jobs]: Created site: 52788. - Cora Texas Piping and Equipment White Castle LA under cluster 774
+[2025-07-31 16:34:30] [INFO] [sync_jobs]: Created site: 52789. - Williams Gas Flash Pump Piping Insulation Larose LA under cluster 774
+[2025-07-31 16:34:31] [INFO] [sync_jobs]: Created site: 52790. - Midship Marine Miss Leslie 2 Harvey LA under cluster 774
+[2025-07-31 16:34:31] [INFO] [sync_jobs]: Created site: 52791. - ThomaSea Exhaust & Cooling Water System Insul Houma LA under cluster 774
+[2025-07-31 16:34:31] [INFO] [sync_jobs]: Created site: 52792. - Raceland Raw Sugar Juicer Piping Insulation Raceland LA under cluster 774
+[2025-07-31 16:34:32] [INFO] [sync_jobs]: Created site: 52793. -  American Tugs MV Gospel Light Belle Chasse LA under cluster 774
+[2025-07-31 16:34:32] [INFO] [sync_jobs]: Created site: 52794. - Marine Indus Fab Ram 12 Hull Insul New Iberia LA under cluster 774
+[2025-07-31 16:34:33] [INFO] [sync_jobs]: Created site: 52795. - Midship Marine Hull 374 Harvey LA under cluster 774
+[2025-07-31 16:34:33] [INFO] [sync_jobs]: Created site: 52796. - Buckeye Piping Insul Vertex Conversion Marrero LA under cluster 774
+[2025-07-31 16:34:33] [INFO] [sync_jobs]: Created site: 52797. - Bunge NA Duct Removal Scaff Destrehan LA under cluster 774
+[2025-07-31 16:34:34] [INFO] [sync_jobs]: Created site: 52798. - Bluewater Rubber & Gasket Norfolk Die Dapper Houma LA under cluster 774
+[2025-07-31 16:34:34] [ERROR] [safetyamp]: POST https://api.safetyamp.com/api/sites HTTP error: 422 Client Error: unknown for url: https://api.safetyamp.com/api/sites - {"message":"The site code is already in use.","errors":{"ext_id":["The site code is already in use."]}}
+[2025-07-31 16:34:34] [WARNING] [sync_jobs]: Failed to create site: 72093. - Ark-La-Tex Electric Material Sales 2025
+[2025-07-31 16:34:34] [INFO] [sync_jobs]: Created site: 72096. - Energy Transfer Alamo Gas Plant 2025 Crokett TX under cluster 755
+[2025-07-31 16:34:34] [INFO] [sync_jobs]: Created site: 72097. - BWC Terminals Pipe Insulation Texas City TX under cluster 755
+[2025-07-31 16:34:35] [INFO] [sync_jobs]: Created site: 72098. - BWC Terminals Pipe Insulation Houston TX under cluster 755
+[2025-07-31 16:34:35] [INFO] [sync_jobs]: Created site: 72099. - Kinder Morgan Pipe Insulation George West TX under cluster 755
+[2025-07-31 16:34:35] [INFO] [sync_jobs]: Created site: 72100. - Energy Transfer TU Coating Waskom TX under cluster 754
+[2025-07-31 16:34:36] [INFO] [sync_jobs]: Created site: 80114. - Univar Solutions Scaffold Support Geismar LA under cluster 743
+[2025-07-31 16:34:36] [ERROR] [safetyamp]: POST https://api.safetyamp.com/api/sites HTTP error: 422 Client Error: unknown for url: https://api.safetyamp.com/api/sites - {"message":"The site code is already in use.","errors":{"ext_id":["The site code is already in use."]}}
+[2025-07-31 16:34:36] [WARNING] [sync_jobs]: Failed to create site: 92649. - Ketjen Bayport Plant BM23151 Insul La Porte TX
+[2025-07-31 16:34:36] [INFO] [sync_jobs]: Created site: 92651. - UTE Barcarena 221600 Ceraic Fiber Blankets Houston TX under cluster 767
+[2025-07-31 16:34:37] [INFO] [sync_jobs]: Created site: 92652. - Exyte Module Insulation Lake Charles LA under cluster 767
+[2025-07-31 16:34:37] [INFO] [sync_jobs]: Created site: 92653. - Air Products La Porte Coldbox Crossover S801 under cluster 767
+[2025-07-31 16:34:37] [INFO] [sync_jobs]: Created site: 92654. - Conrad Puerto Rican Ferry Hulls 1355 1356 1357 Morgan City under cluster 767
+[2025-07-31 16:39:30] [INFO] [sync_jobs]: Job site sync complete.
+[2025-07-31 16:39:39] [INFO] [sync_titles]: Initializing TitleSyncer and fetching existing titles from SafetyAmp...
+[2025-07-31 16:39:40] [INFO] [sync_titles]: Title map built with 143 entries.
+[2025-07-31 16:39:43] [INFO] [sync_titles]: Starting title sync from Viewpoint...
+[2025-07-31 16:39:43] [INFO] [sync_titles]: Retrieved 131 titles from Viewpoint.
+[2025-07-31 16:39:44] [INFO] [sync_titles]: Created new title 'Painter Journeyman' with id 19851
+[2025-07-31 16:39:44] [INFO] [sync_titles]: Created new title 'Forklift Operator' with id 19852
+[2025-07-31 16:39:44] [INFO] [sync_titles]: Created new title 'Cratfsman' with id 19853
+[2025-07-31 16:39:44] [INFO] [sync_titles]: Created new title 'Scaffold Inventory Manager' with id 19854
+[2025-07-31 16:39:44] [INFO] [sync_titles]: Created new title 'Depot Coordinator' with id 19855
+[2025-07-31 16:39:45] [INFO] [sync_titles]: Created new title 'Logistics' with id 19856
+[2025-07-31 16:39:45] [INFO] [sync_titles]: Created new title 'Manager of Project Development' with id 19857
+[2025-07-31 16:39:45] [INFO] [sync_titles]: Created new title 'QA/QC Tech' with id 19858
+[2025-07-31 16:40:30] [INFO] [sync_employees]: Fetching initial data for sync...
+[2025-07-31 16:40:30] [INFO] [sync_employees]: Building cluster map from site clusters and sites...
+[2025-07-31 16:40:41] [INFO] [sync_employees]: Cluster map built with 1150 entries.
+[2025-07-31 16:40:41] [INFO] [sync_employees]: Fetching roles from SafetyAmp...
+[2025-07-31 16:40:41] [INFO] [sync_employees]: Role map built with 4 entries.
+[2025-07-31 16:40:41] [INFO] [sync_employees]: Fetching titles from SafetyAmp...
+[2025-07-31 16:40:42] [INFO] [sync_employees]: Title map built with 151 entries.
+[2025-07-31 16:40:42] [INFO] [sync_employees]: Fetching existing users from SafetyAmp...
+[2025-07-31 16:40:57] [WARNING] [safetyamp]: Rate limited (429). Retrying in 1 seconds...
+[2025-07-31 16:40:58] [WARNING] [safetyamp]: Rate limited (429). Retrying in 2 seconds...
+[2025-07-31 16:41:58] [INFO] [sync_departments]: Fetching department data from Viewpoint...
+[2025-07-31 16:42:00] [INFO] [sync_departments]: Retrieved 33 department records from Viewpoint.
+[2025-07-31 16:42:00] [INFO] [sync_departments]: Fetching existing clusters from SafetyAmp...
+[2025-07-31 16:42:00] [INFO] [sync_departments]: Retrieved 45 existing clusters from SafetyAmp.
+[2025-07-31 16:42:00] [INFO] [sync_departments]: Starting department cluster sync...
+[2025-07-31 16:42:00] [INFO] [sync_departments]: Department cluster sync complete.
+[2025-07-31 16:42:00] [INFO] [sync_jobs]: Fetching existing sites from SafetyAmp...
+[2025-07-31 16:42:06] [WARNING] [safetyamp]: Rate limited (429). Retrying in 1 seconds...
+[2025-07-31 16:42:07] [WARNING] [safetyamp]: Rate limited (429). Retrying in 2 seconds...
+[2025-07-31 16:42:09] [WARNING] [safetyamp]: Rate limited (429). Retrying in 4 seconds...
+[2025-07-31 16:42:13] [WARNING] [safetyamp]: Rate limited (429). Retrying in 8 seconds...
+[2025-07-31 16:42:22] [WARNING] [safetyamp]: Rate limited (429). Retrying in 16 seconds...
+[2025-07-31 16:42:38] [WARNING] [safetyamp]: Rate limited (429). Retrying in 32 seconds...
+[2025-07-31 16:43:14] [INFO] [sync_jobs]: Retrieved 1116 existing sites.
+[2025-07-31 16:43:14] [INFO] [sync_jobs]: Fetching jobs from Viewpoint...
+[2025-07-31 16:43:14] [INFO] [vista_data_manager]: Loaded 732 jobs into memory
+[2025-07-31 16:43:15] [INFO] [sync_jobs]: Retrieved 732 jobs from Viewpoint.
+[2025-07-31 16:43:15] [INFO] [sync_jobs]: Fetching site clusters from SafetyAmp...
+[2025-07-31 16:43:15] [INFO] [sync_jobs]: Built department-to-cluster map with 33 entries.
+[2025-07-31 16:43:15] [INFO] [sync_jobs]: Starting job site sync...
+[2025-07-31 16:43:15] [ERROR] [safetyamp]: POST https://api.safetyamp.com/api/sites HTTP error: 422 Client Error: unknown for url: https://api.safetyamp.com/api/sites - {"message":"The site code is already in use.","errors":{"ext_id":["The site code is already in use."]}}
+[2025-07-31 16:43:15] [WARNING] [sync_jobs]: Failed to create site: 72093. - Ark-La-Tex Electric Material Sales 2025
+[2025-07-31 16:43:15] [ERROR] [safetyamp]: POST https://api.safetyamp.com/api/sites HTTP error: 422 Client Error: unknown for url: https://api.safetyamp.com/api/sites - {"message":"The site code is already in use.","errors":{"ext_id":["The site code is already in use."]}}
+[2025-07-31 16:43:15] [WARNING] [sync_jobs]: Failed to create site: 92649. - Ketjen Bayport Plant BM23151 Insul La Porte TX
+[2025-07-31 16:43:15] [INFO] [sync_jobs]: Job site sync complete.
+[2025-07-31 16:43:15] [INFO] [sync_titles]: Initializing TitleSyncer and fetching existing titles from SafetyAmp...
+[2025-07-31 16:43:17] [INFO] [sync_titles]: Title map built with 151 entries.
+[2025-07-31 16:43:17] [INFO] [sync_titles]: Starting title sync from Viewpoint...
+[2025-07-31 16:43:17] [INFO] [sync_titles]: Retrieved 131 titles from Viewpoint.
+[2025-07-31 16:43:17] [INFO] [sync_employees]: Fetching initial data for sync...
+[2025-07-31 16:43:17] [INFO] [sync_employees]: Building cluster map from site clusters and sites...
+[2025-07-31 16:44:15] [INFO] [sync_employees]: Cluster map built with 1150 entries.
+[2025-07-31 16:44:15] [INFO] [sync_employees]: Fetching roles from SafetyAmp...
+[2025-07-31 16:44:16] [INFO] [sync_employees]: Role map built with 4 entries.
+[2025-07-31 16:44:16] [INFO] [sync_employees]: Fetching titles from SafetyAmp...
+[2025-07-31 16:44:17] [INFO] [sync_employees]: Title map built with 151 entries.
+[2025-07-31 16:44:17] [INFO] [sync_employees]: Fetching existing users from SafetyAmp...
+[2025-07-31 16:45:28] [INFO] [sync_employees]: User map built with 2002 entries.
+[2025-07-31 16:45:28] [INFO] [sync_employees]: Building home office map from sites...
+[2025-07-31 16:46:21] [INFO] [sync_employees]: Home office map built with 9 entries.
+[2025-07-31 16:46:23] [INFO] [msgraph_api]: Fetched active users.
+[2025-07-31 16:46:32] [INFO] [sync_employees]: Starting employee sync...
+[2025-07-31 16:46:48] [INFO] [vista_data_manager]: Loaded 1622 employees into memory
+[2025-07-31 16:46:59] [INFO] [sync_employees]: Retrieved 1622 employees from Viewpoint.
+[2025-07-31 16:47:47] [INFO] [sync_employees]: Updated user Lloyd Granger (ID: 2735) with fields: ['first_name', 'last_name', 'email']
+[2025-07-31 16:52:00] [INFO] [sync_employees]: Fetching initial data for sync...
+[2025-07-31 16:52:00] [INFO] [sync_employees]: Building cluster map from site clusters and sites...
+[2025-07-31 16:52:13] [INFO] [sync_employees]: Cluster map built with 1150 entries.
+[2025-07-31 16:52:13] [INFO] [sync_employees]: Fetching roles from SafetyAmp...
+[2025-07-31 16:52:13] [INFO] [sync_employees]: Role map built with 4 entries.
+[2025-07-31 16:52:13] [INFO] [sync_employees]: Fetching titles from SafetyAmp...
+[2025-07-31 16:52:14] [INFO] [sync_employees]: Title map built with 151 entries.
+[2025-07-31 16:52:14] [INFO] [sync_employees]: Fetching existing users from SafetyAmp...
+[2025-07-31 16:53:00] [WARNING] [safetyamp]: Rate limited (429). Retrying in 1 seconds...
+[2025-07-31 16:54:07] [INFO] [sync_employees]: User map built with 2002 entries.
+[2025-07-31 16:54:07] [INFO] [sync_employees]: Building home office map from sites...
+[2025-07-31 16:55:03] [INFO] [sync_employees]: Home office map built with 9 entries.
+[2025-07-31 16:55:05] [INFO] [msgraph_api]: Fetched active users.
+[2025-07-31 16:55:10] [INFO] [sync_employees]: Starting employee sync...
+[2025-07-31 16:55:12] [INFO] [safetyamp_field_extractor]: Extracting fields from /api/users
+[2025-07-31 16:55:17] [INFO] [vista_data_manager]: Loaded 1622 employees into memory
+[2025-07-31 16:55:18] [INFO] [sync_employees]: Retrieved 1622 employees from Viewpoint.
+[2025-07-31 16:55:30] [WARNING] [safetyamp]: Rate limited (429). Retrying in 1 seconds...
+[2025-07-31 16:55:31] [WARNING] [safetyamp]: Rate limited (429). Retrying in 2 seconds...
+[2025-07-31 16:55:33] [WARNING] [safetyamp]: Rate limited (429). Retrying in 4 seconds...
+[2025-07-31 16:55:37] [WARNING] [safetyamp]: Rate limited (429). Retrying in 8 seconds...
+[2025-07-31 16:55:46] [WARNING] [safetyamp]: Rate limited (429). Retrying in 16 seconds...
+[2025-07-31 16:56:02] [WARNING] [safetyamp]: Rate limited (429). Retrying in 32 seconds...
+[2025-07-31 16:56:21] [ERROR] [safetyamp]: PUT https://api.safetyamp.com/api/users/WjoK7 HTTP error: 422 Client Error: unknown for url: https://api.safetyamp.com/api/users/WjoK7 - {"message":"The first name field is required. (and 2 more errors)","errors":{"first_name":["The first name field is required."],"last_name":["The last name field is required."],"email":["The email field is required."]}}
+[2025-07-31 16:56:22] [INFO] [sync_employees]: Updated user Aaron Cortez (ID: 2849) with fields: ['home_site_id']
+[2025-07-31 16:56:42] [INFO] [safetyamp_field_extractor]: Analyzing 2002 records from /api/users
+[2025-07-31 16:56:42] [ERROR] [safetyamp_field_extractor]: Error extracting fields from /api/users: name 'types' is not defined
+[2025-07-31 16:56:42] [INFO] [safetyamp_field_extractor]: Extracting fields from /api/sites
+[2025-07-31 16:56:48] [WARNING] [safetyamp]: Rate limited (429). Retrying in 1 seconds...
+[2025-07-31 16:57:38] [INFO] [safetyamp_field_extractor]: Analyzing 1116 records from /api/sites
+[2025-07-31 16:57:38] [ERROR] [safetyamp_field_extractor]: Error extracting fields from /api/sites: name 'types' is not defined
+[2025-07-31 16:57:38] [INFO] [safetyamp_field_extractor]: Extracting fields from /api/site_clusters
+[2025-07-31 16:57:39] [INFO] [safetyamp_field_extractor]: Analyzing 45 records from /api/site_clusters
+[2025-07-31 16:57:39] [ERROR] [safetyamp_field_extractor]: Error extracting fields from /api/site_clusters: name 'types' is not defined
+[2025-07-31 16:57:39] [INFO] [safetyamp_field_extractor]: Extracting fields from /api/user_titles
+[2025-07-31 16:57:40] [INFO] [safetyamp_field_extractor]: Analyzing 151 records from /api/user_titles
+[2025-07-31 16:57:40] [ERROR] [safetyamp_field_extractor]: Error extracting fields from /api/user_titles: name 'types' is not defined
+[2025-07-31 16:57:40] [INFO] [safetyamp_field_extractor]: Extracting fields from /api/roles
+[2025-07-31 16:57:41] [INFO] [safetyamp_field_extractor]: Analyzing 4 records from /api/roles
+[2025-07-31 16:57:41] [ERROR] [safetyamp_field_extractor]: Error extracting fields from /api/roles: name 'types' is not defined
+[2025-07-31 16:57:41] [INFO] [safetyamp_field_extractor]: Extracting fields from /api/assets
+[2025-07-31 16:57:41] [INFO] [safetyamp_field_extractor]: Analyzing 4 records from /api/assets
+[2025-07-31 16:57:41] [ERROR] [safetyamp_field_extractor]: Error extracting fields from /api/assets: name 'types' is not defined
+[2025-07-31 16:57:41] [INFO] [safetyamp_field_extractor]: Extracting fields from /api/users
+[2025-07-31 16:58:53] [INFO] [safetyamp_field_extractor]: Analyzing 2002 records from /api/users
+[2025-07-31 16:58:53] [ERROR] [safetyamp_field_extractor]: Error extracting fields from /api/users: name 'types' is not defined
+[2025-07-31 16:58:53] [INFO] [safetyamp_field_extractor]: Extracting fields from /api/sites
+[2025-07-31 16:59:44] [INFO] [safetyamp_field_extractor]: Analyzing 1116 records from /api/sites
+[2025-07-31 16:59:44] [ERROR] [safetyamp_field_extractor]: Error extracting fields from /api/sites: name 'types' is not defined
+[2025-07-31 16:59:44] [INFO] [safetyamp_field_extractor]: Extracting fields from /api/site_clusters
+[2025-07-31 16:59:44] [INFO] [safetyamp_field_extractor]: Analyzing 45 records from /api/site_clusters
+[2025-07-31 16:59:44] [ERROR] [safetyamp_field_extractor]: Error extracting fields from /api/site_clusters: name 'types' is not defined
+[2025-07-31 16:59:44] [INFO] [safetyamp_field_extractor]: Extracting fields from /api/user_titles
+[2025-07-31 16:59:46] [INFO] [safetyamp_field_extractor]: Analyzing 151 records from /api/user_titles
+[2025-07-31 16:59:46] [ERROR] [safetyamp_field_extractor]: Error extracting fields from /api/user_titles: name 'types' is not defined
+[2025-07-31 16:59:46] [INFO] [safetyamp_field_extractor]: Extracting fields from /api/roles
+[2025-07-31 16:59:46] [INFO] [safetyamp_field_extractor]: Analyzing 4 records from /api/roles
+[2025-07-31 16:59:46] [ERROR] [safetyamp_field_extractor]: Error extracting fields from /api/roles: name 'types' is not defined
+[2025-07-31 16:59:46] [INFO] [safetyamp_field_extractor]: Extracting fields from /api/assets
+[2025-07-31 16:59:47] [INFO] [safetyamp_field_extractor]: Analyzing 4 records from /api/assets
+[2025-07-31 16:59:47] [ERROR] [safetyamp_field_extractor]: Error extracting fields from /api/assets: name 'types' is not defined

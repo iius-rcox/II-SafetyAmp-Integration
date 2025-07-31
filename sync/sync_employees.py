@@ -122,25 +122,37 @@ class EmployeeSyncer:
         updated_fields = {}
 
         for key in fields_to_check:
-            existing_value = str(existing_user.get(key)).strip() if existing_user.get(key) else ""
-            new_value = str(new_data.get(key)).strip() if new_data.get(key) else ""
+            # Handle None values and normalize to empty string for comparison
+            existing_raw = existing_user.get(key)
+            new_raw = new_data.get(key)
+            
+            # Normalize existing value
+            if existing_raw is None:
+                existing_value = ""
+            else:
+                existing_value = str(existing_raw).strip()
+            
+            # Normalize new value
+            if new_raw is None:
+                new_value = ""
+            else:
+                new_value = str(new_raw).strip()
 
+            # Apply field-specific normalization
             if key in ["mobile_phone", "work_phone"]:
-                existing_value = self.clean_phone(existing_value)
-                new_value = self.clean_phone(new_value)
-            if key == "gender":
-                existing_value = self.normalize_gender(existing_value)
-                new_value = self.normalize_gender(new_value)
-            if key in ["date_of_birth", "current_hire_date"]:
-                existing_value = self.format_date(existing_value)
-                new_value = self.format_date(new_value)
+                existing_value = self.clean_phone(existing_value) or ""
+                new_value = self.clean_phone(new_value) or ""
+            elif key == "gender":
+                existing_value = self.normalize_gender(existing_value) or ""
+                new_value = self.normalize_gender(new_value) or ""
+            elif key in ["date_of_birth", "current_hire_date"]:
+                existing_value = self.format_date(existing_value) or ""
+                new_value = self.format_date(new_value) or ""
 
+            # Only include field if values are actually different
             if existing_value != new_value:
+                # Use the original new_data value (not normalized) for the update
                 updated_fields[key] = new_data.get(key)
-
-            for mandatory_field in ["first_name", "last_name", "email"]:
-                if mandatory_field not in updated_fields:
-                    updated_fields[mandatory_field] = new_data.get(mandatory_field)
 
         return updated_fields
 
