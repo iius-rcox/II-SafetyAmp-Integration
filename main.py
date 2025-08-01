@@ -8,6 +8,7 @@ import sys
 import threading
 import time
 from utils.logger import get_logger
+from config.settings import SYNC_INTERVAL_MINUTES
 
 app = Flask(__name__)
 logger = get_logger("main")
@@ -73,15 +74,17 @@ def run_sync_worker():
             health_status['errors'] = []  # Clear previous errors
             logger.info("Sync operations completed successfully")
             
-            # Sleep for sync interval (default 1 hour)
-            time.sleep(3600)  # 1 hour
-            
         except Exception as e:
             error_msg = f"Sync worker error: {str(e)}"
             logger.error(error_msg)
             health_status['errors'].append(error_msg)
-            health_status['healthy'] = False
-            break
+            # Don't mark as unhealthy for individual sync failures
+            # The worker will continue and retry on the next interval
+            
+        # Sleep for configurable sync interval (converted from minutes to seconds)
+        sync_interval_seconds = SYNC_INTERVAL_MINUTES * 60
+        logger.info(f"Sleeping for {SYNC_INTERVAL_MINUTES} minutes ({sync_interval_seconds} seconds)")
+        time.sleep(sync_interval_seconds)
 
 def signal_handler(signum, frame):
     """Graceful shutdown handler"""
