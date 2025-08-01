@@ -7,13 +7,11 @@ metadata:
     app: safety-amp
 type: Opaque
 stringData:
-  # API Keys and sensitive configurations
-  SAFETY_AMP_API_KEY: "your-safety-amp-api-key-here"
-  DATABASE_URL: "your-database-connection-string-here"
-  # Azure Service Principal for authentication
-  AZURE_CLIENT_ID: "your-azure-client-id"
-  AZURE_CLIENT_SECRET: "your-azure-client-secret"
-  AZURE_TENANT_ID: "your-azure-tenant-id"
+  # These will be populated from Azure Key Vault
+  AZURE_KEY_VAULT_URL: "https://your-keyvault.vault.azure.net/"
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  REDIS_PASSWORD: "your-redis-password"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -25,11 +23,13 @@ metadata:
 data:
   # Application configuration
   LOG_LEVEL: "INFO"
-  ENVIRONMENT: "development"
-  SYNC_INTERVAL: "300"  # 5 minutes
-  BATCH_SIZE: "100"
-  RETRY_ATTEMPTS: "3"
-  RETRY_DELAY: "30"
+  ENVIRONMENT: "production"
+  SYNC_INTERVAL: "3600"  # 1 hour
+  CACHE_TTL_HOURS: "1"
+  API_RATE_LIMIT_CALLS: "60"
+  API_RATE_LIMIT_PERIOD: "61"
+  MAX_RETRY_ATTEMPTS: "3"
+  RETRY_DELAY_SECONDS: "30"
   HEALTH_CHECK_PORT: "8080"
   METRICS_PORT: "9090"
   # Safety Amp specific settings
@@ -86,21 +86,31 @@ spec:
             configMapKeyRef:
               name: safety-amp-config
               key: SYNC_INTERVAL
-        - name: BATCH_SIZE
+        - name: CACHE_TTL_HOURS
           valueFrom:
             configMapKeyRef:
               name: safety-amp-config
-              key: BATCH_SIZE
-        - name: RETRY_ATTEMPTS
+              key: CACHE_TTL_HOURS
+        - name: API_RATE_LIMIT_CALLS
           valueFrom:
             configMapKeyRef:
               name: safety-amp-config
-              key: RETRY_ATTEMPTS
-        - name: RETRY_DELAY
+              key: API_RATE_LIMIT_CALLS
+        - name: API_RATE_LIMIT_PERIOD
           valueFrom:
             configMapKeyRef:
               name: safety-amp-config
-              key: RETRY_DELAY
+              key: API_RATE_LIMIT_PERIOD
+        - name: MAX_RETRY_ATTEMPTS
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: MAX_RETRY_ATTEMPTS
+        - name: RETRY_DELAY_SECONDS
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: RETRY_DELAY_SECONDS
         - name: HEALTH_CHECK_PORT
           valueFrom:
             configMapKeyRef:
@@ -121,31 +131,26 @@ spec:
             configMapKeyRef:
               name: safety-amp-config
               key: SAFETY_AMP_TIMEOUT
-        - name: SAFETY_AMP_API_KEY
+        - name: AZURE_KEY_VAULT_URL
           valueFrom:
             secretKeyRef:
               name: safety-amp-secrets
-              key: SAFETY_AMP_API_KEY
-        - name: DATABASE_URL
+              key: AZURE_KEY_VAULT_URL
+        - name: REDIS_HOST
           valueFrom:
             secretKeyRef:
               name: safety-amp-secrets
-              key: DATABASE_URL
-        - name: AZURE_CLIENT_ID
+              key: REDIS_HOST
+        - name: REDIS_PORT
           valueFrom:
             secretKeyRef:
               name: safety-amp-secrets
-              key: AZURE_CLIENT_ID
-        - name: AZURE_CLIENT_SECRET
+              key: REDIS_PORT
+        - name: REDIS_PASSWORD
           valueFrom:
             secretKeyRef:
               name: safety-amp-secrets
-              key: AZURE_CLIENT_SECRET
-        - name: AZURE_TENANT_ID
-          valueFrom:
-            secretKeyRef:
-              name: safety-amp-secrets
-              key: AZURE_TENANT_ID
+              key: REDIS_PASSWORD
         resources:
           requests:
             memory: "256Mi"
