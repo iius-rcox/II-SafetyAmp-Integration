@@ -2,12 +2,38 @@
 **/secrets.yaml
 **/*-secrets.yaml
 **/secret-*.yaml
+# Additional secret patterns for enhanced security
+**/secrets-*.yaml
+**/*.secret.yaml
+**/*.secrets.yaml
+**/secret.yaml
+# Prevent actual secret values in template files
+**/secrets.template.yaml
+**/secrets.example.yaml
 
 # Environment specific configurations
 .env
 .env.local
 .env.production
 .env.staging
+# Additional environment patterns
+.env.*
+*.env
+
+# API Keys and credentials patterns
+**/config/credentials.*
+**/credentials/
+*apikey*
+*api-key*
+*api_key*
+*token*
+*password*
+# Certificate files
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
 
 # Temporary files
 *.tmp
@@ -92,3 +118,6 @@ venv.bak/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Pre-commit hooks
+.pre-commit-config.yaml

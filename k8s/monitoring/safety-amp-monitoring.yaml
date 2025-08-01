@@ -1,0 +1,209 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: safety-amp-monitoring-config
+  namespace: monitoring
+  labels:
+    app: safety-amp
+    component: monitoring
+data:
+  # Configurable alert thresholds
+  high_memory_threshold: "80"      # Percentage
+  high_cpu_threshold: "70"         # Percentage
+  sync_error_threshold: "5"        # Number of errors in 1 hour
+  sync_duration_threshold: "1800"  # Seconds (30 minutes)
+  health_check_failure_threshold: "3"  # Consecutive failures
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: safety-amp-metrics
+  namespace: monitoring
+  labels:
+    app: safety-amp
+    component: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: safety-amp
+      component: agent
+  namespaceSelector:
+    matchNames:
+    - safety-amp
+  endpoints:
+  - port: metrics
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: safety-amp-alerts
+  namespace: monitoring
+  labels:
+    app: safety-amp
+    component: monitoring
+spec:
+  groups:
+  - name: safety-amp.rules
+    interval: 30s
+    rules:
+    
+    # High-level availability alerts
+    - alert: SafetyAmpServiceDown
+      expr: up{job="safety-amp-agent"} == 0
+      for: 1m
+      labels:
+        severity: critical
+        service: safety-amp
+      annotations:
+        summary: "SafetyAmp service is down"
+        description: "SafetyAmp service has been down for more than 1 minute"
+        runbook_url: "https://runbooks.example.com/safety-amp/service-down"
+    
+    # Resource utilization alerts
+    - alert: SafetyAmpHighMemoryUsage
+      expr: |
+        (container_memory_working_set_bytes{pod=~"safety-amp-agent-.*"} / 
+         container_spec_memory_limit_bytes{pod=~"safety-amp-agent-.*"}) * 100 > 80
+      for: 5m
+      labels:
+        severity: warning
+        service: safety-amp
+      annotations:
+        summary: "SafetyAmp high memory usage"
+        description: "SafetyAmp memory usage is above 80% for more than 5 minutes"
+        
+    - alert: SafetyAmpHighCPUUsage
+      expr: |
+        (rate(container_cpu_usage_seconds_total{pod=~"safety-amp-agent-.*"}[5m]) / 
+         container_spec_cpu_quota{pod=~"safety-amp-agent-.*"} * 
+         container_spec_cpu_period{pod=~"safety-amp-agent-.*"}) * 100 > 70
+      for: 5m
+      labels:
+        severity: warning
+        service: safety-amp
+      annotations:
+        summary: "SafetyAmp high CPU usage"
+        description: "SafetyAmp CPU usage is above 70% for more than 5 minutes"
+    
+    # Sync operation alerts
+    - alert: SafetyAmpSyncErrors
+      expr: |
+        increase(safetyamp_sync_operations_total{status="error"}[1h]) > 5
+      for: 0m
+      labels:
+        severity: warning
+        service: safety-amp
+      annotations:
+        summary: "SafetyAmp sync errors detected"
+        description: "More than 5 sync errors detected in the last hour"
+        
+    - alert: SafetyAmpSyncDurationHigh
+      expr: |
+        safetyamp_sync_duration_seconds > 1800
+      for: 0m
+      labels:
+        severity: warning
+        service: safety-amp
+      annotations:
+        summary: "SafetyAmp sync taking too long"
+        description: "Sync operation taking more than 30 minutes"
+        
+    - alert: SafetyAmpNoRecentSync
+      expr: |
+        time() - safetyamp_sync_operations_total offset 6h > 21600
+      for: 0m
+      labels:
+        severity: critical
+        service: safety-amp
+      annotations:
+        summary: "SafetyAmp has not synced recently"
+        description: "No sync operations detected in the last 6 hours"
+    
+    # Health check alerts
+    - alert: SafetyAmpHealthCheckFailures
+      expr: |
+        increase(safetyamp_health_check_duration_seconds_count[5m]) == 0
+      for: 3m
+      labels:
+        severity: warning
+        service: safety-amp
+      annotations:
+        summary: "SafetyAmp health check failures"
+        description: "Health check endpoint not responding for 3 minutes"
+    
+    # Database connection alerts
+    - alert: SafetyAmpDatabaseConnectionIssues
+      expr: |
+        safetyamp_database_connections_active < 1
+      for: 2m
+      labels:
+        severity: critical
+        service: safety-amp
+      annotations:
+        summary: "SafetyAmp database connection issues"
+        description: "No active database connections detected"
+    
+    # Pod restart alerts
+    - alert: SafetyAmpPodRestartLoop
+      expr: |
+        increase(kube_pod_container_status_restarts_total{pod=~"safety-amp-agent-.*"}[1h]) > 3
+      for: 0m
+      labels:
+        severity: warning
+        service: safety-amp
+      annotations:
+        summary: "SafetyAmp pod restarting frequently"
+        description: "Pod has restarted more than 3 times in the last hour"
+    
+    # Batch job alerts
+    - alert: SafetyAmpBatchJobFailed
+      expr: |
+        kube_job_status_failed{job_name=~"safety-amp-sync-job-.*"} > 0
+      for: 0m
+      labels:
+        severity: warning
+        service: safety-amp
+      annotations:
+        summary: "SafetyAmp batch job failed"
+        description: "Scheduled batch sync job has failed"
+        
+    - alert: SafetyAmpBatchJobStuck
+      expr: |
+        time() - kube_job_status_start_time{job_name=~"safety-amp-sync-job-.*"} > 7200
+      for: 0m
+      labels:
+        severity: critical
+        service: safety-amp
+      annotations:
+        summary: "SafetyAmp batch job stuck"
+        description: "Batch job has been running for more than 2 hours"
+
+  # Recording rules for dashboards
+  - name: safety-amp.recording
+    interval: 30s
+    rules:
+    - record: safety_amp:sync_success_rate
+      expr: |
+        (
+          rate(safetyamp_sync_operations_total{status="success"}[5m]) / 
+          rate(safetyamp_sync_operations_total[5m])
+        ) * 100
+        
+    - record: safety_amp:avg_sync_duration
+      expr: |
+        rate(safetyamp_sync_duration_seconds_sum[5m]) / 
+        rate(safetyamp_sync_duration_seconds_count[5m])
+        
+    - record: safety_amp:memory_usage_percent
+      expr: |
+        (container_memory_working_set_bytes{pod=~"safety-amp-agent-.*"} / 
+         container_spec_memory_limit_bytes{pod=~"safety-amp-agent-.*"}) * 100
+         
+    - record: safety_amp:cpu_usage_percent
+      expr: |
+        (rate(container_cpu_usage_seconds_total{pod=~"safety-amp-agent-.*"}[5m]) / 
+         container_spec_cpu_quota{pod=~"safety-amp-agent-.*"} * 
+         container_spec_cpu_period{pod=~"safety-amp-agent-.*"}) * 100
