@@ -1,0 +1,170 @@
+{
+  "metadata": {
+    "generated_at": "2025-07-31 22:14:00.885548",
+    "description": "SafetyAmp API field summary",
+    "total_endpoints": 8,
+    "total_fields": 120
+  },
+  "endpoints": {
+    "/api/users": {
+      "field_count": 37,
+      "fields": [
+        "activated",
+        "avatar_location",
+        "bypass_sso",
+        "city",
+        "country",
+        "current_department",
+        "current_hire_date",
+        "current_title",
+        "date_of_birth",
+        "deleted_at",
+        "email",
+        "emp_id",
+        "extension",
+        "first_name",
+        "gender",
+        "home_phone",
+        "home_site",
+        "home_site_id",
+        "id",
+        "last_logged_in",
+        "last_name",
+        "middle_name",
+        "mobile_phone",
+        "nickname",
+        "owner",
+        "rehire_date",
+        "roles",
+        "sites",
+        "state",
+        "street",
+        "street2",
+        "system_access",
+        "text_opt_out",
+        "timezone",
+        "type",
+        "work_phone",
+        "zip_code"
+      ]
+    },
+    "/api/sites": {
+      "field_count": 23,
+      "fields": [
+        "city",
+        "cluster_id",
+        "country",
+        "created_at",
+        "created_by",
+        "deleted_at",
+        "deleted_by",
+        "em_enabled",
+        "em_weather_override",
+        "ext_id",
+        "id",
+        "industry_description",
+        "latitude",
+        "longitude",
+        "naics_code",
+        "name",
+        "state",
+        "street",
+        "street2",
+        "timezone",
+        "updated_at",
+        "updated_by",
+        "zip_code"
+      ]
+    },
+    "/api/site_clusters": {
+      "field_count": 13,
+      "fields": [
+        "created_at",
+        "created_by",
+        "deleted_at",
+        "deleted_by",
+        "depth",
+        "external_code",
+        "id",
+        "name",
+        "osha_establishment",
+        "parent_cluster_id",
+        "path",
+        "updated_at",
+        "updated_by"
+      ]
+    },
+    "/api/user_titles": {
+      "field_count": 8,
+      "fields": [
+        "created_at",
+        "created_by",
+        "deleted_at",
+        "deleted_by",
+        "id",
+        "name",
+        "updated_at",
+        "updated_by"
+      ]
+    },
+    "/api/roles": {
+      "field_count": 12,
+      "fields": [
+        "account_default",
+        "created_at",
+        "created_by",
+        "default_role_id",
+        "deleted_at",
+        "deleted_by",
+        "guard_name",
+        "id",
+        "name",
+        "scim_external_id",
+        "updated_at",
+        "updated_by"
+      ]
+    },
+    "/api/assets": {
+      "field_count": 20,
+      "fields": [
+        "asset_type",
+        "asset_type_id",
+        "code",
+        "created_at",
+        "created_by",
+        "current_user",
+        "current_user_id",
+        "deleted_at",
+        "description",
+        "id",
+        "location",
+        "location_id",
+        "model",
+        "name",
+        "serial",
+        "site",
+        "site_id",
+        "status",
+        "updated_at",
+        "updated_by"
+      ]
+    },
+    "/api/asset_categories": {
+      "field_count": 2,
+      "fields": [
+        "id",
+        "name"
+      ]
+    },
+    "/api/asset_types": {
+      "field_count": 5,
+      "fields": [
+        "asset_category_id",
+        "id",
+        "name",
+        "relationships",
+        "site_id"
+      ]
+    }
+  }
+}

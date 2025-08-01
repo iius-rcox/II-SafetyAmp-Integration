@@ -20896,3 +20896,479 @@
 [2025-07-31 16:59:46] [INFO] [safetyamp_field_extractor]: Extracting fields from /api/assets
 [2025-07-31 16:59:47] [INFO] [safetyamp_field_extractor]: Analyzing 4 records from /api/assets
 [2025-07-31 16:59:47] [ERROR] [safetyamp_field_extractor]: Error extracting fields from /api/assets: name 'types' is not defined
+[2025-07-31 22:23:05] [INFO] [samsara]: Fetching all vehicles from Samsara API...
+[2025-07-31 22:23:06] [INFO] [samsara]: Retrieved 80 vehicles from Samsara.
+[2025-07-31 22:24:11] [INFO] [samsara]: Fetching all vehicles from Samsara API...
+[2025-07-31 22:24:12] [INFO] [samsara]: Retrieved 80 vehicles from Samsara.
+[2025-07-31 22:24:12] [ERROR] [vehicle_sync]: Error getting sync summary: 'NoneType' object has no attribute 'startswith'
+[2025-07-31 22:24:12] [INFO] [vehicle_sync]: Starting vehicle sync from Samsara to SafetyAmp
+[2025-07-31 22:24:12] [INFO] [vehicle_sync]: Fetching vehicles from Samsara...
+[2025-07-31 22:24:12] [INFO] [samsara]: Fetching all vehicles from Samsara API...
+[2025-07-31 22:24:14] [INFO] [samsara]: Retrieved 80 vehicles from Samsara.
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: Found 80 vehicles in Samsara
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: Found 3 existing assets in SafetyAmp
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G8JD7UB9UR
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GDD9CYUM2C
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GHZGPVZCAU
+[2025-07-31 22:24:14] [WARNING] [vehicle_sync]: Vehicle 281474989342704 has no serial number, skipping
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GN3427AYZ3
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GRY8G7RCP3
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G88SYZN7G9
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GYYZFRJMJG
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GRGTR3JXHF
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G7EDPPHB3B
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GGWWWP8HW3
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G6G55NV6FW
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GDH9RWP6U5
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GTF3FETB3M
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GZNGT3SDHR
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G5CU2WYNZW
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GAB2FYRXG3
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G4GKJYD7Z3
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G5P6MSUXNY
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G8DS8W9XMA
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G28DNUVEV4
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GC55NYE7CC
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G8WMKUCCSS
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GPHY29YV8F
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G4AMTDWNZB
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G2TSNRTJ6X
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GF9HZD7Y7P
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GFDRG3YVEY
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GRWTFB3FTF
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GVPZUGU4S6
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GWTTJ5MKPT
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G45NAN5JRH
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G4RGZRUD8P
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GXDDNW765V
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G2EHVA7H5N
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G3W4ZC3MPB
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G3X9N376YN
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GB9CZ4W5A5
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GDX8KFRAYC
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GGYYZ2689Y
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GKF65ECGFK
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GZ637R6RG5
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GZ8BGB83GY
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G287CN8W2X
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G3CTJ2TZM5
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G448NPP897
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G44ECKR8WN
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G4SK89VFBX
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G5DSRAHS6J
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G5G68F6NG3
+[2025-07-31 22:24:14] [WARNING] [vehicle_sync]: Vehicle 281474995549051 has no serial number, skipping
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G6HFMFNYJK
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G8HDGGEJMX
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GAA2N5KA22
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GK6K4NYNSZ
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GRBCBKJPBW
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GUJDW6U4ZF
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GYDPJZ53SW
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G8GFE9AK5C
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GAXT7AGPUV
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GHESR9SDSN
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GKPGGA3XZ6
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GMHD5X7C2F
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GRHEGE64PN
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GSHHTJD4UN
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GX4V7U8ZMY
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GX54BBXB5H
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GXZWW5EN3V
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GY624XZJB6
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GZE845SWEH
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G2AKB745XK
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G4X75MTM6X
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GCTCX4Z5NV
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GDH9U6GJZS
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GHHEM5U9N7
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GJKHW2KWDU
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GJMABYX59E
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GJMBVYT5BE
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GVYRZMM8A2
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GWR7SHJ46W
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]: Vehicle sync completed:
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]:   Synced: 78
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]:   Errors: 0
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]:   Skipped: 2
+[2025-07-31 22:24:14] [INFO] [vehicle_sync]:   Dry run: True
+[2025-07-31 22:27:37] [INFO] [samsara]: Fetching all vehicles from Samsara API...
+[2025-07-31 22:27:38] [INFO] [samsara]: Retrieved 80 vehicles from Samsara.
+[2025-07-31 22:27:39] [INFO] [vehicle_sync]: Starting vehicle sync from Samsara to SafetyAmp
+[2025-07-31 22:27:39] [INFO] [vehicle_sync]: Fetching vehicles from Samsara...
+[2025-07-31 22:27:39] [INFO] [samsara]: Fetching all vehicles from Samsara API...
+[2025-07-31 22:27:40] [INFO] [samsara]: Retrieved 80 vehicles from Samsara.
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: Found 80 vehicles in Samsara
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: Found 3 existing assets in SafetyAmp
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G8JD7UB9UR
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GDD9CYUM2C
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GHZGPVZCAU
+[2025-07-31 22:27:40] [WARNING] [vehicle_sync]: Vehicle 281474989342704 has no serial number, skipping
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GN3427AYZ3
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GRY8G7RCP3
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G88SYZN7G9
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GYYZFRJMJG
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GRGTR3JXHF
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G7EDPPHB3B
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GGWWWP8HW3
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G6G55NV6FW
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GDH9RWP6U5
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GTF3FETB3M
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GZNGT3SDHR
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G5CU2WYNZW
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GAB2FYRXG3
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G4GKJYD7Z3
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G5P6MSUXNY
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G8DS8W9XMA
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G28DNUVEV4
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GC55NYE7CC
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G8WMKUCCSS
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GPHY29YV8F
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G4AMTDWNZB
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G2TSNRTJ6X
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GF9HZD7Y7P
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GFDRG3YVEY
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GRWTFB3FTF
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GVPZUGU4S6
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GWTTJ5MKPT
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G45NAN5JRH
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G4RGZRUD8P
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GXDDNW765V
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G2EHVA7H5N
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G3W4ZC3MPB
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G3X9N376YN
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GB9CZ4W5A5
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GDX8KFRAYC
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GGYYZ2689Y
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GKF65ECGFK
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GZ637R6RG5
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GZ8BGB83GY
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G287CN8W2X
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G3CTJ2TZM5
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G448NPP897
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G44ECKR8WN
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G4SK89VFBX
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G5DSRAHS6J
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G5G68F6NG3
+[2025-07-31 22:27:40] [WARNING] [vehicle_sync]: Vehicle 281474995549051 has no serial number, skipping
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G6HFMFNYJK
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G8HDGGEJMX
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GAA2N5KA22
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GK6K4NYNSZ
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GRBCBKJPBW
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GUJDW6U4ZF
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GYDPJZ53SW
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G8GFE9AK5C
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GAXT7AGPUV
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GHESR9SDSN
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GKPGGA3XZ6
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GMHD5X7C2F
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GRHEGE64PN
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GSHHTJD4UN
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GX4V7U8ZMY
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GX54BBXB5H
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GXZWW5EN3V
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GY624XZJB6
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GZE845SWEH
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G2AKB745XK
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G4X75MTM6X
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GCTCX4Z5NV
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GDH9U6GJZS
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GHHEM5U9N7
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GJKHW2KWDU
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GJMABYX59E
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GJMBVYT5BE
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GVYRZMM8A2
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GWR7SHJ46W
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]: Vehicle sync completed:
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]:   Synced: 78
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]:   Errors: 0
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]:   Skipped: 2
+[2025-07-31 22:27:40] [INFO] [vehicle_sync]:   Dry run: True
+[2025-07-31 22:30:07] [INFO] [samsara]: Fetching all vehicles from Samsara API...
+[2025-07-31 22:30:08] [INFO] [samsara]: Retrieved 80 vehicles from Samsara.
+[2025-07-31 22:30:09] [INFO] [vehicle_sync]: Starting vehicle sync from Samsara to SafetyAmp
+[2025-07-31 22:30:09] [INFO] [vehicle_sync]: Fetching vehicles from Samsara...
+[2025-07-31 22:30:09] [INFO] [samsara]: Fetching all vehicles from Samsara API...
+[2025-07-31 22:30:10] [INFO] [samsara]: Retrieved 80 vehicles from Samsara.
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: Found 80 vehicles in Samsara
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: Found 3 existing assets in SafetyAmp
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G8JD7UB9UR
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GDD9CYUM2C
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GHZGPVZCAU
+[2025-07-31 22:30:10] [WARNING] [vehicle_sync]: Vehicle 281474989342704 has no serial number, skipping
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GN3427AYZ3
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GRY8G7RCP3
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G88SYZN7G9
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GYYZFRJMJG
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GRGTR3JXHF
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G7EDPPHB3B
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GGWWWP8HW3
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G6G55NV6FW
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GDH9RWP6U5
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GTF3FETB3M
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GZNGT3SDHR
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G5CU2WYNZW
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GAB2FYRXG3
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G4GKJYD7Z3
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G5P6MSUXNY
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G8DS8W9XMA
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G28DNUVEV4
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GC55NYE7CC
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G8WMKUCCSS
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GPHY29YV8F
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G4AMTDWNZB
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G2TSNRTJ6X
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GF9HZD7Y7P
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GFDRG3YVEY
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GRWTFB3FTF
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GVPZUGU4S6
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GWTTJ5MKPT
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G45NAN5JRH
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G4RGZRUD8P
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GXDDNW765V
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G2EHVA7H5N
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G3W4ZC3MPB
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G3X9N376YN
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GB9CZ4W5A5
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GDX8KFRAYC
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GGYYZ2689Y
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GKF65ECGFK
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GZ637R6RG5
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GZ8BGB83GY
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G287CN8W2X
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G3CTJ2TZM5
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G448NPP897
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G44ECKR8WN
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G4SK89VFBX
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G5DSRAHS6J
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G5G68F6NG3
+[2025-07-31 22:30:10] [WARNING] [vehicle_sync]: Vehicle 281474995549051 has no serial number, skipping
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G6HFMFNYJK
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G8HDGGEJMX
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GAA2N5KA22
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GK6K4NYNSZ
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GRBCBKJPBW
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GUJDW6U4ZF
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GYDPJZ53SW
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G8GFE9AK5C
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GAXT7AGPUV
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GHESR9SDSN
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GKPGGA3XZ6
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GMHD5X7C2F
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GRHEGE64PN
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GSHHTJD4UN
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GX4V7U8ZMY
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GX54BBXB5H
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GXZWW5EN3V
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GY624XZJB6
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GZE845SWEH
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G2AKB745XK
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset G4X75MTM6X
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GCTCX4Z5NV
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GDH9U6GJZS
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GHHEM5U9N7
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GJKHW2KWDU
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GJMABYX59E
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GJMBVYT5BE
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GVYRZMM8A2
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: [DRY RUN] Would create asset GWR7SHJ46W
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]: Vehicle sync completed:
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]:   Synced: 78
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]:   Errors: 0
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]:   Skipped: 2
+[2025-07-31 22:30:10] [INFO] [vehicle_sync]:   Dry run: True
+[2025-07-31 22:31:44] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-07-31 22:31:44] [INFO] [test_single_vehicle]: Fetching vehicles from Samsara...
+[2025-07-31 22:31:44] [INFO] [samsara]: Fetching all vehicles from Samsara API...
+[2025-07-31 22:31:46] [INFO] [samsara]: Retrieved 80 vehicles from Samsara.
+[2025-07-31 22:31:46] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-07-31 22:31:46] [INFO] [test_single_vehicle]: [DRY RUN] Would create asset G8JD7UB9UR
+[2025-07-31 22:36:33] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-07-31 22:36:33] [INFO] [test_single_vehicle]: Fetching vehicles from Samsara...
+[2025-07-31 22:36:33] [INFO] [samsara]: Fetching all vehicles from Samsara API...
+[2025-07-31 22:36:34] [INFO] [samsara]: Retrieved 80 vehicles from Samsara.
+[2025-07-31 22:36:34] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-07-31 22:36:35] [INFO] [test_single_vehicle]: [DRY RUN] Would create asset G8JD7UB9UR
+[2025-07-31 22:42:10] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-07-31 22:42:10] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-07-31 22:42:11] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-07-31 22:42:11] [INFO] [test_single_vehicle]: [DRY RUN] Would create asset G8JD7UB9UR
+[2025-07-31 23:34:28] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-07-31 23:34:28] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-07-31 23:34:29] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-07-31 23:34:29] [INFO] [test_single_vehicle]: [DRY RUN] Would create asset G8JD7UB9UR
+[2025-07-31 23:40:36] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-07-31 23:40:36] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-07-31 23:40:37] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-07-31 23:40:38] [WARNING] [test_single_vehicle]: No SafetyAmp user ID found in driver notes for ID: 52337118
+[2025-07-31 23:40:38] [INFO] [test_single_vehicle]: [DRY RUN] Would create asset G8JD7UB9UR
+[2025-07-31 23:42:31] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-07-31 23:42:31] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-07-31 23:42:32] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-07-31 23:42:33] [WARNING] [test_single_vehicle]: No SafetyAmp user ID found in driver notes for ID: 52337118
+[2025-07-31 23:42:33] [INFO] [test_single_vehicle]: [DRY RUN] Would create asset G8JD7UB9UR
+[2025-07-31 23:42:48] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-07-31 23:42:48] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-07-31 23:42:48] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-07-31 23:42:49] [WARNING] [test_single_vehicle]: No SafetyAmp user ID found in driver notes for ID: 52337118
+[2025-07-31 23:42:49] [INFO] [test_single_vehicle]: [DRY RUN] Would create asset G8JD7UB9UR
+[2025-07-31 23:46:37] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-07-31 23:46:37] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-07-31 23:46:38] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-07-31 23:46:39] [WARNING] [test_single_vehicle]: No name found for driver ID: 52337118
+[2025-07-31 23:46:39] [INFO] [test_single_vehicle]: [DRY RUN] Would create asset G8JD7UB9UR
+[2025-07-31 23:47:00] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-07-31 23:47:00] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-07-31 23:47:01] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-07-31 23:47:02] [WARNING] [test_single_vehicle]: No name found for driver ID: 52337118
+[2025-07-31 23:47:02] [INFO] [test_single_vehicle]: [DRY RUN] Would create asset G8JD7UB9UR
+[2025-07-31 23:48:53] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-07-31 23:48:53] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-07-31 23:48:54] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-07-31 23:48:55] [WARNING] [test_single_vehicle]: No SafetyAmp user ID found in driver notes for ID: 52337118
+[2025-07-31 23:48:55] [INFO] [test_single_vehicle]: [DRY RUN] Would create asset G8JD7UB9UR
+[2025-07-31 23:49:33] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-07-31 23:49:33] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-07-31 23:49:34] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-07-31 23:51:10] [WARNING] [test_single_vehicle]: No SafetyAmp user ID found in driver notes for ID: 52337118
+[2025-07-31 23:51:10] [INFO] [test_single_vehicle]: [DRY RUN] Would create asset G8JD7UB9UR
+[2025-07-31 23:51:21] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-07-31 23:51:21] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-07-31 23:51:21] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-07-31 23:51:22] [WARNING] [test_single_vehicle]: No SafetyAmp user ID found in driver notes for ID: 52337118
+[2025-07-31 23:51:22] [INFO] [test_single_vehicle]: [DRY RUN] Would create asset G8JD7UB9UR
+[2025-07-31 23:51:31] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-07-31 23:51:31] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-07-31 23:51:32] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-07-31 23:51:49] [WARNING] [test_single_vehicle]: No SafetyAmp user ID found in driver notes for ID: 52337118
+[2025-07-31 23:52:51] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-07-31 23:52:51] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-07-31 23:52:51] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-07-31 23:52:52] [WARNING] [test_single_vehicle]: No SafetyAmp user ID found in driver notes for ID: 52337118
+[2025-07-31 23:52:52] [INFO] [test_single_vehicle]: [DRY RUN] Would create asset G8JD7UB9UR
+[2025-07-31 23:53:32] [INFO] [test_single_vehicle]: [DRY RUN] Would create asset G8JD7UB9UR
+[2025-07-31 23:53:37] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-07-31 23:53:37] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-07-31 23:53:41] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-07-31 23:53:41] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-07-31 23:53:42] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-07-31 23:55:31] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-07-31 23:55:31] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-07-31 23:55:32] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-07-31 23:55:33] [INFO] [test_single_vehicle]: Found employee ID '18908' in driver notes
+[2025-07-31 23:56:17] [INFO] [test_single_vehicle]: Found SafetyAmp user ID '18908' in driver notes
+[2025-07-31 23:56:17] [INFO] [test_single_vehicle]: [DRY RUN] Would create asset G8JD7UB9UR
+[2025-07-31 23:56:31] [INFO] [test_single_vehicle]: Loading SafetyAmp users cache...
+[2025-07-31 23:56:36] [INFO] [test_single_vehicle]: Loading SafetyAmp users cache...
+[2025-07-31 23:56:44] [WARNING] [safetyamp]: Rate limited (429). Retrying in 1 seconds...
+[2025-07-31 23:56:44] [WARNING] [safetyamp]: Rate limited (429). Retrying in 1 seconds...
+[2025-07-31 23:56:45] [WARNING] [safetyamp]: Rate limited (429). Retrying in 2 seconds...
+[2025-07-31 23:56:45] [WARNING] [safetyamp]: Rate limited (429). Retrying in 2 seconds...
+[2025-07-31 23:56:47] [WARNING] [safetyamp]: Rate limited (429). Retrying in 4 seconds...
+[2025-07-31 23:56:47] [WARNING] [safetyamp]: Rate limited (429). Retrying in 4 seconds...
+[2025-07-31 23:56:51] [WARNING] [safetyamp]: Rate limited (429). Retrying in 8 seconds...
+[2025-07-31 23:56:51] [WARNING] [safetyamp]: Rate limited (429). Retrying in 8 seconds...
+[2025-07-31 23:56:59] [WARNING] [safetyamp]: Rate limited (429). Retrying in 16 seconds...
+[2025-07-31 23:56:59] [WARNING] [safetyamp]: Rate limited (429). Retrying in 16 seconds...
+[2025-07-31 23:57:16] [WARNING] [safetyamp]: Rate limited (429). Retrying in 32 seconds...
+[2025-07-31 23:57:16] [WARNING] [safetyamp]: Rate limited (429). Retrying in 32 seconds...
+[2025-07-31 23:57:57] [WARNING] [safetyamp]: Rate limited (429). Retrying in 1 seconds...
+[2025-07-31 23:57:57] [WARNING] [safetyamp]: Rate limited (429). Retrying in 1 seconds...
+[2025-07-31 23:57:59] [WARNING] [safetyamp]: Rate limited (429). Retrying in 2 seconds...
+[2025-07-31 23:57:59] [WARNING] [safetyamp]: Rate limited (429). Retrying in 2 seconds...
+[2025-07-31 23:58:01] [WARNING] [safetyamp]: Rate limited (429). Retrying in 4 seconds...
+[2025-07-31 23:58:01] [WARNING] [safetyamp]: Rate limited (429). Retrying in 4 seconds...
+[2025-07-31 23:58:05] [WARNING] [safetyamp]: Rate limited (429). Retrying in 8 seconds...
+[2025-07-31 23:58:05] [WARNING] [safetyamp]: Rate limited (429). Retrying in 8 seconds...
+[2025-07-31 23:58:13] [WARNING] [safetyamp]: Rate limited (429). Retrying in 16 seconds...
+[2025-07-31 23:58:13] [WARNING] [safetyamp]: Rate limited (429). Retrying in 16 seconds...
+[2025-07-31 23:58:29] [WARNING] [safetyamp]: Rate limited (429). Retrying in 32 seconds...
+[2025-07-31 23:58:29] [WARNING] [safetyamp]: Rate limited (429). Retrying in 32 seconds...
+[2025-07-31 23:59:04] [INFO] [test_single_vehicle]: Loaded 2001 SafetyAmp users into cache
+[2025-07-31 23:59:04] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-07-31 23:59:04] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-07-31 23:59:05] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-07-31 23:59:05] [INFO] [test_single_vehicle]: Found employee ID '18908' in driver notes
+[2025-07-31 23:59:05] [INFO] [test_single_vehicle]: Found SafetyAmp user ID 'KNDlQ' for employee ID '18908'
+[2025-07-31 23:59:06] [INFO] [test_single_vehicle]: [DRY RUN] Would create asset G8JD7UB9UR
+[2025-07-31 23:59:10] [INFO] [test_single_vehicle]: Loaded 2001 SafetyAmp users into cache
+[2025-07-31 23:59:10] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-07-31 23:59:10] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-07-31 23:59:10] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-07-31 23:59:11] [INFO] [test_single_vehicle]: Found employee ID '18908' in driver notes
+[2025-07-31 23:59:51] [INFO] [test_single_vehicle]: Found SafetyAmp user ID 'KNDlQ' for employee ID '18908'
+[2025-08-01 00:00:02] [INFO] [test_single_vehicle]: [DRY RUN] Would create asset G8JD7UB9UR
+[2025-08-01 00:01:37] [INFO] [test_single_vehicle]: Loading SafetyAmp users cache...
+[2025-08-01 00:01:45] [INFO] [test_single_vehicle]: Loading SafetyAmp users cache...
+[2025-08-01 00:01:52] [WARNING] [safetyamp]: Rate limited (429). Retrying in 1 seconds...
+[2025-08-01 00:01:52] [WARNING] [safetyamp]: Rate limited (429). Retrying in 1 seconds...
+[2025-08-01 00:01:53] [WARNING] [safetyamp]: Rate limited (429). Retrying in 2 seconds...
+[2025-08-01 00:01:53] [WARNING] [safetyamp]: Rate limited (429). Retrying in 2 seconds...
+[2025-08-01 00:01:55] [WARNING] [safetyamp]: Rate limited (429). Retrying in 4 seconds...
+[2025-08-01 00:01:55] [WARNING] [safetyamp]: Rate limited (429). Retrying in 4 seconds...
+[2025-08-01 00:01:59] [WARNING] [safetyamp]: Rate limited (429). Retrying in 8 seconds...
+[2025-08-01 00:02:36] [INFO] [test_single_vehicle]: Loading SafetyAmp users cache...
+[2025-08-01 00:02:36] [WARNING] [safetyamp]: Rate limited (429). Retrying in 1 seconds...
+[2025-08-01 00:03:43] [INFO] [test_single_vehicle]: Loaded 2001 SafetyAmp users into cache
+[2025-08-01 00:03:43] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-08-01 00:03:43] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-08-01 00:03:44] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-08-01 00:03:44] [INFO] [test_single_vehicle]: Found employee ID '18908' in driver notes
+[2025-08-01 00:03:44] [INFO] [test_single_vehicle]: Found SafetyAmp user ID 'KNDlQ' for employee ID '18908'
+[2025-08-01 00:03:45] [INFO] [test_single_vehicle]: [DRY RUN] Would create asset G8JD7UB9UR
+[2025-08-01 00:12:17] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-08-01 00:12:17] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-08-01 00:12:18] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-08-01 00:12:18] [INFO] [test_single_vehicle]: Found employee ID '18908' in driver notes
+[2025-08-01 00:12:18] [INFO] [test_single_vehicle]: Found SafetyAmp user ID 'KNDlQ' for employee ID '18908'
+[2025-08-01 00:12:18] [ERROR] [test_single_vehicle]: Error during single vehicle test: 'SafetyAmpAPI' object has no attribute 'create_asset'
+[2025-08-01 00:13:10] [INFO] [test_single_vehicle]: Loading SafetyAmp users cache...
+[2025-08-01 00:13:40] [INFO] [test_single_vehicle]: Loading SafetyAmp users cache...
+[2025-08-01 00:13:49] [WARNING] [safetyamp]: Rate limited (429). Retrying in 1 seconds...
+[2025-08-01 00:13:50] [WARNING] [safetyamp]: Rate limited (429). Retrying in 2 seconds...
+[2025-08-01 00:13:53] [WARNING] [safetyamp]: Rate limited (429). Retrying in 4 seconds...
+[2025-08-01 00:13:57] [WARNING] [safetyamp]: Rate limited (429). Retrying in 8 seconds...
+[2025-08-01 00:14:05] [WARNING] [safetyamp]: Rate limited (429). Retrying in 16 seconds...
+[2025-08-01 00:14:48] [INFO] [test_single_vehicle]: Loaded 2001 SafetyAmp users into cache
+[2025-08-01 00:14:48] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-08-01 00:14:48] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-08-01 00:14:49] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-08-01 00:14:50] [INFO] [test_single_vehicle]: Found employee ID '18908' in driver notes
+[2025-08-01 00:14:50] [INFO] [test_single_vehicle]: Found SafetyAmp user ID 'KNDlQ' for employee ID '18908'
+[2025-08-01 00:14:50] [INFO] [test_single_vehicle]: [DRY RUN] Would create asset G8JD7UB9UR
+[2025-08-01 00:15:25] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-08-01 00:15:25] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-08-01 00:15:26] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-08-01 00:15:27] [INFO] [test_single_vehicle]: Found employee ID '18908' in driver notes
+[2025-08-01 00:15:27] [INFO] [test_single_vehicle]: Found SafetyAmp user ID 'KNDlQ' for employee ID '18908'
+[2025-08-01 00:15:27] [ERROR] [safetyamp]: POST https://api.safetyamp.com/api/assets HTTP error: 422 Client Error: unknown for url: https://api.safetyamp.com/api/assets - {"message":"The selected current user id is invalid. (and 1 more error)","errors":{"current_user_id":["The selected current user id is invalid."],"site_id":["The site id field is required."]}}
+[2025-08-01 00:15:27] [ERROR] [test_single_vehicle]: Failed to create asset G8JD7UB9UR
+[2025-08-01 00:17:43] [INFO] [test_single_vehicle]: Loading SafetyAmp users cache...
+[2025-08-01 00:18:49] [INFO] [test_single_vehicle]: Loaded 2001 SafetyAmp users into cache
+[2025-08-01 00:18:49] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-08-01 00:18:49] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-08-01 00:18:50] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-08-01 00:18:51] [INFO] [test_single_vehicle]: Found employee ID '18908' in driver notes
+[2025-08-01 00:19:47] [INFO] [test_single_vehicle]: Loading SafetyAmp users cache...
+[2025-08-01 00:19:58] [INFO] [test_single_vehicle]: Loading SafetyAmp users cache...
+[2025-08-01 00:20:08] [WARNING] [safetyamp]: Rate limited (429). Retrying in 1 seconds...
+[2025-08-01 00:20:09] [WARNING] [safetyamp]: Rate limited (429). Retrying in 2 seconds...
+[2025-08-01 00:20:12] [WARNING] [safetyamp]: Rate limited (429). Retrying in 4 seconds...
+[2025-08-01 00:20:16] [WARNING] [safetyamp]: Rate limited (429). Retrying in 8 seconds...
+[2025-08-01 00:20:24] [WARNING] [safetyamp]: Rate limited (429). Retrying in 16 seconds...
+[2025-08-01 00:20:40] [WARNING] [safetyamp]: Rate limited (429). Retrying in 32 seconds...
+[2025-08-01 00:21:26] [INFO] [test_single_vehicle]: Loaded 2004 SafetyAmp users into cache
+[2025-08-01 00:21:26] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-08-01 00:21:26] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-08-01 00:21:27] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-08-01 00:21:27] [INFO] [test_single_vehicle]: Found employee ID '18908' in driver notes
+[2025-08-01 00:21:27] [INFO] [test_single_vehicle]: Found SafetyAmp user ID 'KNDlQ' with home_site_id '6085' for employee ID '18908'
+[2025-08-01 00:21:28] [INFO] [test_single_vehicle]: [DRY RUN] Would create asset G8JD7UB9UR
+[2025-08-01 00:22:03] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-08-01 00:22:03] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-08-01 00:22:04] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-08-01 00:22:05] [INFO] [test_single_vehicle]: Found employee ID '18908' in driver notes
+[2025-08-01 00:22:05] [INFO] [test_single_vehicle]: Found SafetyAmp user ID 'KNDlQ' with home_site_id '6085' for employee ID '18908'
+[2025-08-01 00:22:05] [ERROR] [safetyamp]: POST https://api.safetyamp.com/api/assets HTTP error: 422 Client Error: unknown for url: https://api.safetyamp.com/api/assets - {"message":"The selected asset type id is invalid. (and 1 more error)","errors":{"asset_type_id":["The selected asset type id is invalid."],"current_user_id":["The selected current user id is invalid."]}}
+[2025-08-01 00:22:05] [ERROR] [test_single_vehicle]: Failed to create asset G8JD7UB9UR

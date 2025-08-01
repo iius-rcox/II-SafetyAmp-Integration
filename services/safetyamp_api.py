@@ -165,3 +165,11 @@ class SafetyAmpAPI:
 
     def create_user(self, user_data: dict):
         return self.post("/api/users", user_data)
+
+    def create_asset(self, asset_data: dict):
+        """Create a new asset in SafetyAmp"""
+        return self.post("/api/assets", asset_data)
+
+    def update_asset(self, asset_id: str, asset_data: dict):
+        """Update an existing asset in SafetyAmp"""
+        return self.put(f"/api/assets/{asset_id}", asset_data)
