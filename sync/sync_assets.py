@@ -18,15 +18,15 @@ class AssetSyncer:
         self.user_site_map = self._build_user_site_map()
 
     def _build_asset_map(self):
-        assets = self.api_client.get("/api/assets")
-        return {asset.get("external_id"): asset for asset in assets if asset.get("external_id")}
+        assets = self.api_client.get_assets_cached(max_age_hours=1)
+        return {asset.get("external_id"): asset for asset in assets.values() if asset.get("external_id")}
 
     def _build_user_map(self):
-        users = self.api_client.get_users()
+        users = self.api_client.get_users_cached(max_age_hours=1)
         return {str(user.get("emp_id")): user.get("id") for user in users.values() if user.get("emp_id") and user.get("id")}
 
     def _build_user_site_map(self):
-        users = self.api_client.get_users()
+        users = self.api_client.get_users_cached(max_age_hours=1)
         return {user.get("id"): user.get("home_site_id") for user in users.values() if user.get("id") and user.get("home_site_id")}
 
     def format_vehicle_to_asset(self, vehicle):

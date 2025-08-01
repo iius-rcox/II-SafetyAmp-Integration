@@ -12,7 +12,7 @@ class TitleSyncer:
         self.title_map = self._build_title_map()
 
     def _build_title_map(self):
-        titles = self.api_client.get_titles()
+        titles = self.api_client.get_titles_cached(max_age_hours=1)
         title_map = {
             t["name"].strip(): t["id"]
             for t in titles.values()

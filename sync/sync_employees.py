@@ -32,7 +32,7 @@ class EmployeeSyncer:
             if cluster.get("external_code") and cluster.get("parent_cluster_id") is not None
         }
 
-        sites_dict = self.api_client.get_sites()
+        sites_dict = self.api_client.get_sites_cached(max_age_hours=1)
         for site in sites_dict.values():
             ext_id = site.get("ext_id")
             if ext_id and site.get("id") and not site["name"].endswith(" Office"):
@@ -43,10 +43,10 @@ class EmployeeSyncer:
 
     def _build_role_map(self):
         logger.info("Fetching roles from SafetyAmp...")
-        roles = self.api_client.get_roles().values()
+        roles = self.api_client.get_roles_cached(max_age_hours=1)
         role_map = {
             r["name"]: r["id"]
-            for r in roles
+            for r in roles.values()
                 if r.get("name") is not None and "id" in r
         }
         logger.info(f"Role map built with {len(role_map)} entries.")
@@ -54,7 +54,7 @@ class EmployeeSyncer:
 
     def _build_title_map(self):
         logger.info("Fetching titles from SafetyAmp...")
-        titles = self.api_client.get_titles()
+        titles = self.api_client.get_titles_cached(max_age_hours=1)
         title_map = {
             t["name"].strip(): t["id"]
             for t in titles.values()
@@ -65,16 +65,16 @@ class EmployeeSyncer:
 
     def _build_user_map(self):
         logger.info("Fetching existing users from SafetyAmp...")
-        users = self.api_client.get_users().values()
-        user_map = {str(user.get("emp_id")): user for user in users if "emp_id" in user}
+        users = self.api_client.get_users_cached(max_age_hours=1)
+        user_map = {str(user.get("emp_id")): user for user in users.values() if "emp_id" in user}
         logger.info(f"User map built with {len(user_map)} entries.")
         return user_map
 
     def _build_home_office_map(self):
         logger.info("Building home office map from sites...")
-        sites = self.api_client.get_sites().values()
+        sites = self.api_client.get_sites_cached(max_age_hours=1)
         home_offices = {}
-        for site in sites:
+        for site in sites.values():
             if site["name"].endswith(" Office") and site.get("cluster_id") and site.get("id"):
                 cluster_id = site["cluster_id"]
                 home_offices[cluster_id] = site["id"]

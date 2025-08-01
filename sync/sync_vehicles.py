@@ -44,16 +44,50 @@ class VehicleSync:
         """Load SafetyAmp users into cache for efficient lookup"""
         try:
             logger.info("Loading SafetyAmp users cache...")
-            safetyamp_users = self.safetyamp_api.get_all_paginated("/api/users", "id")
+            safetyamp_users = self.safetyamp_api.get_users_by_id_cached(max_age_hours=1)
             
             # Store full user objects in cache
-            self.safetyamp_users_cache = safetyamp_users
+            self.safetyamp_users_cache = safetyamp_users or {}
             
             logger.info(f"Loaded {len(self.safetyamp_users_cache)} SafetyAmp users into cache")
             
         except Exception as e:
             logger.error(f"Error loading SafetyAmp users cache: {e}")
             self.safetyamp_users_cache = {}
+    
+    def _get_asset_type_for_site(self, site_id):
+        """Get the appropriate asset type ID for a given site"""
+        try:
+            asset_types = self.safetyamp_api.get_asset_types_cached(max_age_hours=1)
+            
+            # Look for a vehicle asset type that matches the site
+            for asset_type_id, asset_type in asset_types.items():
+                if (asset_type.get("name", "").lower() in ["vehicles", "vehicle"] and 
+                    asset_type.get("site_id") == site_id):
+                    return int(asset_type_id)
+            
+            # If no site-specific vehicle type found, look for any vehicle type
+            for asset_type_id, asset_type in asset_types.items():
+                if asset_type.get("name", "").lower() in ["vehicles", "vehicle"]:
+                    return int(asset_type_id)
+            
+            # Fallback to the default vehicle type
+            return 3183
+            
+        except Exception as e:
+            logger.error(f"Error getting asset type for site {site_id}: {e}")
+            return 3183
+    
+    def _get_site_for_asset_type(self, asset_type_id):
+        """Get the site ID that an asset type is valid for"""
+        try:
+            asset_types = self.safetyamp_api.get_asset_types_cached(max_age_hours=1)
+            if str(asset_type_id) in asset_types:
+                return asset_types[str(asset_type_id)].get("site_id")
+            return None
+        except Exception as e:
+            logger.error(f"Error getting site for asset type {asset_type_id}: {e}")
+            return None
     
     def get_driver_safetyamp_id(self, driver_id):
         """Get SafetyAmp user ID and home_site_id by looking up employee ID in SafetyAmp users cache"""
@@ -154,10 +188,8 @@ class VehicleSync:
                 
                 # Derived mappings
                 "code": license_plate or f"Unit_{vehicle_id[-4:]}" if vehicle_id else "",
-                "asset_type_id": 3183,  # Use the specific vehicle asset type ID from SafetyAmp
+                "asset_type_id": 3183,  # Use default vehicle asset type
                 "status": self.status_mapping.get(regulation_mode, 1),
-                "current_user_id": safetyamp_user_id,  # Use SafetyAmp user ID from lookup
-                "site_id": home_site_id,  # Use home_site_id from user record
                 "location_id": None,  # Optional field
                 
                 # Default values
@@ -165,6 +197,10 @@ class VehicleSync:
                 "updated_by": self.defaults["updated_by"],
                 "deleted_at": self.defaults["deleted_at"]
             }
+            
+            # Only add current_user_id if we have a valid user
+            if safetyamp_user_id:
+                asset_data["current_user_id"] = safetyamp_user_id
             
             # Add VIN as additional identifier if available
             if vin:
@@ -184,7 +220,7 @@ class VehicleSync:
     def get_existing_assets(self):
         """Get existing SafetyAmp assets for comparison"""
         try:
-            assets = self.safetyamp_api.get_all_paginated("/api/assets", "id")
+            assets = self.safetyamp_api.get_assets_cached(max_age_hours=1)
             return {asset.get("serial"): asset for asset in assets.values() if asset.get("serial")}
         except Exception as e:
             logger.error(f"Error fetching existing assets: {e}")
@@ -290,7 +326,7 @@ class VehicleSync:
         """Check if asset needs to be updated"""
         # Compare essential fields that might change
         fields_to_check = [
-            "current_user_id", "asset_type_id", "site_id"
+            "current_user_id", "asset_type_id"
         ]
         
         for field in fields_to_check:
@@ -308,7 +344,7 @@ class VehicleSync:
         try:
             # Get counts from both systems
             samsara_vehicles = self.samsara_api.get_all_vehicles()
-            safetyamp_assets = self.safetyamp_api.get_all_paginated("/api/assets", "id")
+            safetyamp_assets = self.safetyamp_api.get_assets_cached(max_age_hours=1)
             
             # Count vehicles with serial numbers (can be synced)
             syncable_vehicles = [v for v in samsara_vehicles if v.get("serial")]

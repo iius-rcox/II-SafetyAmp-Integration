@@ -21372,3 +21372,192 @@
 [2025-08-01 00:22:05] [INFO] [test_single_vehicle]: Found SafetyAmp user ID 'KNDlQ' with home_site_id '6085' for employee ID '18908'
 [2025-08-01 00:22:05] [ERROR] [safetyamp]: POST https://api.safetyamp.com/api/assets HTTP error: 422 Client Error: unknown for url: https://api.safetyamp.com/api/assets - {"message":"The selected asset type id is invalid. (and 1 more error)","errors":{"asset_type_id":["The selected asset type id is invalid."],"current_user_id":["The selected current user id is invalid."]}}
 [2025-08-01 00:22:05] [ERROR] [test_single_vehicle]: Failed to create asset G8JD7UB9UR
+[2025-08-01 08:25:53] [INFO] [test_single_vehicle]: Loading SafetyAmp users cache...
+[2025-08-01 08:27:00] [INFO] [test_single_vehicle]: Loaded 2004 SafetyAmp users into cache
+[2025-08-01 08:27:00] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-08-01 08:27:00] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-08-01 08:27:00] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-08-01 08:27:01] [INFO] [test_single_vehicle]: Found employee ID '18908' in driver notes
+[2025-08-01 08:27:01] [INFO] [test_single_vehicle]: Found SafetyAmp user ID 'KNDlQ' with home_site_id '6085' for employee ID '18908'
+[2025-08-01 08:27:02] [INFO] [test_single_vehicle]: [DRY RUN] Would create asset G8JD7UB9UR
+[2025-08-01 08:28:13] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-08-01 08:28:13] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-08-01 08:28:14] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-08-01 08:28:14] [INFO] [test_single_vehicle]: Found employee ID '18908' in driver notes
+[2025-08-01 08:28:14] [INFO] [test_single_vehicle]: Found SafetyAmp user ID 'KNDlQ' with home_site_id '6085' for employee ID '18908'
+[2025-08-01 08:28:16] [ERROR] [safetyamp]: POST https://api.safetyamp.com/api/assets HTTP error: 422 Client Error: unknown for url: https://api.safetyamp.com/api/assets - {"message":"The selected asset type id is invalid. (and 1 more error)","errors":{"asset_type_id":["The selected asset type id is invalid."],"current_user_id":["The selected current user id is invalid."]}}
+[2025-08-01 08:28:16] [ERROR] [test_single_vehicle]: Failed to create asset G8JD7UB9UR
+[2025-08-01 08:28:58] [INFO] [test_single_vehicle]: Loading SafetyAmp users cache...
+[2025-08-01 08:30:06] [INFO] [test_single_vehicle]: Loaded 2004 SafetyAmp users into cache
+[2025-08-01 08:30:06] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-08-01 08:30:06] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-08-01 08:30:07] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-08-01 08:30:45] [INFO] [test_single_vehicle]: Found employee ID '18908' in driver notes
+[2025-08-01 08:30:45] [INFO] [test_single_vehicle]: Found SafetyAmp user ID 'KNDlQ' with home_site_id '6085' for employee ID '18908'
+[2025-08-01 08:32:10] [INFO] [test_single_vehicle]: [DRY RUN] Would create asset G8JD7UB9UR
+[2025-08-01 08:32:41] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-08-01 08:32:43] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-08-01 08:33:36] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-08-01 08:33:43] [INFO] [test_single_vehicle]: Found employee ID '18908' in driver notes
+[2025-08-01 08:33:43] [INFO] [test_single_vehicle]: Found SafetyAmp user ID 'KNDlQ' with home_site_id '6085' for employee ID '18908'
+[2025-08-01 08:41:16] [WARNING] [safetyamp]: Rate limited (429). Retrying in 1 seconds...
+[2025-08-01 08:41:17] [WARNING] [safetyamp]: Rate limited (429). Retrying in 2 seconds...
+[2025-08-01 08:41:19] [WARNING] [safetyamp]: Rate limited (429). Retrying in 4 seconds...
+[2025-08-01 08:44:55] [ERROR] [safetyamp]: POST https://api.safetyamp.com/api/assets HTTP error: 422 Client Error: unknown for url: https://api.safetyamp.com/api/assets - {"message":"The selected asset type id is invalid. (and 1 more error)","errors":{"asset_type_id":["The selected asset type id is invalid."],"current_user_id":["The selected current user id is invalid."]}}
+[2025-08-01 08:45:35] [WARNING] [safetyamp]: Rate limited (429). Retrying in 1 seconds...
+[2025-08-01 08:45:36] [WARNING] [safetyamp]: Rate limited (429). Retrying in 2 seconds...
+[2025-08-01 08:45:38] [WARNING] [safetyamp]: Rate limited (429). Retrying in 4 seconds...
+[2025-08-01 08:45:43] [WARNING] [safetyamp]: Rate limited (429). Retrying in 8 seconds...
+[2025-08-01 08:45:51] [WARNING] [safetyamp]: Rate limited (429). Retrying in 16 seconds...
+[2025-08-01 08:46:34] [WARNING] [safetyamp]: Rate limited (429). Retrying in 1 seconds...
+[2025-08-01 08:46:36] [WARNING] [safetyamp]: Rate limited (429). Retrying in 2 seconds...
+[2025-08-01 08:46:38] [WARNING] [safetyamp]: Rate limited (429). Retrying in 4 seconds...
+[2025-08-01 08:46:42] [WARNING] [safetyamp]: Rate limited (429). Retrying in 8 seconds...
+[2025-08-01 08:46:50] [WARNING] [safetyamp]: Rate limited (429). Retrying in 16 seconds...
+[2025-08-01 08:47:06] [WARNING] [safetyamp]: Rate limited (429). Retrying in 32 seconds...
+[2025-08-01 08:47:45] [ERROR] [safetyamp]: POST https://api.safetyamp.com/api/assets HTTP error: 422 Client Error: unknown for url: https://api.safetyamp.com/api/assets - {"message":"The selected asset type id is invalid. (and 1 more error)","errors":{"asset_type_id":["The selected asset type id is invalid."],"current_user_id":["The selected current user id is invalid."]}}
+[2025-08-01 08:48:11] [ERROR] [safetyamp]: POST https://api.safetyamp.com/api/assets HTTP error: 422 Client Error: unknown for url: https://api.safetyamp.com/api/assets - {"message":"The site id field is required.","errors":{"site_id":["The site id field is required."]}}
+[2025-08-01 08:48:11] [ERROR] [safetyamp]: POST https://api.safetyamp.com/api/assets HTTP error: 422 Client Error: unknown for url: https://api.safetyamp.com/api/assets - {"message":"The selected current user id is invalid. (and 1 more error)","errors":{"current_user_id":["The selected current user id is invalid."],"site_id":["The site id field is required."]}}
+[2025-08-01 08:48:11] [ERROR] [safetyamp]: POST https://api.safetyamp.com/api/assets HTTP error: 422 Client Error: unknown for url: https://api.safetyamp.com/api/assets - {"message":"The selected asset type id is invalid.","errors":{"asset_type_id":["The selected asset type id is invalid."]}}
+[2025-08-01 08:48:12] [ERROR] [safetyamp]: POST https://api.safetyamp.com/api/assets HTTP error: 422 Client Error: unknown for url: https://api.safetyamp.com/api/assets - {"message":"The selected current user id is invalid.","errors":{"current_user_id":["The selected current user id is invalid."]}}
+[2025-08-01 08:49:11] [INFO] [test_single_vehicle]: Loading SafetyAmp users cache...
+[2025-08-01 08:50:18] [INFO] [test_single_vehicle]: Loaded 2004 SafetyAmp users into cache
+[2025-08-01 08:50:18] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-08-01 08:50:18] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-08-01 08:50:19] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-08-01 08:50:20] [INFO] [test_single_vehicle]: Found employee ID '18908' in driver notes
+[2025-08-01 08:50:20] [INFO] [test_single_vehicle]: Found SafetyAmp user ID 'KNDlQ' with home_site_id '6085' for employee ID '18908'
+[2025-08-01 08:50:20] [INFO] [test_single_vehicle]: [DRY RUN] Would update asset G8JD7UB9UR
+[2025-08-01 09:28:52] [INFO] [test_single_vehicle]: Loading SafetyAmp users cache...
+[2025-08-01 09:30:00] [INFO] [test_single_vehicle]: Loaded 2004 SafetyAmp users into cache
+[2025-08-01 09:30:00] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-08-01 09:30:00] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-08-01 09:32:25] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-08-01 09:32:25] [INFO] [test_single_vehicle]: Found employee ID '18908' in driver notes
+[2025-08-01 09:32:25] [INFO] [test_single_vehicle]: Found SafetyAmp user ID 'KNDlQ' with home_site_id '6085' for employee ID '18908'
+[2025-08-01 09:32:26] [INFO] [test_single_vehicle]: [DRY RUN] Would update asset G8JD7UB9UR
+[2025-08-01 09:32:34] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-08-01 09:32:34] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-08-01 09:32:35] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-08-01 09:32:35] [INFO] [test_single_vehicle]: Found employee ID '18908' in driver notes
+[2025-08-01 09:32:35] [INFO] [test_single_vehicle]: Found SafetyAmp user ID 'KNDlQ' with home_site_id '6085' for employee ID '18908'
+[2025-08-01 09:32:36] [ERROR] [safetyamp]: PUT https://api.safetyamp.com/api/assets/25647 HTTP error: 422 Client Error: unknown for url: https://api.safetyamp.com/api/assets/25647 - {"message":"The selected asset type id is invalid. (and 1 more error)","errors":{"asset_type_id":["The selected asset type id is invalid."],"current_user_id":["The selected current user id is invalid."]}}
+[2025-08-01 09:32:36] [ERROR] [test_single_vehicle]: Failed to update asset G8JD7UB9UR
+[2025-08-01 09:45:03] [INFO] [test_single_vehicle]: Loading SafetyAmp users cache...
+[2025-08-01 09:46:11] [INFO] [test_single_vehicle]: Loaded 2004 SafetyAmp users into cache
+[2025-08-01 09:46:11] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-08-01 09:46:11] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-08-01 09:46:11] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-08-01 09:46:12] [INFO] [test_single_vehicle]: Found employee ID '18908' in driver notes
+[2025-08-01 09:46:12] [INFO] [test_single_vehicle]: Found SafetyAmp user ID 'KNDlQ' with home_site_id '6085' for employee ID '18908'
+[2025-08-01 09:46:12] [INFO] [test_single_vehicle]: [DRY RUN] Would update asset G8JD7UB9UR
+[2025-08-01 09:52:37] [INFO] [test_single_vehicle]: Loading SafetyAmp users cache...
+[2025-08-01 09:55:59] [INFO] [cache_manager]: Created cache directory: cache
+[2025-08-01 09:55:59] [INFO] [test_single_vehicle]: Loading SafetyAmp users cache...
+[2025-08-01 09:55:59] [INFO] [cache_manager]: Fetching fresh data for safetyamp_users_by_id
+[2025-08-01 09:58:19] [INFO] [cache_manager]: Fetching fresh data for safetyamp_users
+[2025-08-01 09:59:26] [INFO] [cache_manager]: Saved cache safetyamp_users with 2002 items
+[2025-08-01 09:59:26] [INFO] [cache_manager]: Fetching fresh data for safetyamp_users_by_id
+[2025-08-01 10:00:38] [INFO] [cache_manager]: Saved cache safetyamp_users_by_id with 2004 items
+[2025-08-01 10:00:38] [INFO] [cache_manager]: Fetching fresh data for safetyamp_sites
+[2025-08-01 10:01:29] [INFO] [cache_manager]: Saved cache safetyamp_sites with 1116 items
+[2025-08-01 10:01:29] [INFO] [cache_manager]: Fetching fresh data for safetyamp_asset_types
+[2025-08-01 10:01:30] [INFO] [cache_manager]: Saved cache safetyamp_asset_types with 3 items
+[2025-08-01 10:01:30] [INFO] [cache_manager]: Fetching fresh data for safetyamp_titles
+[2025-08-01 10:01:32] [INFO] [cache_manager]: Saved cache safetyamp_titles with 151 items
+[2025-08-01 10:01:32] [INFO] [cache_manager]: Fetching fresh data for safetyamp_assets
+[2025-08-01 10:01:32] [INFO] [cache_manager]: Saved cache safetyamp_assets with 5 items
+[2025-08-01 10:01:45] [INFO] [test_single_vehicle]: Loading SafetyAmp users cache...
+[2025-08-01 10:01:45] [INFO] [cache_manager]: Using cached data for safetyamp_users_by_id
+[2025-08-01 10:01:45] [INFO] [test_single_vehicle]: Loaded 2004 SafetyAmp users into cache
+[2025-08-01 10:01:45] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-08-01 10:01:45] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-08-01 10:01:46] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-08-01 10:01:46] [INFO] [test_single_vehicle]: Found employee ID '18908' in driver notes
+[2025-08-01 10:01:46] [INFO] [test_single_vehicle]: Found SafetyAmp user ID 'KNDlQ' with home_site_id '6085' for employee ID '18908'
+[2025-08-01 10:01:46] [INFO] [cache_manager]: Using cached data for safetyamp_assets
+[2025-08-01 10:01:46] [INFO] [test_single_vehicle]: [DRY RUN] Would update asset G8JD7UB9UR
+[2025-08-01 10:06:15] [INFO] [test_single_vehicle]: Loading SafetyAmp users cache...
+[2025-08-01 10:06:15] [INFO] [cache_manager]: Using cached data for safetyamp_users_by_id
+[2025-08-01 10:06:15] [INFO] [test_single_vehicle]: Loaded 2004 SafetyAmp users into cache
+[2025-08-01 10:06:15] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-08-01 10:06:15] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-08-01 10:06:16] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-08-01 10:06:17] [INFO] [test_single_vehicle]: Found employee ID '18908' in driver notes
+[2025-08-01 10:06:17] [INFO] [test_single_vehicle]: Found SafetyAmp user ID 'KNDlQ' with home_site_id '6085' for employee ID '18908'
+[2025-08-01 10:06:17] [INFO] [cache_manager]: Using cached data for safetyamp_assets
+[2025-08-01 10:06:17] [INFO] [test_single_vehicle]: [DRY RUN] Would update asset G8JD7UB9UR
+[2025-08-01 10:07:35] [INFO] [test_single_vehicle]: Loading SafetyAmp users cache...
+[2025-08-01 10:07:35] [INFO] [cache_manager]: Using cached data for safetyamp_users_by_id
+[2025-08-01 10:07:35] [INFO] [test_single_vehicle]: Loaded 2004 SafetyAmp users into cache
+[2025-08-01 10:07:48] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-08-01 10:07:53] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-08-01 10:08:08] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-08-01 10:08:35] [INFO] [test_single_vehicle]: Found employee ID '18908' in driver notes
+[2025-08-01 10:08:35] [INFO] [test_single_vehicle]: Found SafetyAmp user ID 'KNDlQ' with home_site_id '6085' for employee ID '18908'
+[2025-08-01 10:08:41] [INFO] [cache_manager]: Fetching fresh data for safetyamp_roles
+[2025-08-01 10:08:42] [INFO] [cache_manager]: Saved cache safetyamp_roles with 4 items
+[2025-08-01 10:08:56] [INFO] [cache_manager]: Using cached data for safetyamp_assets
+[2025-08-01 10:09:06] [INFO] [cache_manager]: Using cached data for safetyamp_users
+[2025-08-01 10:09:06] [INFO] [cache_manager]: Using cached data for safetyamp_users_by_id
+[2025-08-01 10:09:06] [INFO] [cache_manager]: Using cached data for safetyamp_sites
+[2025-08-01 10:09:06] [INFO] [cache_manager]: Using cached data for safetyamp_asset_types
+[2025-08-01 10:09:06] [INFO] [cache_manager]: Using cached data for safetyamp_titles
+[2025-08-01 10:09:06] [INFO] [cache_manager]: Using cached data for safetyamp_assets
+[2025-08-01 10:09:06] [INFO] [cache_manager]: Using cached data for safetyamp_roles
+[2025-08-01 10:09:07] [INFO] [sync_employees]: Fetching initial data for sync...
+[2025-08-01 10:09:07] [INFO] [sync_employees]: Building cluster map from site clusters and sites...
+[2025-08-01 10:09:07] [INFO] [cache_manager]: Using cached data for safetyamp_sites
+[2025-08-01 10:09:07] [INFO] [sync_employees]: Cluster map built with 1150 entries.
+[2025-08-01 10:09:07] [INFO] [sync_employees]: Fetching roles from SafetyAmp...
+[2025-08-01 10:09:07] [INFO] [cache_manager]: Using cached data for safetyamp_roles
+[2025-08-01 10:09:07] [INFO] [sync_employees]: Role map built with 4 entries.
+[2025-08-01 10:09:07] [INFO] [sync_employees]: Fetching titles from SafetyAmp...
+[2025-08-01 10:09:07] [INFO] [cache_manager]: Using cached data for safetyamp_titles
+[2025-08-01 10:09:07] [INFO] [sync_employees]: Title map built with 151 entries.
+[2025-08-01 10:09:07] [INFO] [sync_employees]: Fetching existing users from SafetyAmp...
+[2025-08-01 10:09:07] [INFO] [cache_manager]: Using cached data for safetyamp_users
+[2025-08-01 10:09:07] [INFO] [sync_employees]: User map built with 2002 entries.
+[2025-08-01 10:09:07] [INFO] [sync_employees]: Building home office map from sites...
+[2025-08-01 10:09:07] [INFO] [cache_manager]: Using cached data for safetyamp_sites
+[2025-08-01 10:09:07] [INFO] [sync_employees]: Home office map built with 9 entries.
+[2025-08-01 10:09:09] [INFO] [msgraph_api]: Fetched active users.
+[2025-08-01 10:09:09] [INFO] [sync_titles]: Initializing TitleSyncer and fetching existing titles from SafetyAmp...
+[2025-08-01 10:09:09] [INFO] [cache_manager]: Using cached data for safetyamp_titles
+[2025-08-01 10:09:09] [INFO] [sync_titles]: Title map built with 151 entries.
+[2025-08-01 10:09:09] [INFO] [sync_jobs]: Fetching existing sites from SafetyAmp...
+[2025-08-01 10:09:09] [INFO] [cache_manager]: Using cached data for safetyamp_sites
+[2025-08-01 10:09:09] [INFO] [sync_jobs]: Retrieved 1116 existing sites.
+[2025-08-01 10:09:09] [INFO] [sync_jobs]: Fetching jobs from Viewpoint...
+[2025-08-01 10:09:11] [INFO] [vista_data_manager]: Loaded 733 jobs into memory
+[2025-08-01 10:09:11] [INFO] [sync_jobs]: Retrieved 733 jobs from Viewpoint.
+[2025-08-01 10:09:11] [INFO] [sync_jobs]: Fetching site clusters from SafetyAmp...
+[2025-08-01 10:09:11] [INFO] [sync_jobs]: Built department-to-cluster map with 33 entries.
+[2025-08-01 10:09:11] [INFO] [sync_assets]: Fetching assets from SafetyAmp...
+[2025-08-01 10:09:11] [INFO] [cache_manager]: Using cached data for safetyamp_assets
+[2025-08-01 10:09:11] [INFO] [sync_assets]: Fetching vehicles from Samsara...
+[2025-08-01 10:09:11] [INFO] [samsara]: Fetching all vehicles from Samsara API...
+[2025-08-01 10:09:13] [INFO] [samsara]: Retrieved 80 vehicles from Samsara.
+[2025-08-01 10:09:13] [INFO] [sync_assets]: Fetching users from SafetyAmp...
+[2025-08-01 10:09:13] [INFO] [cache_manager]: Using cached data for safetyamp_users
+[2025-08-01 10:09:13] [INFO] [cache_manager]: Using cached data for safetyamp_users
+[2025-08-01 10:14:11] [INFO] [test_single_vehicle]: [DRY RUN] Would update asset G8JD7UB9UR
+[2025-08-01 10:14:33] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-08-01 10:14:36] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-08-01 10:14:51] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-08-01 10:14:52] [INFO] [test_single_vehicle]: Found employee ID '18908' in driver notes
+[2025-08-01 10:14:52] [INFO] [test_single_vehicle]: Found SafetyAmp user ID 'KNDlQ' with home_site_id '6085' for employee ID '18908'
+[2025-08-01 10:14:52] [INFO] [cache_manager]: Using cached data for safetyamp_assets
+[2025-08-01 10:15:02] [ERROR] [safetyamp]: PUT https://api.safetyamp.com/api/assets/25647 HTTP error: 422 Client Error: unknown for url: https://api.safetyamp.com/api/assets/25647 - {"message":"The selected current user id is invalid. (and 1 more error)","errors":{"current_user_id":["The selected current user id is invalid."],"site_id":["The site id field is required."]}}
+[2025-08-01 11:04:46] [INFO] [test_single_vehicle]: Loading SafetyAmp users cache...
+[2025-08-01 11:04:46] [INFO] [cache_manager]: Fetching fresh data for safetyamp_users_by_id
+[2025-08-01 11:05:54] [INFO] [cache_manager]: Saved cache safetyamp_users_by_id with 2004 items
+[2025-08-01 11:05:54] [INFO] [test_single_vehicle]: Loaded 2004 SafetyAmp users into cache
+[2025-08-01 11:05:54] [INFO] [test_single_vehicle]: Testing single vehicle sync from Samsara to SafetyAmp
+[2025-08-01 11:05:54] [INFO] [test_single_vehicle]: Fetching single vehicle from Samsara...
+[2025-08-01 11:05:55] [INFO] [test_single_vehicle]: Testing with vehicle: Unit 719 - II95 - Rodney Benoit (ID: 281474989342699)
+[2025-08-01 11:05:55] [INFO] [test_single_vehicle]: Found employee ID '18908' in driver notes
+[2025-08-01 11:05:55] [INFO] [test_single_vehicle]: Found SafetyAmp user ID 'KNDlQ' with home_site_id '6085' for employee ID '18908'
+[2025-08-01 11:05:55] [INFO] [cache_manager]: Fetching fresh data for safetyamp_assets
+[2025-08-01 11:05:56] [INFO] [cache_manager]: Saved cache safetyamp_assets with 5 items
+[2025-08-01 11:05:56] [INFO] [test_single_vehicle]: Asset G8JD7UB9UR is up to date
