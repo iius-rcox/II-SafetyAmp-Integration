@@ -89,7 +89,7 @@ class ViewpointAPI:
 
 
     def fetch_recent_jobs(self, connection):
-        query = """
+        query = text("""
         WITH RankedRecords AS (
             SELECT 
                 JC.PREndDate,
@@ -101,7 +101,7 @@ class ViewpointAPI:
                 bPRJC AS JC
             LEFT JOIN bJCJM AS JM ON JM.JCCo = JC.PRCo AND JM.Job = JC.Job
             WHERE
-                PREndDate > '2024-01-01' AND
+                PREndDate > :start_date AND
                 JM.JobStatus = 1
         )
         SELECT 
@@ -114,10 +114,10 @@ class ViewpointAPI:
         WHERE 
             RowNum = 1
         ORDER BY
-            Employee;
-        """
-        recent_jobs = self._fetch_query(connection, query)
-        return {row['Employee']: row['Job'].strip() if row['Job'] else None for row in recent_jobs}
+            Employee
+        """)
+        recent_jobs = connection.execute(query, {"start_date": "2024-01-01"}).fetchall()
+        return {row.Employee: row.Job.strip() if row.Job else None for row in recent_jobs}
 
     def fetch_employees(self, connection):
         query = """

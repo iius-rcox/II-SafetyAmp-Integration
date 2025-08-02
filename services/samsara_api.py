@@ -1,11 +1,14 @@
 import requests
 import time
+from ratelimit import limits, sleep_and_retry
 from config import settings
 from utils.logger import get_logger
 
 logger = get_logger("samsara")
 
 class SamsaraAPI:
+    CALLS = 25  # Vehicle endpoint limit (most restrictive)
+    PERIOD = 1   # Per second
     MAX_RETRY_WAIT = 60
 
     def __init__(self):
@@ -15,6 +18,8 @@ class SamsaraAPI:
             "Accept": "application/json"
         }
 
+    @sleep_and_retry
+    @limits(calls=CALLS, period=PERIOD)
     def _rate_limited_request(self, method, url, **kwargs):
         return method(url, headers=self.headers, **kwargs)
 

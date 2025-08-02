@@ -6,8 +6,8 @@ metadata:
   labels:
     app: safety-amp
   annotations:
-    azure.workload.identity/client-id: "a2bcb3ce-a89b-43af-804c-e8029e0bafb4"
-    azure.workload.identity/tenant-id: "953922e6-5370-4a01-a3d5-773a30df726b"
+    azure.workload.identity/client-id: "YOUR_ACTUAL_CLIENT_ID"
+    azure.workload.identity/tenant-id: "YOUR_ACTUAL_TENANT_ID"
 ---
 apiVersion: v1
 kind: Secret
@@ -32,15 +32,16 @@ metadata:
   labels:
     app: safety-amp
 data:
-  # Application configuration
+  # Application configuration optimized for 5000 records/hour
   LOG_LEVEL: "INFO"
   LOG_FORMAT: "json"  # For structured logging
   ENVIRONMENT: "production"
-  SYNC_INTERVAL: "3600"  # 1 hour
-  CACHE_TTL_HOURS: "1"
+  SYNC_INTERVAL: "900"  # 15 minutes (4 times per hour)
+  BATCH_SIZE: "125"  # 1250 records per sync (5000/4)
+  CACHE_TTL_HOURS: "4"  # Longer cache for stable data
   API_RATE_LIMIT_CALLS: "60"
   API_RATE_LIMIT_PERIOD: "61"
-  MAX_RETRY_ATTEMPTS: "3"
+  MAX_RETRY_ATTEMPTS: "5"  # More retries for reliability
   RETRY_DELAY_SECONDS: "30"
   HEALTH_CHECK_PORT: "8080"
   HEALTH_CHECK_TIMEOUT: "5"
@@ -49,9 +50,9 @@ data:
   # Database authentication mode - use managed_identity for Azure
   SQL_AUTH_MODE: "managed_identity"
   
-  # Database connection pooling configuration
-  DB_POOL_SIZE: "5"
-  DB_MAX_OVERFLOW: "10"
+  # Database connection pooling configuration - optimized for higher throughput
+  DB_POOL_SIZE: "8"  # Increased connection pool
+  DB_MAX_OVERFLOW: "15"  # More overflow connections
   DB_POOL_TIMEOUT: "30"
   DB_POOL_RECYCLE: "3600"
   
@@ -59,8 +60,8 @@ data:
   SAFETY_AMP_BASE_URL: "https://api.safetyamp.com"
   SAFETY_AMP_TIMEOUT: "30"
   
-  # Circuit breaker configuration
-  CIRCUIT_BREAKER_FAILURE_THRESHOLD: "3"
+  # Circuit breaker configuration - more tolerance for production
+  CIRCUIT_BREAKER_FAILURE_THRESHOLD: "5"  # More tolerance
   CIRCUIT_BREAKER_RECOVERY_TIMEOUT: "30"
   
   # Memory profiling settings
@@ -76,7 +77,7 @@ metadata:
     app: safety-amp
     component: agent
 spec:
-  replicas: 1
+  replicas: 2  # Scale up for production
   selector:
     matchLabels:
       app: safety-amp
@@ -129,6 +130,11 @@ spec:
             configMapKeyRef:
               name: safety-amp-config
               key: CACHE_TTL_HOURS
+        - name: BATCH_SIZE
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: BATCH_SIZE
         - name: API_RATE_LIMIT_CALLS
           valueFrom:
             configMapKeyRef:
@@ -241,11 +247,11 @@ spec:
               key: REDIS_PASSWORD
         resources:
           requests:
-            memory: "512Mi"  # Increased for connection pooling and caching
-            cpu: "200m"      # Increased for sync operations
+            memory: "768Mi"  # Increased for larger batches
+            cpu: "300m"      # Increased for processing
           limits:
-            memory: "1Gi"    # Increased limit for large sync operations
-            cpu: "1000m"     # Increased CPU limit for processing
+            memory: "1.5Gi"  # Allow for spikes
+            cpu: "1500m"     # Higher ceiling for 5000 records/hour
         livenessProbe:
           httpGet:
             path: /health
@@ -303,7 +309,7 @@ metadata:
     app: safety-amp
     component: sync-job
 spec:
-  schedule: "0 */4 * * *"  # Every 4 hours
+  schedule: "*/15 * * * *"  # Every 15 minutes for 5000 records/hour
   timeZone: "America/Chicago"  # Explicit timezone (Kubernetes 1.24+)
   concurrencyPolicy: Forbid  # Prevent overlapping jobs
   failedJobsHistoryLimit: 3

@@ -7,13 +7,13 @@ The `.env` file in this repository contains **real production secrets** that hav
 ## Exposed Credentials to Rotate
 
 ### 1. SafetyAmp API Token ✅ **HIGHEST PRIORITY**
-- **Token**: `eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...` (EXPOSED)
+- **Token**: `__PLACEHOLDER__
 - **Action**: Generate new API token in SafetyAmp dashboard
 - **Location**: SafetyAmp admin panel → API Keys
 
 ### 2. Microsoft Graph Client Secret ✅ **HIGH PRIORITY**
 - **Client ID**: `73b82823-d860-4bf6-938b-74deabeebab7`
-- **Secret**: `T~k8Q~jQjVIaJML57NYDZBKph3BXdeEJcDt4vb~c` (EXPOSED)
+- **Secret**: `__PLACEHOLDER__
 - **Action**: 
   1. Go to Azure Portal → App Registrations
   2. Find app `73b82823-d860-4bf6-938b-74deabeebab7`
@@ -21,7 +21,7 @@ The `.env` file in this repository contains **real production secrets** that hav
   4. Remove old secret
 
 ### 3. Samsara API Key ✅ **HIGH PRIORITY**
-- **Key**: `samsara_api_8pbhuGqktwraLrf9MyhXWVK3kXaX6v` (EXPOSED)
+- **Key**: `__PLACEHOLDER__
 - **Action**: Generate new API key in Samsara dashboard
 - **Location**: Samsara Cloud → Settings → API Tokens
 
