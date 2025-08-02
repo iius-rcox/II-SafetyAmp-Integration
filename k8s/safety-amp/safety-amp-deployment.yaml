@@ -1,4 +1,15 @@
 apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: safety-amp-workload-identity-sa
+  namespace: safety-amp
+  labels:
+    app: safety-amp
+  annotations:
+    azure.workload.identity/client-id: "${USER_ASSIGNED_CLIENT_ID}"  # Replace with actual client ID
+    azure.workload.identity/tenant-id: "${AZURE_TENANT_ID}"          # Replace with actual tenant ID
+---
+apiVersion: v1
 kind: Secret
 metadata:
   name: safety-amp-secrets
@@ -34,6 +45,9 @@ data:
   HEALTH_CHECK_PORT: "8080"
   HEALTH_CHECK_TIMEOUT: "5"
   METRICS_PORT: "9090"
+  
+  # Database authentication mode - use managed_identity for Azure
+  SQL_AUTH_MODE: "managed_identity"
   
   # Database connection pooling configuration
   DB_POOL_SIZE: "5"
@@ -72,11 +86,13 @@ spec:
       labels:
         app: safety-amp
         component: agent
+        azure.workload.identity/use: "true"  # Enable Workload Identity
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9090"
         prometheus.io/path: "/metrics"
     spec:
+      serviceAccountName: safety-amp-workload-identity-sa  # Use Workload Identity SA
       containers:
       - name: safety-amp-agent
         # Update this image to your actual SafetyAmp Python agent image
@@ -198,6 +214,11 @@ spec:
             configMapKeyRef:
               name: safety-amp-config
               key: MEMORY_PROFILER_INTERVAL
+        - name: SQL_AUTH_MODE
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: SQL_AUTH_MODE
         - name: AZURE_KEY_VAULT_URL
           valueFrom:
             secretKeyRef:
@@ -295,8 +316,10 @@ spec:
           labels:
             app: safety-amp
             component: sync-job
+            azure.workload.identity/use: "true"  # Enable Workload Identity for CronJob
         spec:
           restartPolicy: Never  # Use Never for batch jobs
+          serviceAccountName: safety-amp-workload-identity-sa  # Use Workload Identity SA
           containers:
           - name: safety-amp-sync
             image: your-registry/safety-amp-agent:latest

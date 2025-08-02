@@ -1,33 +1,57 @@
 import os
 import pyodbc
 from datetime import datetime
+from contextlib import contextmanager
+from sqlalchemy import create_engine, text
+from sqlalchemy.pool import QueuePool
+from sqlalchemy.engine import Engine
+from urllib.parse import quote_plus
 from config import settings
 from utils.logger import get_logger
 from .vista_data_manager import vista_data_manager
-from contextlib import contextmanager
 
 logger = get_logger("viewpoint")
 
 class ViewpointAPI:
     def __init__(self):
-        self.conn_str = (
-            f"DRIVER={settings.SQL_DRIVER};"
-            f"SERVER={settings.SQL_SERVER};"
-            f"DATABASE={settings.SQL_DATABASE};"
-            "Trusted_Connection=yes;"
-            "Encrypt=no;"
+        # Build SQLAlchemy connection URL from ODBC connection string
+        self.conn_str = settings.VIEWPOINT_CONN_STRING
+        
+        # Convert ODBC connection string to SQLAlchemy URL
+        # Format: mssql+pyodbc:///?odbc_connect=<encoded_connection_string>
+        encoded_conn_str = quote_plus(self.conn_str)
+        sqlalchemy_url = f"mssql+pyodbc:///?odbc_connect={encoded_conn_str}"
+        
+        # Create engine with connection pooling
+        self.engine = create_engine(
+            sqlalchemy_url,
+            poolclass=QueuePool,
+            pool_size=settings.DB_POOL_SIZE,
+            max_overflow=settings.DB_MAX_OVERFLOW,
+            pool_timeout=settings.DB_POOL_TIMEOUT,
+            pool_recycle=settings.DB_POOL_RECYCLE,
+            echo=False,  # Set to True for SQL debugging
+            pool_pre_ping=True,  # Verify connections before use
+            pool_reset_on_return='commit'  # Reset connections on return
         )
+        
+        logger.info(f"Initialized Viewpoint API with connection pool (size={settings.DB_POOL_SIZE}, max_overflow={settings.DB_MAX_OVERFLOW})")
 
     @contextmanager
     def _get_connection(self):
-        """Context manager that tracks database connections for metrics"""
+        """Context manager that provides database connections from the pool"""
         connection = None
         try:
-            connection = pyodbc.connect(self.conn_str)
+            connection = self.engine.connect()
             # Import here to avoid circular imports
             from main import track_connection
             track_connection(connection)
             yield connection
+        except Exception as e:
+            logger.error(f"Database connection error: {str(e)}")
+            if connection:
+                connection.rollback()
+            raise
         finally:
             if connection:
                 try:
@@ -39,12 +63,18 @@ class ViewpointAPI:
                     pass
                 connection.close()
 
-    def _fetch_query(self, cursor, query):
-        cursor.execute(query)
-        columns = [col[0] for col in cursor.description]
-        return [dict(zip(columns, row)) for row in cursor.fetchall()]
+    def _fetch_query(self, connection, query):
+        """Execute query and return results as list of dictionaries"""
+        try:
+            result = connection.execute(text(query))
+            columns = result.keys()
+            return [dict(zip(columns, row)) for row in result.fetchall()]
+        except Exception as e:
+            logger.error(f"Query execution error: {str(e)}")
+            logger.error(f"Query: {query}")
+            raise
 
-    def get_title_list(self, cursor):
+    def get_title_list(self, connection):
         query = """
         SELECT DISTINCT
             udEmpTitle
@@ -55,10 +85,10 @@ class ViewpointAPI:
             HireDate IS NOT NULL AND
             TermDate IS NULL
         """
-        return self._fetch_query(cursor, query)
+        return self._fetch_query(connection, query)
 
 
-    def fetch_recent_jobs(self, cursor):
+    def fetch_recent_jobs(self, connection):
         query = """
         WITH RankedRecords AS (
             SELECT 
@@ -86,10 +116,10 @@ class ViewpointAPI:
         ORDER BY
             Employee;
         """
-        recent_jobs = self._fetch_query(cursor, query)
+        recent_jobs = self._fetch_query(connection, query)
         return {row['Employee']: row['Job'].strip() if row['Job'] else None for row in recent_jobs}
 
-    def fetch_employees(self, cursor):
+    def fetch_employees(self, connection):
         query = """
         SELECT
             FirstName,
@@ -108,9 +138,9 @@ class ViewpointAPI:
             HireDate IS NOT NULL AND
             TermDate IS NULL
         """
-        return self._fetch_query(cursor, query)
+        return self._fetch_query(connection, query)
 
-    def fetch_job_list(self, cursor):
+    def fetch_job_list(self, connection):
         query = """
         SELECT
             JM.Contract,
@@ -126,9 +156,9 @@ class ViewpointAPI:
         LEFT JOIN bJCCM AS CM ON CM.Contract = JM.Contract AND CM.JCCo = JM.JCCo
         WHERE JM.JCCo = 1 AND JM.JobStatus = 1
         """
-        return self._fetch_query(cursor, query)
+        return self._fetch_query(connection, query)
 
-    def get_department_list(self, cursor):
+    def get_department_list(self, connection):
         query = """
         SELECT
             DP.PRDept,
@@ -138,9 +168,9 @@ class ViewpointAPI:
             bPRDP AS DP
         WHERE PRCo = 1
         """
-        return self._fetch_query(cursor, query)
+        return self._fetch_query(connection, query)
 
-    def build_employee_json(self, cursor, recent_job_map=None):
+    def build_employee_json(self, connection, recent_job_map=None):
         query = """
         SELECT
             Employee,
@@ -165,7 +195,7 @@ class ViewpointAPI:
             HireDate IS NOT NULL AND
             TermDate IS NULL
         """
-        employees = self._fetch_query(cursor, query)
+        employees = self._fetch_query(connection, query)
         if recent_job_map:
             for emp in employees:
                 emp_id = emp["Employee"]
@@ -175,29 +205,25 @@ class ViewpointAPI:
 
     def get_employees(self):
         with self._get_connection() as conn:
-            cursor = conn.cursor()
-            recent_job_map = self.fetch_recent_jobs(cursor)
-            employees = self.build_employee_json(cursor, recent_job_map)
+            recent_job_map = self.fetch_recent_jobs(conn)
+            employees = self.build_employee_json(conn, recent_job_map)
             # Store in memory instead of file
             vista_data_manager.set_employee_data(employees)
             return employees
 
     def get_jobs(self):
         with self._get_connection() as conn:
-            cursor = conn.cursor()
-            jobs = self.fetch_job_list(cursor)
+            jobs = self.fetch_job_list(conn)
             # Store in memory instead of file
             vista_data_manager.set_job_data(jobs)
             return jobs
 
     def get_departments(self):
         with self._get_connection() as conn:
-            cursor = conn.cursor()
-            departments = self.get_department_list(cursor)
+            departments = self.get_department_list(conn)
             return departments
 
     def get_titles(self):
         with self._get_connection() as conn:
-            cursor = conn.cursor()
-            titles = self.get_title_list(cursor)
+            titles = self.get_title_list(conn)
             return titles
