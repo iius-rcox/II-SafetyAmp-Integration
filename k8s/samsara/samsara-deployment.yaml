@@ -73,7 +73,7 @@ spec:
       containers:
       - name: samsara-integration
         # Update this image to your actual Samsara integration image
-        image: your-registry/samsara-integration:latest
+        image: youracr.azurecr.io/samsara-integration:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
@@ -273,7 +273,7 @@ spec:
           containers:
           - name: samsara-sync
             # Update this image to your actual Samsara sync job image
-            image: your-registry/samsara-sync:latest
+            image: youracr.azurecr.io/samsara-sync:latest
             imagePullPolicy: Always
             env:
             - name: LOG_LEVEL
