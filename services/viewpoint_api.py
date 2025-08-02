@@ -4,6 +4,7 @@ from datetime import datetime
 from config import settings
 from utils.logger import get_logger
 from .vista_data_manager import vista_data_manager
+from contextlib import contextmanager
 
 logger = get_logger("viewpoint")
 
@@ -17,8 +18,26 @@ class ViewpointAPI:
             "Encrypt=no;"
         )
 
+    @contextmanager
     def _get_connection(self):
-        return pyodbc.connect(self.conn_str)
+        """Context manager that tracks database connections for metrics"""
+        connection = None
+        try:
+            connection = pyodbc.connect(self.conn_str)
+            # Import here to avoid circular imports
+            from main import track_connection
+            track_connection(connection)
+            yield connection
+        finally:
+            if connection:
+                try:
+                    # Import here to avoid circular imports
+                    from main import untrack_connection
+                    untrack_connection(connection)
+                except ImportError:
+                    # If main module is not available (e.g., during testing), just pass
+                    pass
+                connection.close()
 
     def _fetch_query(self, cursor, query):
         cursor.execute(query)
