@@ -182,6 +182,32 @@ def metrics():
     
     return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
 
+@app.route('/health/detailed')
+def detailed_health():
+    """Enhanced health check for production monitoring"""
+    from utils.cache_manager import CacheManager
+    from utils.circuit_breaker import SmartRateLimiter
+    
+    cache_manager = CacheManager()
+    safetyamp_rate_limiter = SmartRateLimiter("safetyamp")
+    samsara_rate_limiter = SmartRateLimiter("samsara")
+    
+    return jsonify({
+        'status': 'healthy' if health_status['healthy'] else 'unhealthy',
+        'timestamp': time.time(),
+        'last_sync': health_status['last_sync'],
+        'active_connections': get_active_connection_count(),
+        'database_status': health_status['database_status'],
+        'external_apis_status': health_status['external_apis_status'],
+        'cache_status': getattr(cache_manager, 'get_cache_info', lambda: {'status': 'unknown'})(),
+        'rate_limit_status': {
+            'safetyamp': safetyamp_rate_limiter.status(),
+            'samsara': samsara_rate_limiter.status()
+        },
+        'sync_in_progress': health_status['sync_in_progress'],
+        'errors': health_status['errors'][-5:] if health_status['errors'] else []  # Last 5 errors
+    })
+
 def run_sync_worker():
     """Enhanced background sync worker with connection pooling"""
     logger.info("Starting background sync worker", 

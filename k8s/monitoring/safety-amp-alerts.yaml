@@ -1,0 +1,201 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: safety-amp-alerts
+  namespace: monitoring
+  labels:
+    app: safety-amp
+    component: monitoring
+data:
+  alerts.yaml: |
+    groups:
+    - name: safety-amp
+      rules:
+      # Critical: Sync backlog
+      - alert: SafetyAmpSyncBacklog
+        expr: time() - safetyamp_last_successful_sync > 3600
+        for: 5m
+        labels:
+          severity: critical
+          component: safety-amp
+        annotations:
+          summary: "SafetyAmp sync has not completed successfully in over 1 hour"
+          description: "The last successful SafetyAmp sync was {{ $value | humanizeDuration }} ago."
+          runbook_url: "https://docs.example.com/runbooks/safety-amp-sync-backlog"
+      
+      # Warning: High error rate
+      - alert: SafetyAmpHighErrorRate
+        expr: rate(safetyamp_sync_operations_total{status="failed"}[5m]) / rate(safetyamp_sync_operations_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          component: safety-amp
+        annotations:
+          summary: "SafetyAmp sync error rate is above 10%"
+          description: "SafetyAmp sync error rate is {{ $value | humanizePercentage }}."
+          
+      # Info: Rate limit reached (expected constraint)
+      - alert: SafetyAmpRateLimitExceeded
+        expr: increase(safetyamp_rate_limit_429_total[5m]) > 10
+        for: 1m
+        labels:
+          severity: info
+          component: safety-amp
+        annotations:
+          summary: "SafetyAmp API rate limits are being hit frequently"
+          description: "Rate limit 429 responses: {{ $value }} in the last 5 minutes."
+          
+      # Warning: High memory usage
+      - alert: SafetyAmpHighMemoryUsage
+        expr: container_memory_usage_bytes{pod=~"safety-amp-.*"} / container_spec_memory_limit_bytes > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          component: safety-amp
+        annotations:
+          summary: "SafetyAmp pod memory usage is above 80%"
+          description: "Pod {{ $labels.pod }} memory usage is {{ $value | humanizePercentage }}."
+          
+      # Warning: High CPU usage
+      - alert: SafetyAmpHighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total{pod=~"safety-amp-.*"}[5m]) > 1.2
+        for: 5m
+        labels:
+          severity: warning
+          component: safety-amp
+        annotations:
+          summary: "SafetyAmp pod CPU usage is above 120%"
+          description: "Pod {{ $labels.pod }} CPU usage is {{ $value }}."
+          
+      # Critical: Pod crash loop
+      - alert: SafetyAmpPodCrashLoop
+        expr: rate(kube_pod_container_status_restarts_total{pod=~"safety-amp-.*"}[15m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+          component: safety-amp
+        annotations:
+          summary: "SafetyAmp pod is crash looping"
+          description: "Pod {{ $labels.pod }} has restarted {{ $value }} times in the last 15 minutes."
+          
+      # Warning: Database connection pool exhaustion
+      - alert: SafetyAmpDatabaseConnectionPoolHigh
+        expr: safetyamp_database_connections_active > 12
+        for: 2m
+        labels:
+          severity: warning
+          component: safety-amp
+        annotations:
+          summary: "SafetyAmp database connection pool usage is high"
+          description: "Active database connections: {{ $value }} (threshold: 12)."
+          
+      # Info: Sync duration is increasing
+      - alert: SafetyAmpSyncDurationHigh
+        expr: histogram_quantile(0.95, rate(safetyamp_sync_duration_seconds_bucket[10m])) > 600
+        for: 5m
+        labels:
+          severity: info
+          component: safety-amp
+        annotations:
+          summary: "SafetyAmp sync duration is high"
+          description: "95th percentile sync duration is {{ $value | humanizeDuration }}."
+          
+      # Critical: Sync job failed
+      - alert: SafetyAmpSyncJobFailed
+        expr: kube_job_status_failed{job_name=~"safety-amp-sync-job-.*"} > 0
+        for: 0m
+        labels:
+          severity: critical
+          component: safety-amp
+        annotations:
+          summary: "SafetyAmp sync job failed"
+          description: "Sync job {{ $labels.job_name }} has failed."
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: safety-amp-dashboard
+  namespace: monitoring
+  labels:
+    app: safety-amp
+    component: monitoring
+data:
+  dashboard.json: |
+    {
+      "dashboard": {
+        "title": "SafetyAmp Integration",
+        "tags": ["safety-amp", "integration"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "title": "Sync Operations Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(safetyamp_sync_operations_total[5m])",
+                "legendFormat": "{{ operation }} - {{ status }}"
+              }
+            ]
+          },
+          {
+            "title": "Records Processed per Hour",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(safetyamp_records_processed_total[1h])",
+                "legendFormat": "{{ sync_type }}"
+              }
+            ]
+          },
+          {
+            "title": "Sync Duration",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, rate(safetyamp_sync_duration_seconds_bucket[5m]))",
+                "legendFormat": "95th percentile"
+              },
+              {
+                "expr": "histogram_quantile(0.50, rate(safetyamp_sync_duration_seconds_bucket[5m]))",
+                "legendFormat": "50th percentile"
+              }
+            ]
+          },
+          {
+            "title": "Active Database Connections",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "safetyamp_database_connections_active",
+                "legendFormat": "Active connections"
+              }
+            ]
+          },
+          {
+            "title": "Memory Usage",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "container_memory_usage_bytes{pod=~\"safety-amp-.*\"} / 1024 / 1024",
+                "legendFormat": "{{ pod }}"
+              }
+            ]
+          },
+          {
+            "title": "CPU Usage",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(container_cpu_usage_seconds_total{pod=~\"safety-amp-.*\"}[5m])",
+                "legendFormat": "{{ pod }}"
+              }
+            ]
+          }
+        ],
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "refresh": "30s"
+      }
+    }
