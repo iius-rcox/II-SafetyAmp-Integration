@@ -6,8 +6,8 @@ metadata:
   labels:
     app: safety-amp
   annotations:
-    azure.workload.identity/client-id: "${USER_ASSIGNED_CLIENT_ID}"  # Replace with actual client ID
-    azure.workload.identity/tenant-id: "${AZURE_TENANT_ID}"          # Replace with actual tenant ID
+    azure.workload.identity/client-id: "a2bcb3ce-a89b-43af-804c-e8029e0bafb4"
+    azure.workload.identity/tenant-id: "953922e6-5370-4a01-a3d5-773a30df726b"
 ---
 apiVersion: v1
 kind: Secret
@@ -96,7 +96,7 @@ spec:
       containers:
       - name: safety-amp-agent
         # Update this image to your actual SafetyAmp Python agent image
-        image: your-registry/safety-amp-agent:latest
+        image: youracr.azurecr.io/safety-amp-agent:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
@@ -322,7 +322,7 @@ spec:
           serviceAccountName: safety-amp-workload-identity-sa  # Use Workload Identity SA
           containers:
           - name: safety-amp-sync
-            image: your-registry/safety-amp-agent:latest
+            image: youracr.azurecr.io/safety-amp-agent:latest
             imagePullPolicy: Always
             command: ["python", "sync_batch.py"]  # Dedicated batch sync script
             env:
