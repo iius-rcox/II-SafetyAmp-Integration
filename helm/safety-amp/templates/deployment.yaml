@@ -1,0 +1,226 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "safety-amp.fullname" . }}-agent
+  namespace: {{ .Values.namespace | default "safety-amp" }}
+  labels:
+    {{- include "safety-amp.labels" . | nindent 4 }}
+    component: agent
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "safety-amp.selectorLabels" . | nindent 6 }}
+      component: agent
+  template:
+    metadata:
+      labels:
+        {{- include "safety-amp.selectorLabels" . | nindent 8 }}
+        component: agent
+        azure.workload.identity/use: "true"
+      annotations:
+        {{- if .Values.monitoring.prometheus.enabled }}
+        {{- with .Values.monitoring.prometheus.annotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- end }}
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+    spec:
+      {{- include "safety-amp.imagePullSecrets" . | nindent 6 }}
+      serviceAccountName: {{ include "safety-amp.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+      - name: {{ .Chart.Name }}
+        image: {{ include "safety-amp.image" . }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.config.healthCheck.port }}
+          protocol: TCP
+        - name: metrics
+          containerPort: {{ .Values.config.metrics.port }}
+          protocol: TCP
+        env:
+        # Load configuration from ConfigMap
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: LOG_LEVEL
+        - name: LOG_FORMAT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: LOG_FORMAT
+        - name: ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: ENVIRONMENT
+        - name: SYNC_INTERVAL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: SYNC_INTERVAL
+        - name: BATCH_SIZE
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: BATCH_SIZE
+        - name: CACHE_TTL_HOURS
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: CACHE_TTL_HOURS
+        - name: API_RATE_LIMIT_CALLS
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: API_RATE_LIMIT_CALLS
+        - name: API_RATE_LIMIT_PERIOD
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: API_RATE_LIMIT_PERIOD
+        - name: MAX_RETRY_ATTEMPTS
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: MAX_RETRY_ATTEMPTS
+        - name: RETRY_DELAY_SECONDS
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: RETRY_DELAY_SECONDS
+        - name: HEALTH_CHECK_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: HEALTH_CHECK_PORT
+        - name: HEALTH_CHECK_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: HEALTH_CHECK_TIMEOUT
+        - name: METRICS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: METRICS_PORT
+        - name: DB_POOL_SIZE
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: DB_POOL_SIZE
+        - name: DB_MAX_OVERFLOW
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: DB_MAX_OVERFLOW
+        - name: DB_POOL_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: DB_POOL_TIMEOUT
+        - name: DB_POOL_RECYCLE
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: DB_POOL_RECYCLE
+        - name: SQL_AUTH_MODE
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: SQL_AUTH_MODE
+        - name: CIRCUIT_BREAKER_FAILURE_THRESHOLD
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: CIRCUIT_BREAKER_FAILURE_THRESHOLD
+        - name: CIRCUIT_BREAKER_RECOVERY_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: CIRCUIT_BREAKER_RECOVERY_TIMEOUT
+        - name: SAFETY_AMP_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: SAFETY_AMP_BASE_URL
+        - name: SAFETY_AMP_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: SAFETY_AMP_TIMEOUT
+        - name: SAMSARA_DOMAIN
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: SAMSARA_DOMAIN
+        - name: MEMORY_PROFILER_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: MEMORY_PROFILER_ENABLED
+        - name: MEMORY_PROFILER_INTERVAL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: MEMORY_PROFILER_INTERVAL
+        {{- if .Values.testing.enabled }}
+        - name: TEST_MODE
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: TEST_MODE
+        - name: SMALL_BATCH_SIZE
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-config
+              key: SMALL_BATCH_SIZE
+        {{- end }}
+        # Load secrets from Secret
+        - name: AZURE_KEY_VAULT_URL
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-secrets
+              key: AZURE_KEY_VAULT_URL
+        {{- if .Values.redis.enabled }}
+        - name: REDIS_HOST
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-secrets
+              key: REDIS_HOST
+        - name: REDIS_PORT
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-secrets
+              key: REDIS_PORT
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "safety-amp.fullname" . }}-secrets
+              key: REDIS_PASSWORD
+        {{- end }}
+        livenessProbe:
+          {{- toYaml .Values.livenessProbe | nindent 10 }}
+        readinessProbe:
+          {{- toYaml .Values.readinessProbe | nindent 10 }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 10 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

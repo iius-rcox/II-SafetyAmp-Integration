@@ -1,0 +1,53 @@
+# SafetyAmp Integration - Development Environment Values
+
+# Override for development environment
+replicaCount: 1
+
+# Development resource limits
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "100m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
+
+# Development configuration
+config:
+  environment: development
+  logLevel: DEBUG
+  
+  # Smaller batches for development
+  syncInterval: 300  # 5 minutes for faster testing
+  batchSize: 10      # Small batches for development
+  cacheTtlHours: 1   # Shorter cache for development
+  
+  # Development database settings
+  database:
+    poolSize: 2
+    maxOverflow: 5
+
+# Development Key Vault
+keyVault:
+  name: kv-safety-amp-dev
+
+# Development CronJob - disabled by default
+cronjob:
+  enabled: false
+
+# Development monitoring - simplified
+monitoring:
+  alerts:
+    enabled: false
+  dashboard:
+    enabled: false
+
+# Development autoscaling - disabled
+autoscaling:
+  enabled: false
+
+# Development testing
+testing:
+  enabled: true
+  testMode: true
+  smallBatchSize: 5

@@ -1,0 +1,75 @@
+{{- if .Values.cronjob.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "safety-amp.fullname" . }}-sync-job
+  namespace: {{ .Values.namespace | default "safety-amp" }}
+  labels:
+    {{- include "safety-amp.labels" . | nindent 4 }}
+    component: sync-job
+spec:
+  schedule: {{ .Values.cronjob.schedule | quote }}
+  {{- if .Values.cronjob.timeZone }}
+  timeZone: {{ .Values.cronjob.timeZone | quote }}
+  {{- end }}
+  concurrencyPolicy: {{ .Values.cronjob.concurrencyPolicy }}
+  failedJobsHistoryLimit: {{ .Values.cronjob.failedJobsHistoryLimit }}
+  successfulJobsHistoryLimit: {{ .Values.cronjob.successfulJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      backoffLimit: {{ .Values.cronjob.backoffLimit }}
+      template:
+        metadata:
+          labels:
+            {{- include "safety-amp.selectorLabels" . | nindent 12 }}
+            component: sync-job
+            azure.workload.identity/use: "true"
+        spec:
+          restartPolicy: {{ .Values.cronjob.restartPolicy }}
+          {{- include "safety-amp.imagePullSecrets" . | nindent 10 }}
+          serviceAccountName: {{ include "safety-amp.serviceAccountName" . }}
+          securityContext:
+            {{- toYaml .Values.podSecurityContext | nindent 12 }}
+          containers:
+          - name: {{ .Chart.Name }}-sync
+            image: {{ include "safety-amp.image" . }}
+            imagePullPolicy: {{ .Values.image.pullPolicy }}
+            command: ["python", "sync_batch.py"]
+            env:
+            # Copy environment variables from main deployment
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "safety-amp.fullname" . }}-config
+                  key: LOG_LEVEL
+            - name: LOG_FORMAT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "safety-amp.fullname" . }}-config
+                  key: LOG_FORMAT
+            - name: ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "safety-amp.fullname" . }}-config
+                  key: ENVIRONMENT
+            - name: BATCH_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "safety-amp.fullname" . }}-config
+                  key: BATCH_SIZE
+            - name: DB_POOL_SIZE
+              value: "2"  # Smaller pool for batch jobs
+            - name: DB_MAX_OVERFLOW
+              value: "5"
+            - name: BATCH_MODE
+              value: "true"
+            - name: AZURE_KEY_VAULT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "safety-amp.fullname" . }}-secrets
+                  key: AZURE_KEY_VAULT_URL
+            resources:
+              {{- toYaml .Values.cronjob.resources | nindent 14 }}
+            securityContext:
+              {{- toYaml .Values.securityContext | nindent 14 }}
+{{- end }}

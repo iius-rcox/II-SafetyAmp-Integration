@@ -1,0 +1,255 @@
+# SafetyAmp Integration - Helm Values
+# Configuration optimized for 5000 records/hour processing
+
+# Global settings
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+
+# Image configuration
+image:
+  registry: youracr.azurecr.io
+  repository: safety-amp-agent
+  tag: "v1.0.0"
+  pullPolicy: Always
+  pullSecrets: []
+
+# Deployment configuration
+replicaCount: 2
+
+# Service account and RBAC
+serviceAccount:
+  create: true
+  name: safety-amp-workload-identity-sa
+  annotations:
+    azure.workload.identity/client-id: "YOUR_ACTUAL_CLIENT_ID"
+    azure.workload.identity/tenant-id: "YOUR_ACTUAL_TENANT_ID"
+
+# Pod security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+# Container security context
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# Resource configuration optimized for 5000 records/hour
+resources:
+  requests:
+    memory: "768Mi"
+    cpu: "300m"
+  limits:
+    memory: "1.5Gi"
+    cpu: "1500m"
+
+# Node selector and affinity
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Application configuration
+config:
+  # Environment
+  environment: production
+  logLevel: INFO
+  logFormat: json
+  
+  # Performance tuning for 5000 records/hour
+  syncInterval: 900  # 15 minutes (4 times per hour)
+  batchSize: 125     # 125 records per sync (1250 per hour * 4 = 5000)
+  cacheTtlHours: 4   # Longer cache for stable data
+  
+  # API rate limiting
+  apiRateLimit:
+    calls: 60
+    period: 61
+  
+  # Retry configuration
+  maxRetryAttempts: 5
+  retryDelaySeconds: 30
+  
+  # Database connection pooling - optimized for higher throughput
+  database:
+    poolSize: 8
+    maxOverflow: 15
+    poolTimeout: 30
+    poolRecycle: 3600
+    authMode: managed_identity
+  
+  # Circuit breaker configuration - more tolerance for production
+  circuitBreaker:
+    failureThreshold: 5
+    recoveryTimeout: 30
+  
+  # Health checks
+  healthCheck:
+    port: 8080
+    timeout: 5
+    
+  # Metrics
+  metrics:
+    port: 9090
+    enabled: true
+  
+  # Memory profiling
+  memoryProfiler:
+    enabled: false
+    interval: 300
+
+# External services configuration
+externalServices:
+  safetyAmp:
+    baseUrl: "https://api.safetyamp.com"
+    timeout: 30
+    
+  samsara:
+    domain: "https://api.samsaraapi.com"
+    
+  viewpoint:
+    # Connection string will be built from secrets
+
+# Azure Key Vault configuration
+keyVault:
+  name: kv-safety-amp-dev
+  secrets:
+    safetyAmpToken: SAFETYAMP-TOKEN
+    msGraphClientSecret: MS-GRAPH-CLIENT-SECRET
+    samsaraApiKey: SAMSARA-API-KEY
+    sqlServer: SQL-SERVER
+    sqlDatabase: SQL-DATABASE
+
+# Redis configuration
+redis:
+  enabled: true
+  host: redis-service
+  port: 6379
+  password: ""  # Will be loaded from Key Vault
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 8080
+  metricsPort: 9090
+  annotations: {}
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts: []
+  tls: []
+
+# Health checks
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: http
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# Scheduled sync jobs
+cronjob:
+  enabled: true
+  schedule: "*/15 * * * *"  # Every 15 minutes for 5000 records/hour
+  timeZone: "America/Chicago"
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 3
+  successfulJobsHistoryLimit: 1
+  backoffLimit: 2
+  restartPolicy: Never
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+# Monitoring and observability
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9090"
+      prometheus.io/path: "/metrics"
+  
+  alerts:
+    enabled: true
+    namespace: monitoring
+  
+  dashboard:
+    enabled: true
+
+# Horizontal Pod Autoscaler
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Network policies
+networkPolicy:
+  enabled: false
+  ingress: []
+  egress: []
+
+# Testing configuration
+testing:
+  enabled: true
+  testMode: false
+  smallBatchSize: 10
+
+# Environment-specific overrides
+environments:
+  development:
+    replicaCount: 1
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    config:
+      logLevel: DEBUG
+      batchSize: 10
+      syncInterval: 300  # 5 minutes for development
+  
+  staging:
+    replicaCount: 1
+    config:
+      batchSize: 50
+      syncInterval: 600  # 10 minutes for staging
+  
+  production:
+    replicaCount: 2
+    # Production values are the defaults above

@@ -1,0 +1,61 @@
+# SafetyAmp Integration - Staging Environment Values
+
+# Staging configuration - midway between dev and prod
+replicaCount: 1
+
+# Staging resource allocation
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "200m"
+  limits:
+    memory: "1Gi"
+    cpu: "1000m"
+
+# Staging configuration
+config:
+  environment: staging
+  logLevel: INFO
+  
+  # Moderate batches for staging validation
+  syncInterval: 600  # 10 minutes
+  batchSize: 50      # Medium batches for staging
+  cacheTtlHours: 2   # Moderate cache for staging
+  
+  # Staging database settings
+  database:
+    poolSize: 4
+    maxOverflow: 8
+
+# Staging Key Vault
+keyVault:
+  name: kv-safety-amp-staging
+
+# Staging CronJob - enabled with longer intervals
+cronjob:
+  enabled: true
+  schedule: "*/10 * * * *"  # Every 10 minutes for staging
+
+# Staging monitoring - basic alerting
+monitoring:
+  alerts:
+    enabled: true
+    namespace: monitoring-staging
+  dashboard:
+    enabled: true
+
+# Staging autoscaling - disabled (manual scaling for testing)
+autoscaling:
+  enabled: false
+
+# Staging testing
+testing:
+  enabled: true
+  testMode: false
+  smallBatchSize: 10
+
+# Staging service account annotations (update with staging values)
+serviceAccount:
+  annotations:
+    azure.workload.identity/client-id: "YOUR_STAGING_CLIENT_ID"
+    azure.workload.identity/tenant-id: "YOUR_STAGING_TENANT_ID"

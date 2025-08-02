@@ -1,0 +1,21 @@
+apiVersion: v2
+name: safety-amp
+description: SafetyAmp Integration - Employee, Vehicle, and Job Synchronization
+type: application
+version: 1.0.0
+appVersion: "v1.0.0"
+home: https://github.com/your-org/safety-amp-integration
+sources:
+  - https://github.com/your-org/safety-amp-integration
+maintainers:
+  - name: SafetyAmp Team
+    email: safety-amp@company.com
+keywords:
+  - safety-amp
+  - integration
+  - sync
+  - viewpoint
+  - samsara
+dependencies: []
+annotations:
+  category: Integration

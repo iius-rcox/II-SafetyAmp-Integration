@@ -1,0 +1,15 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "safety-amp.fullname" . }}-pdb
+  namespace: {{ .Values.namespace | default "safety-amp" }}
+  labels:
+    {{- include "safety-amp.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "safety-amp.selectorLabels" . | nindent 6 }}
+      component: agent
+{{- end }}
