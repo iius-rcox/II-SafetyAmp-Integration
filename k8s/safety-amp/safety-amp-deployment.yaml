@@ -23,6 +23,7 @@ metadata:
 data:
   # Application configuration
   LOG_LEVEL: "INFO"
+  LOG_FORMAT: "json"  # For structured logging
   ENVIRONMENT: "production"
   SYNC_INTERVAL: "3600"  # 1 hour
   CACHE_TTL_HOURS: "1"
@@ -31,10 +32,26 @@ data:
   MAX_RETRY_ATTEMPTS: "3"
   RETRY_DELAY_SECONDS: "30"
   HEALTH_CHECK_PORT: "8080"
+  HEALTH_CHECK_TIMEOUT: "5"
   METRICS_PORT: "9090"
+  
+  # Database connection pooling configuration
+  DB_POOL_SIZE: "5"
+  DB_MAX_OVERFLOW: "10"
+  DB_POOL_TIMEOUT: "30"
+  DB_POOL_RECYCLE: "3600"
+  
   # Safety Amp specific settings
   SAFETY_AMP_BASE_URL: "https://api.safetyamp.com"
   SAFETY_AMP_TIMEOUT: "30"
+  
+  # Circuit breaker configuration
+  CIRCUIT_BREAKER_FAILURE_THRESHOLD: "3"
+  CIRCUIT_BREAKER_RECOVERY_TIMEOUT: "30"
+  
+  # Memory profiling settings
+  MEMORY_PROFILER_ENABLED: "false"
+  MEMORY_PROFILER_INTERVAL: "300"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -76,6 +93,11 @@ spec:
             configMapKeyRef:
               name: safety-amp-config
               key: LOG_LEVEL
+        - name: LOG_FORMAT
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: LOG_FORMAT
         - name: ENVIRONMENT
           valueFrom:
             configMapKeyRef:
@@ -116,11 +138,36 @@ spec:
             configMapKeyRef:
               name: safety-amp-config
               key: HEALTH_CHECK_PORT
+        - name: HEALTH_CHECK_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: HEALTH_CHECK_TIMEOUT
         - name: METRICS_PORT
           valueFrom:
             configMapKeyRef:
               name: safety-amp-config
               key: METRICS_PORT
+        - name: DB_POOL_SIZE
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: DB_POOL_SIZE
+        - name: DB_MAX_OVERFLOW
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: DB_MAX_OVERFLOW
+        - name: DB_POOL_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: DB_POOL_TIMEOUT
+        - name: DB_POOL_RECYCLE
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: DB_POOL_RECYCLE
         - name: SAFETY_AMP_BASE_URL
           valueFrom:
             configMapKeyRef:
@@ -131,6 +178,26 @@ spec:
             configMapKeyRef:
               name: safety-amp-config
               key: SAFETY_AMP_TIMEOUT
+        - name: CIRCUIT_BREAKER_FAILURE_THRESHOLD
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: CIRCUIT_BREAKER_FAILURE_THRESHOLD
+        - name: CIRCUIT_BREAKER_RECOVERY_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: CIRCUIT_BREAKER_RECOVERY_TIMEOUT
+        - name: MEMORY_PROFILER_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: MEMORY_PROFILER_ENABLED
+        - name: MEMORY_PROFILER_INTERVAL
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: MEMORY_PROFILER_INTERVAL
         - name: AZURE_KEY_VAULT_URL
           valueFrom:
             secretKeyRef:
@@ -153,11 +220,11 @@ spec:
               key: REDIS_PASSWORD
         resources:
           requests:
-            memory: "256Mi"
-            cpu: "100m"
+            memory: "512Mi"  # Increased for connection pooling and caching
+            cpu: "200m"      # Increased for sync operations
           limits:
-            memory: "512Mi"
-            cpu: "500m"
+            memory: "1Gi"    # Increased limit for large sync operations
+            cpu: "1000m"     # Increased CPU limit for processing
         livenessProbe:
           httpGet:
             path: /health
@@ -204,6 +271,67 @@ spec:
   selector:
     app: safety-amp
     component: agent
+---
+# CronJob for scheduled SafetyAmp synchronization
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: safety-amp-sync-job
+  namespace: safety-amp
+  labels:
+    app: safety-amp
+    component: sync-job
+spec:
+  schedule: "0 */4 * * *"  # Every 4 hours
+  timeZone: "America/Chicago"  # Explicit timezone (Kubernetes 1.24+)
+  concurrencyPolicy: Forbid  # Prevent overlapping jobs
+  failedJobsHistoryLimit: 3
+  successfulJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app: safety-amp
+            component: sync-job
+        spec:
+          restartPolicy: Never  # Use Never for batch jobs
+          containers:
+          - name: safety-amp-sync
+            image: your-registry/safety-amp-agent:latest
+            imagePullPolicy: Always
+            command: ["python", "sync_batch.py"]  # Dedicated batch sync script
+            env:
+            # Copy all environment variables from the main deployment
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: safety-amp-config
+                  key: LOG_LEVEL
+            - name: LOG_FORMAT
+              valueFrom:
+                configMapKeyRef:
+                  name: safety-amp-config
+                  key: LOG_FORMAT
+            - name: ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: safety-amp-config
+                  key: ENVIRONMENT
+            - name: DB_POOL_SIZE
+              value: "2"  # Smaller pool for batch jobs
+            - name: DB_MAX_OVERFLOW
+              value: "5"
+            - name: BATCH_MODE
+              value: "true"
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "100m"
+              limits:
+                memory: "512Mi"
+                cpu: "500m"
 ---
 # Optional: Create a PVC if the agent needs persistent storage
 # apiVersion: v1

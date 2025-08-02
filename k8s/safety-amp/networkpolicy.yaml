@@ -1,0 +1,102 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: safety-amp-integration-netpol
+  namespace: safety-amp
+  labels:
+    app: safety-amp
+spec:
+  podSelector:
+    matchLabels:
+      app: safety-amp
+  policyTypes:
+  - Ingress
+  - Egress
+  
+  # Ingress rules - what can connect to SafetyAmp pods
+  ingress:
+  - from:
+    # Allow monitoring/prometheus scraping
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 9090  # Metrics port
+  - from:
+    # Allow ingress controller for health checks
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8080  # Health check port
+  - from:
+    # Allow same namespace communication
+    - namespaceSelector:
+        matchLabels:
+          name: safety-amp
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 9090
+  
+  # Egress rules - what SafetyAmp pods can connect to
+  egress:
+  # Allow DNS resolution
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  
+  # Allow HTTPS traffic for external APIs
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+  
+  # Allow HTTP traffic for health checks and APIs that require it
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 80
+  
+  # Allow database connections (adjust ports as needed)
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 1433  # SQL Server
+    - protocol: TCP
+      port: 5432  # PostgreSQL
+    - protocol: TCP
+      port: 3306  # MySQL
+  
+  # Allow Redis connections
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  
+  # Allow communication with Azure services (if using specific ports)
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443  # Azure Key Vault, etc.
+  
+  # Allow communication within the same namespace
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: safety-amp
+  
+  # Allow communication with monitoring namespace
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
