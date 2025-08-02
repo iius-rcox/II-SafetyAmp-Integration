@@ -226,7 +226,7 @@ class VehicleSync:
             logger.error(f"Error fetching existing assets: {e}")
             return {}
     
-    def sync_vehicles(self, dry_run=True):
+    def sync_vehicles(self):
         """Sync vehicles from Samsara to SafetyAmp"""
         logger.info("Starting vehicle sync from Samsara to SafetyAmp")
         
@@ -270,35 +270,27 @@ class VehicleSync:
                     if existing_asset:
                         # Asset exists - check if update needed
                         if self._needs_update(existing_asset, asset_data):
-                            if not dry_run:
-                                # Update existing asset
-                                result = self.safetyamp_api.update_asset(existing_asset["id"], asset_data)
-                                if result:
-                                    synced_count += 1
-                                    logger.info(f"Updated asset {vehicle_serial}")
-                                else:
-                                    error_count += 1
-                                    logger.error(f"Failed to update asset {vehicle_serial}")
-                            else:
-                                logger.info(f"[DRY RUN] Would update asset {vehicle_serial}")
+                            # Update existing asset
+                            result = self.safetyamp_api.update_asset(existing_asset["id"], asset_data)
+                            if result:
                                 synced_count += 1
+                                logger.info(f"Updated asset {vehicle_serial}")
+                            else:
+                                error_count += 1
+                                logger.error(f"Failed to update asset {vehicle_serial}")
                         else:
                             logger.debug(f"Asset {vehicle_serial} is up to date")
                             skipped_count += 1
                     else:
                         # Asset doesn't exist - create new one
-                        if not dry_run:
-                            # Create new asset
-                            result = self.safetyamp_api.create_asset(asset_data)
-                            if result:
-                                synced_count += 1
-                                logger.info(f"Created asset {vehicle_serial}")
-                            else:
-                                error_count += 1
-                                logger.error(f"Failed to create asset {vehicle_serial}")
-                        else:
-                            logger.info(f"[DRY RUN] Would create asset {vehicle_serial}")
+                        # Create new asset
+                        result = self.safetyamp_api.create_asset(asset_data)
+                        if result:
                             synced_count += 1
+                            logger.info(f"Created asset {vehicle_serial}")
+                        else:
+                            error_count += 1
+                            logger.error(f"Failed to create asset {vehicle_serial}")
                 
                 except Exception as e:
                     error_count += 1
@@ -309,13 +301,11 @@ class VehicleSync:
             logger.info(f"  Synced: {synced_count}")
             logger.info(f"  Errors: {error_count}")
             logger.info(f"  Skipped: {skipped_count}")
-            logger.info(f"  Dry run: {dry_run}")
             
             return {
                 "synced": synced_count,
                 "errors": error_count,
-                "skipped": skipped_count,
-                "dry_run": dry_run
+                "skipped": skipped_count
             }
             
         except Exception as e:
@@ -378,10 +368,10 @@ def main():
         print(f"  Samsara Assets: {summary.get('samsara_assets', 0)}")
         print(f"  Pending Sync: {summary.get('pending_sync', 0)}")
     
-    # Run dry run sync
-    print("\nRunning dry run sync...")
-    result = sync.sync_vehicles(dry_run=True)
-    print(f"Dry run result: {result}")
+    # Run sync
+    print("\nRunning vehicle sync...")
+    result = sync.sync_vehicles()
+    print(f"Sync result: {result}")
 
 if __name__ == "__main__":
     main() 

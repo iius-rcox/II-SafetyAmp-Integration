@@ -248,7 +248,7 @@ def run_sync_worker():
             with sync_duration_seconds.labels(operation='vehicles').time():
                 try:
                     vehicle_syncer = VehicleSync()
-                    result = vehicle_syncer.sync_vehicles(dry_run=False)
+                    result = vehicle_syncer.sync_vehicles()
                     sync_operations_total.labels(operation='vehicles', status='success').inc()
                     if result and 'synced' in result:
                         records_processed_total.labels(sync_type='vehicles').inc(result['synced'])
