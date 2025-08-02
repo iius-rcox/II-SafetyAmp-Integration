@@ -3,6 +3,7 @@ from sync.sync_departments import DepartmentSyncer
 from sync.sync_jobs import JobSyncer
 from sync.sync_employees import EmployeeSyncer
 from sync.sync_titles import TitleSyncer
+from sync.sync_vehicles import VehicleSync
 import signal
 import sys
 import threading
@@ -207,17 +208,53 @@ def run_sync_worker():
                     sync_operations_total.labels(operation='employees', status='error').inc()
                     raise e
             
-            # Uncomment other sync operations as needed
-            # with sync_duration_seconds.labels(operation='departments').time():
-            #     dept_syncer = DepartmentSyncer()
-            #     dept_syncer.sync()
-            #     sync_operations_total.labels(operation='departments', status='success').inc()
+            # Department sync
+            with sync_duration_seconds.labels(operation='departments').time():
+                try:
+                    dept_syncer = DepartmentSyncer()
+                    result = dept_syncer.sync()
+                    sync_operations_total.labels(operation='departments', status='success').inc()
+                    if result and 'processed' in result:
+                        records_processed_total.labels(sync_type='departments').inc(result['processed'])
+                except Exception as e:
+                    sync_operations_total.labels(operation='departments', status='error').inc()
+                    raise e
             
-            # job_syncer = JobSyncer()
-            # job_syncer.sync()
+            # Job sync
+            with sync_duration_seconds.labels(operation='jobs').time():
+                try:
+                    job_syncer = JobSyncer()
+                    result = job_syncer.sync()
+                    sync_operations_total.labels(operation='jobs', status='success').inc()
+                    if result and 'processed' in result:
+                        records_processed_total.labels(sync_type='jobs').inc(result['processed'])
+                except Exception as e:
+                    sync_operations_total.labels(operation='jobs', status='error').inc()
+                    raise e
             
-            # title_syncer = TitleSyncer()
-            # title_syncer.sync()
+            # Title sync
+            with sync_duration_seconds.labels(operation='titles').time():
+                try:
+                    title_syncer = TitleSyncer()
+                    result = title_syncer.sync()
+                    sync_operations_total.labels(operation='titles', status='success').inc()
+                    if result and 'processed' in result:
+                        records_processed_total.labels(sync_type='titles').inc(result['processed'])
+                except Exception as e:
+                    sync_operations_total.labels(operation='titles', status='error').inc()
+                    raise e
+            
+            # Vehicle sync
+            with sync_duration_seconds.labels(operation='vehicles').time():
+                try:
+                    vehicle_syncer = VehicleSync()
+                    result = vehicle_syncer.sync_vehicles(dry_run=False)
+                    sync_operations_total.labels(operation='vehicles', status='success').inc()
+                    if result and 'synced' in result:
+                        records_processed_total.labels(sync_type='vehicles').inc(result['synced'])
+                except Exception as e:
+                    sync_operations_total.labels(operation='vehicles', status='error').inc()
+                    raise e
             
             health_status['last_sync'] = time.time()
             health_status['ready'] = True
