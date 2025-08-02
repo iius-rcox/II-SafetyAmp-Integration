@@ -113,7 +113,7 @@ spec:
         
     - alert: SafetyAmpNoRecentSync
       expr: |
-        time() - safetyamp_sync_operations_total offset 6h > 21600
+        increase(safetyamp_sync_operations_total[6h]) == 0
       for: 0m
       labels:
         severity: critical
