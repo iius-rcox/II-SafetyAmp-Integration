@@ -42,6 +42,27 @@ DB_POOL_TIMEOUT = int(os.getenv('DB_POOL_TIMEOUT', '30'))
 SYNC_INTERVAL = int(os.getenv('SYNC_INTERVAL', '3600'))
 HEALTH_CHECK_TIMEOUT = int(os.getenv('HEALTH_CHECK_TIMEOUT', '5'))
 
+# Database connection tracking
+_active_connections = set()
+_connection_lock = threading.Lock()
+
+def track_connection(connection):
+    """Add a connection to the active connections tracker"""
+    with _connection_lock:
+        _active_connections.add(id(connection))
+        logger.debug(f"Connection opened, active count: {len(_active_connections)}")
+
+def untrack_connection(connection):
+    """Remove a connection from the active connections tracker"""
+    with _connection_lock:
+        _active_connections.discard(id(connection))
+        logger.debug(f"Connection closed, active count: {len(_active_connections)}")
+
+def get_active_connection_count():
+    """Get the current number of active database connections"""
+    with _connection_lock:
+        return len(_active_connections)
+
 # Prometheus metrics
 sync_operations_total = Counter('safetyamp_sync_operations_total', 'Total sync operations', ['operation', 'status'])
 sync_duration_seconds = Histogram('safetyamp_sync_duration_seconds', 'Sync operation duration', ['operation'])
@@ -155,8 +176,8 @@ def ready():
 @app.route('/metrics')
 def metrics():
     """Enhanced Prometheus metrics endpoint"""
-    # Update connection pool metrics
-    database_connections_active.set(DB_POOL_SIZE)  # This would be actual pool usage
+    # Update connection pool metrics with actual active connections
+    database_connections_active.set(get_active_connection_count())
     
     return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
 
