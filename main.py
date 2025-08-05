@@ -211,8 +211,10 @@ def detailed_health():
 def run_sync_worker():
     """Enhanced background sync worker with connection pooling"""
     logger.info("Starting background sync worker", 
-                db_pool_size=DB_POOL_SIZE, 
-                db_max_overflow=DB_MAX_OVERFLOW)
+                extra={
+                    'db_pool_size': DB_POOL_SIZE, 
+                    'db_max_overflow': DB_MAX_OVERFLOW
+                })
     
     while health_status['healthy'] and not shutdown_requested:
         try:
