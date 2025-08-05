@@ -46,13 +46,13 @@ if SQL_AUTH_MODE == "managed_identity":
         f"DATABASE={SQL_DATABASE};"
         "Authentication=ActiveDirectoryMSI;"
         "Encrypt=yes;"
-        "TrustServerCertificate=no;"
+        "TrustServerCertificate=yes;"
         "Connection Timeout=30;"
     )
 elif SQL_AUTH_MODE == "sql_auth":
     # Fallback to SQL Authentication using secrets
-    SQL_USERNAME = key_vault.get_secret("SQL_USERNAME")
-    SQL_PASSWORD = key_vault.get_secret("SQL_PASSWORD")
+    SQL_USERNAME = key_vault.get_secret("SQL-USERNAME")
+    SQL_PASSWORD = key_vault.get_secret("VISTA-SQL-PASSWORD")
     VIEWPOINT_CONN_STRING = (
         f"DRIVER={SQL_DRIVER};"
         f"SERVER={SQL_SERVER};"
@@ -60,7 +60,7 @@ elif SQL_AUTH_MODE == "sql_auth":
         f"UID={SQL_USERNAME};"
         f"PWD={SQL_PASSWORD};"
         "Encrypt=yes;"
-        "TrustServerCertificate=no;"
+        "TrustServerCertificate=yes;"
         "Connection Timeout=30;"
     )
 else:

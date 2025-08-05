@@ -25,10 +25,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Stage 2: Runtime stage with standard Python image
 FROM python:3.11-slim
 
-# Install runtime dependencies including ODBC
+# Install runtime dependencies including ODBC and Microsoft SQL Server driver
 RUN apt-get update && apt-get install -y \
-    unixodbc \
-    unixodbc-dev \
+    gnupg2 \
+    curl \
+    && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
+    && curl https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+    && apt-get update \
+    && apt-get remove -y unixodbc unixodbc-dev || true \
+    && ACCEPT_EULA=Y apt-get install -y msodbcsql18 \
+    && ACCEPT_EULA=Y apt-get install -y mssql-tools18 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy virtual environment from builder stage

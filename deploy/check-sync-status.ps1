@@ -65,7 +65,7 @@ if ($latestPod) {
 Write-Host ""
 Write-Host "=== Recent Logs ===" -ForegroundColor Yellow
 if ($latestPod) {
-    Write-Host "Recent logs from $latestPod:" -ForegroundColor Cyan
+    Write-Host "Recent logs from $latestPod" -ForegroundColor Cyan
     kubectl logs $latestPod -n $Namespace --tail=10
 }
 

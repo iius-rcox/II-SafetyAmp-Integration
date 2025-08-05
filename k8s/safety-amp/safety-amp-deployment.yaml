@@ -47,8 +47,8 @@ data:
   HEALTH_CHECK_TIMEOUT: "5"
   METRICS_PORT: "9090"
   
-  # Database authentication mode - use managed_identity for Azure
-  SQL_AUTH_MODE: "managed_identity"
+  # Database authentication mode - use sql_auth for immediate connectivity
+  SQL_AUTH_MODE: "sql_auth"
   
   # Database connection pooling configuration - optimized for higher throughput
   DB_POOL_SIZE: "8"  # Increased connection pool

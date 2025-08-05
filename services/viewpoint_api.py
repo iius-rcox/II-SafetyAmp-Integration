@@ -43,9 +43,6 @@ class ViewpointAPI:
         connection = None
         try:
             connection = self.engine.connect()
-            # Import here to avoid circular imports
-            from main import track_connection
-            track_connection(connection)
             yield connection
         except Exception as e:
             logger.error(f"Database connection error: {str(e)}")
@@ -54,13 +51,6 @@ class ViewpointAPI:
             raise
         finally:
             if connection:
-                try:
-                    # Import here to avoid circular imports
-                    from main import untrack_connection
-                    untrack_connection(connection)
-                except ImportError:
-                    # If main module is not available (e.g., during testing), just pass
-                    pass
                 connection.close()
 
     def _fetch_query(self, connection, query):

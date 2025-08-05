@@ -160,13 +160,14 @@ def ready():
                 overall_status = 'degraded'
             logger.warning(f"External APIs health degraded: {e}")
         
-        # Don't fail readiness for transient issues, but report degraded state
-        if health_status['ready'] or overall_status == 'degraded':
+        # Allow readiness during initial sync or if already ready
+        if health_status['ready'] or health_status['sync_in_progress'] or overall_status == 'degraded':
             return jsonify({
                 'status': overall_status,
                 'timestamp': time.time(),
                 'details': details,
-                'last_sync': health_status['last_sync']
+                'last_sync': health_status['last_sync'],
+                'sync_in_progress': health_status['sync_in_progress']
             }), status_code
         else:
             return jsonify({
