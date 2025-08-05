@@ -345,10 +345,12 @@ if __name__ == "__main__":
     
     # Log startup configuration
     logger.info("Starting SafetyAmp integration service", 
-                port=8080,
-                db_pool_size=DB_POOL_SIZE,
-                db_max_overflow=DB_MAX_OVERFLOW,
-                sync_interval=SYNC_INTERVAL)
+                extra={
+                    'port': 8080,
+                    'db_pool_size': DB_POOL_SIZE,
+                    'db_max_overflow': DB_MAX_OVERFLOW,
+                    'sync_interval': SYNC_INTERVAL
+                })
     
     # Start sync worker in background
     sync_thread = threading.Thread(target=run_sync_worker, daemon=True)
