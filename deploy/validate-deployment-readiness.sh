@@ -122,8 +122,8 @@ if grep -q "your-registry" k8s/safety-amp/safety-amp-deployment.yaml; then
     log_error "Placeholder 'your-registry' still found in safety-amp deployment"
 fi
 
-if grep -q "youracr.azurecr.io" k8s/safety-amp/safety-amp-deployment.yaml; then
-    log_warning "Generic ACR name 'youracr.azurecr.io' found - update with actual registry"
+if grep -q "iiusacr.azurecr.io" k8s/safety-amp/safety-amp-deployment.yaml; then
+    log_warning "Generic ACR name 'iiusacr.azurecr.io' found - update with actual registry"
 else
     log_success "Container registry references updated"
 fi
@@ -183,7 +183,7 @@ if [ $ERRORS -eq 0 ]; then
         log_success "🎉 ALL CHECKS PASSED - READY FOR PRODUCTION DEPLOYMENT"
         echo ""
         echo "Next steps:"
-        echo "1. Replace 'youracr.azurecr.io' with your actual Azure Container Registry"
+        echo "1. Replace 'iiusacr.azurecr.io' with your actual Azure Container Registry"
         echo "2. Build and push container images"
         echo "3. Run the setup-workload-identity.sh script"
         echo "4. Deploy using ./deploy/deploy.sh"
@@ -201,7 +201,7 @@ fi
 
 echo ""
 echo "🔍 Pre-Deployment Actions Required:"
-echo "1. Update container registry name from 'youracr.azurecr.io' to your actual ACR"
+echo "1. Update container registry name from 'iiusacr.azurecr.io' to your actual ACR"
 echo "2. Build and push container images to your registry"
 echo "3. Populate Azure Key Vault with actual secrets (see production-deployment-checklist.md)"
 echo "4. Set up SQL Server Azure AD authentication"

@@ -8,7 +8,7 @@ set -euo pipefail
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-ACR_NAME="${ACR_NAME:-youracr.azurecr.io}"
+ACR_NAME="${ACR_NAME:-iiusacr.azurecr.io}"
 IMAGE_TAG="${IMAGE_TAG:-v1.0.0}"
 NAMESPACE="safety-amp"
 KEY_VAULT_NAME="${KEY_VAULT_NAME:-kv-safety-amp-dev}"
@@ -71,7 +71,7 @@ phase1_infrastructure() {
     
     # Update image references in deployment files
     log_info "Updating image references..."
-    find k8s/ -name "*.yaml" -exec sed -i "s|youracr\.azurecr\.io/safety-amp-agent:latest|${ACR_NAME}/safety-amp-agent:${IMAGE_TAG}|g" {} \;
+    find k8s/ -name "*.yaml" -exec sed -i "s|iiusacr\.azurecr\.io/safety-amp-agent:latest|${ACR_NAME}/safety-amp-agent:${IMAGE_TAG}|g" {} \;
     
     # Deploy infrastructure
     log_info "Deploying namespaces..."

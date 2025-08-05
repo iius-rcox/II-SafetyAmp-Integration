@@ -21,7 +21,7 @@
 - [x] Proper SSL encryption enabled
 
 ### 4. Container Registry Configuration ✅ COMPLETED
-- [x] Placeholder `your-registry` replaced with `youracr.azurecr.io`
+- [x] Placeholder `your-registry` replaced with `iiusacr.azurecr.io`
 - [x] All deployment manifests updated
 
 ## 🚨 PRE-DEPLOYMENT REQUIREMENTS
@@ -30,10 +30,10 @@
 
 1. **Container Registry Setup**
    ```bash
-   # Replace 'youracr' with your actual ACR name
+   # Replace 'iiusacr' with your actual ACR name
    # Build and push the safety-amp-agent image
-   docker build -t youracr.azurecr.io/safety-amp-agent:latest .
-   docker push youracr.azurecr.io/safety-amp-agent:latest
+   docker build -t iiusacr.azurecr.io/safety-amp-agent:latest .
+   docker push iiusacr.azurecr.io/safety-amp-agent:latest
    ```
 
 2. **Azure Key Vault Secrets Configuration**
@@ -70,8 +70,8 @@
 ### Step 1: Container Registry Update
 ```bash
 # Update deployment files with your actual ACR name
-# Replace 'youracr' with your actual Azure Container Registry name
-find k8s/ -name "*.yaml" -exec sed -i 's/youracr\.azurecr\.io/YOUR_ACTUAL_ACR.azurecr.io/g' {} \;
+# Replace 'iiusacr' with your actual Azure Container Registry name
+find k8s/ -name "*.yaml" -exec sed -i 's/iiusacr\.azurecr\.io/YOUR_ACTUAL_ACR.azurecr.io/g' {} \;
 ```
 
 ### Step 2: Build and Push Images
