@@ -6,11 +6,11 @@ param(
 )
 
 # Configuration - Update these values for your environment
-$RESOURCE_GROUP = "safetyamp-rg"
-$LOCATION = "eastus"
-$CLUSTER_NAME = "safetyamp-aks"
-$ACR_NAME = "safetyampacr"
-$KEY_VAULT_NAME = "safetyamp-kv"
+$RESOURCE_GROUP = "rg_prod"    # Your existing resource group
+$LOCATION = "southcentralus"
+$CLUSTER_NAME = "dev-aks"      # Your existing AKS cluster
+$ACR_NAME = "iiusacr"          # Your existing ACR
+$KEY_VAULT_NAME = "iius-akv"   # Your existing Key Vault
 $SUBSCRIPTION_ID = ""
 $TENANT_ID = ""
 
@@ -424,19 +424,16 @@ function Main {
     # Check prerequisites
     Check-AzureCLI
     
-    # Create Azure resources
-    Create-ResourceGroup
-    Create-ACR
-    Create-KeyVault
-    Create-AKSCluster
-    
-    # Configure workload identity
-    Configure-WorkloadIdentity
-    
-    # Get cluster credentials
+    # Get cluster credentials (connect to existing cluster)
     Get-ClusterCredentials
     
-    # Install add-ons
+    # Create Key Vault if it doesn't exist
+    Create-KeyVault
+    
+    # Configure workload identity for existing cluster
+    Configure-WorkloadIdentity
+    
+    # Install add-ons (skip if already installed)
     Install-ClusterAddons
     
     # Build and push image

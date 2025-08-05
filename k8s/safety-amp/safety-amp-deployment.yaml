@@ -19,7 +19,7 @@ metadata:
 type: Opaque
 stringData:
   # These will be populated from Azure Key Vault
-  AZURE_KEY_VAULT_URL: "https://your-keyvault.vault.azure.net/"
+  AZURE_KEY_VAULT_URL: "https://iius-akv.vault.azure.net/"
   REDIS_HOST: "redis-service"
   REDIS_PORT: "6379"
   REDIS_PASSWORD: "your-redis-password"
@@ -94,6 +94,8 @@ spec:
         prometheus.io/path: "/metrics"
     spec:
       serviceAccountName: safety-amp-workload-identity-sa  # Use Workload Identity SA
+      imagePullSecrets:
+      - name: acr-secret
       containers:
       - name: safety-amp-agent
         # Update this image to your actual SafetyAmp Python agent image

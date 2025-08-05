@@ -22,8 +22,8 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Stage 2: Runtime stage with distroless
-FROM gcr.io/distroless/python3-debian11
+# Stage 2: Runtime stage with standard Python image
+FROM python:3.11-slim
 
 # Copy virtual environment from builder stage
 COPY --from=builder /opt/venv /opt/venv
@@ -32,8 +32,9 @@ COPY --from=builder /opt/venv /opt/venv
 WORKDIR /app
 COPY . .
 
-# Create non-root user (distroless already provides nonroot user)
-USER nonroot:nonroot
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash app && chown -R app:app /app
+USER app
 
 # Set environment variables
 ENV PATH="/opt/venv/bin:$PATH"
