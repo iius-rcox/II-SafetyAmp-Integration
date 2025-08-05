@@ -32,12 +32,12 @@ metadata:
   labels:
     app: safety-amp
 data:
-  # Application configuration optimized for 5000 records/hour
+  # Application configuration optimized for hourly sync
   LOG_LEVEL: "INFO"
   LOG_FORMAT: "json"  # For structured logging
   ENVIRONMENT: "production"
-  SYNC_INTERVAL: "900"  # 15 minutes (4 times per hour)
-  BATCH_SIZE: "125"  # 1250 records per sync (5000/4)
+  SYNC_INTERVAL: "3600"  # 1 hour
+  BATCH_SIZE: "500"  # Larger batches for hourly sync
   CACHE_TTL_HOURS: "4"  # Longer cache for stable data
   API_RATE_LIMIT_CALLS: "60"
   API_RATE_LIMIT_PERIOD: "61"
@@ -311,7 +311,7 @@ metadata:
     app: safety-amp
     component: sync-job
 spec:
-  schedule: "*/15 * * * *"  # Every 15 minutes for 5000 records/hour
+  schedule: "0 * * * *"  # Every hour at minute 0
   timeZone: "America/Chicago"  # Explicit timezone (Kubernetes 1.24+)
   concurrencyPolicy: Forbid  # Prevent overlapping jobs
   failedJobsHistoryLimit: 3
