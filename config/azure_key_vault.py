@@ -1,9 +1,16 @@
 from azure.keyvault.secrets import SecretClient
 from azure.identity import DefaultAzureCredential
 import os
-from utils.logger import get_logger
+import logging
 
-logger = get_logger("azure_key_vault")
+# Simple logger setup to avoid circular imports
+logger = logging.getLogger("azure_key_vault")
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
 
 class AzureKeyVault:
     def __init__(self, vault_url=None):

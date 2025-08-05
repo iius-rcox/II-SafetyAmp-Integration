@@ -6,6 +6,7 @@ gunicorn>=21.0.0
 
 # Database connectivity
 pyodbc>=4.0.39
+sqlalchemy>=2.0.0
 
 # Microsoft Graph API
 msal>=1.24.0

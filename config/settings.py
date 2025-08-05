@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 from .azure_key_vault import AzureKeyVault
+from .azure_settings import get_azure_config
 
 # Load .env from project root (if it exists)
 env_path = Path(__file__).resolve().parent.parent / '.env'
@@ -11,8 +12,9 @@ else:
     # In production, we should rely on Azure Key Vault and environment variables only
     print("No .env file found, using Azure Key Vault and environment variables only")
 
-# Initialize Azure Key Vault
+# Initialize Azure Key Vault and Azure configuration
 key_vault = AzureKeyVault()
+azure_config = get_azure_config()
 
 # === SafetyAmp ===
 SAFETYAMP_DOMAIN = os.getenv("SAFETYAMP_DOMAIN", "https://api.safetyamp.com")
