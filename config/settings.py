@@ -31,12 +31,17 @@ SAMSARA_DOMAIN = os.getenv("SAMSARA_DOMAIN", "https://api.samsara.com")
 SAMSARA_API_KEY = key_vault.get_secret("SAMSARA-API-KEY")
 
 # === Viewpoint (Vista) SQL Server — Azure Authentication ===
-SQL_SERVER = key_vault.get_secret("SQL-SERVER")
-SQL_DATABASE = key_vault.get_secret("SQL-DATABASE")
+# Fallback to environment variables if Key Vault is not available
+SQL_SERVER = key_vault.get_secret("SQL-SERVER") or os.getenv("SQL_SERVER")
+SQL_DATABASE = key_vault.get_secret("SQL-DATABASE") or os.getenv("SQL_DATABASE")
 SQL_DRIVER = os.getenv("SQL_DRIVER", "{ODBC Driver 18 for SQL Server}")
 
 # Authentication mode: 'managed_identity' or 'sql_auth'
 SQL_AUTH_MODE = os.getenv("SQL_AUTH_MODE", "managed_identity")
+
+# Enhanced connection timeout settings
+CONNECTION_TIMEOUT = int(os.getenv("CONNECTION_TIMEOUT", "60"))  # Increased from 30
+LOGIN_TIMEOUT = int(os.getenv("LOGIN_TIMEOUT", "60"))  # Added login timeout
 
 if SQL_AUTH_MODE == "managed_identity":
     # Use Azure Workload Identity / Managed Identity
@@ -47,12 +52,13 @@ if SQL_AUTH_MODE == "managed_identity":
         "Authentication=ActiveDirectoryMSI;"
         "Encrypt=yes;"
         "TrustServerCertificate=yes;"
-        "Connection Timeout=30;"
+        f"Connection Timeout={CONNECTION_TIMEOUT};"
+        f"Login Timeout={LOGIN_TIMEOUT};"
     )
 elif SQL_AUTH_MODE == "sql_auth":
     # Fallback to SQL Authentication using secrets
-    SQL_USERNAME = key_vault.get_secret("SQL-USERNAME")
-    SQL_PASSWORD = key_vault.get_secret("VISTA-SQL-PASSWORD")
+    SQL_USERNAME = key_vault.get_secret("SQL-USERNAME") or os.getenv("SQL_USERNAME")
+    SQL_PASSWORD = key_vault.get_secret("VISTA-SQL-PASSWORD") or os.getenv("VISTA_SQL_PASSWORD")
     VIEWPOINT_CONN_STRING = (
         f"DRIVER={SQL_DRIVER};"
         f"SERVER={SQL_SERVER};"
@@ -61,16 +67,25 @@ elif SQL_AUTH_MODE == "sql_auth":
         f"PWD={SQL_PASSWORD};"
         "Encrypt=yes;"
         "TrustServerCertificate=yes;"
-        "Connection Timeout=30;"
+        f"Connection Timeout={CONNECTION_TIMEOUT};"
+        f"Login Timeout={LOGIN_TIMEOUT};"
     )
 else:
     raise ValueError(f"Invalid SQL_AUTH_MODE: {SQL_AUTH_MODE}. Must be 'managed_identity' or 'sql_auth'")
 
-# Connection Pool Settings
-DB_POOL_SIZE = int(os.getenv('DB_POOL_SIZE', '5'))
-DB_MAX_OVERFLOW = int(os.getenv('DB_MAX_OVERFLOW', '10'))
-DB_POOL_TIMEOUT = int(os.getenv('DB_POOL_TIMEOUT', '30'))
-DB_POOL_RECYCLE = int(os.getenv('DB_POOL_RECYCLE', '3600'))
+# Validate required connection parameters
+if not SQL_SERVER or not SQL_DATABASE:
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.warning(f"Vista connection may fail: SQL_SERVER={SQL_SERVER}, SQL_DATABASE={SQL_DATABASE}")
+    if SQL_AUTH_MODE == "sql_auth" and (not SQL_USERNAME or not SQL_PASSWORD):
+        logger.warning("SQL authentication selected but username/password not configured")
+
+# Connection Pool Settings - Enhanced for better reliability
+DB_POOL_SIZE = int(os.getenv('DB_POOL_SIZE', '3'))  # Reduced from 5 for testing
+DB_MAX_OVERFLOW = int(os.getenv('DB_MAX_OVERFLOW', '5'))  # Reduced from 10
+DB_POOL_TIMEOUT = int(os.getenv('DB_POOL_TIMEOUT', '60'))  # Increased from 30
+DB_POOL_RECYCLE = int(os.getenv('DB_POOL_RECYCLE', '1800'))  # Reduced from 3600
 
 # === Email Settings ===
 ALERT_EMAIL_FROM = key_vault.get_secret("ALERT-EMAIL-FROM")

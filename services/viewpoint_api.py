@@ -9,6 +9,7 @@ from urllib.parse import quote_plus
 from config import settings
 from utils.logger import get_logger
 from .vista_data_manager import vista_data_manager
+import time
 
 logger = get_logger("viewpoint")
 
@@ -17,12 +18,18 @@ class ViewpointAPI:
         # Build SQLAlchemy connection URL from ODBC connection string
         self.conn_str = settings.VIEWPOINT_CONN_STRING
         
+        # Validate connection string
+        if "SERVER=None" in self.conn_str or "DATABASE=None" in self.conn_str:
+            logger.error("Invalid Vista connection configuration - missing server or database")
+            logger.error(f"Connection string: {self.conn_str}")
+            raise ValueError("Vista connection not properly configured. Check SQL_SERVER and SQL_DATABASE settings.")
+        
         # Convert ODBC connection string to SQLAlchemy URL
         # Format: mssql+pyodbc:///?odbc_connect=<encoded_connection_string>
         encoded_conn_str = quote_plus(self.conn_str)
         sqlalchemy_url = f"mssql+pyodbc:///?odbc_connect={encoded_conn_str}"
         
-        # Create engine with connection pooling
+        # Create engine with enhanced connection pooling and error handling
         self.engine = create_engine(
             sqlalchemy_url,
             poolclass=QueuePool,
@@ -32,37 +39,87 @@ class ViewpointAPI:
             pool_recycle=settings.DB_POOL_RECYCLE,
             echo=False,  # Set to True for SQL debugging
             pool_pre_ping=True,  # Verify connections before use
-            pool_reset_on_return='commit'  # Reset connections on return
+            pool_reset_on_return='commit',  # Reset connections on return
+            # Enhanced error handling
+            connect_args={
+                "timeout": settings.DB_POOL_TIMEOUT,
+                "autocommit": True
+            }
         )
         
         logger.info(f"Initialized Viewpoint API with connection pool (size={settings.DB_POOL_SIZE}, max_overflow={settings.DB_MAX_OVERFLOW})")
+        logger.info(f"Connection timeout: {getattr(settings, 'CONNECTION_TIMEOUT', 30)}s")
 
     @contextmanager
-    def _get_connection(self):
-        """Context manager that provides database connections from the pool"""
+    def _get_connection(self, max_retries=3, retry_delay=5):
+        """Context manager that provides database connections from the pool with retry logic"""
         connection = None
-        try:
-            connection = self.engine.connect()
-            yield connection
-        except Exception as e:
-            logger.error(f"Database connection error: {str(e)}")
-            if connection:
-                connection.rollback()
-            raise
-        finally:
-            if connection:
-                connection.close()
+        last_exception = None
+        
+        for attempt in range(max_retries):
+            try:
+                logger.debug(f"Attempting database connection (attempt {attempt + 1}/{max_retries})")
+                connection = self.engine.connect()
+                logger.debug("Database connection established successfully")
+                yield connection
+                return
+            except Exception as e:
+                last_exception = e
+                error_msg = str(e)
+                logger.error(f"Database connection error (attempt {attempt + 1}/{max_retries}): {error_msg}")
+                
+                if connection:
+                    try:
+                        connection.rollback()
+                        connection.close()
+                    except:
+                        pass
+                    connection = None
+                
+                # Check if it's a timeout or authentication error
+                if "timeout" in error_msg.lower():
+                    logger.warning(f"Connection timeout detected. Retrying in {retry_delay} seconds...")
+                elif "authentication" in error_msg.lower() or "login failed" in error_msg.lower():
+                    logger.error("Authentication error - check credentials and authentication mode")
+                    break  # Don't retry authentication errors
+                elif attempt < max_retries - 1:
+                    logger.info(f"Retrying connection in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                    retry_delay *= 1.5  # Exponential backoff
+        
+        # If we get here, all retries failed
+        logger.error(f"All {max_retries} connection attempts failed")
+        if last_exception:
+            raise last_exception
 
-    def _fetch_query(self, connection, query):
-        """Execute query and return results as list of dictionaries"""
+    def _fetch_query(self, connection, query, params=None):
+        """Execute query and return results as list of dictionaries with enhanced error handling"""
         try:
-            result = connection.execute(text(query))
+            logger.debug(f"Executing query: {query[:100]}{'...' if len(query) > 100 else ''}")
+            if params:
+                result = connection.execute(text(query), params)
+            else:
+                result = connection.execute(text(query))
             columns = result.keys()
-            return [dict(zip(columns, row)) for row in result.fetchall()]
+            rows = result.fetchall()
+            logger.debug(f"Query returned {len(rows)} rows")
+            return [dict(zip(columns, row)) for row in rows]
         except Exception as e:
             logger.error(f"Query execution error: {str(e)}")
             logger.error(f"Query: {query}")
+            if params:
+                logger.error(f"Parameters: {params}")
             raise
+
+    def test_connection(self):
+        """Test the database connection with basic query"""
+        try:
+            with self._get_connection() as conn:
+                result = self._fetch_query(conn, "SELECT 1 as test")
+                return len(result) > 0
+        except Exception as e:
+            logger.error(f"Connection test failed: {e}")
+            return False
 
     def get_title_list(self, connection):
         query = """
@@ -194,26 +251,42 @@ class ViewpointAPI:
         return employees
 
     def get_employees(self):
-        with self._get_connection() as conn:
-            recent_job_map = self.fetch_recent_jobs(conn)
-            employees = self.build_employee_json(conn, recent_job_map)
-            # Store in memory instead of file
-            vista_data_manager.set_employee_data(employees)
-            return employees
+        try:
+            with self._get_connection() as conn:
+                recent_job_map = self.fetch_recent_jobs(conn)
+                employees = self.build_employee_json(conn, recent_job_map)
+                # Store in memory instead of file
+                vista_data_manager.set_employee_data(employees)
+                return employees
+        except Exception as e:
+            logger.error(f"Failed to fetch employees: {e}")
+            raise
 
     def get_jobs(self):
-        with self._get_connection() as conn:
-            jobs = self.fetch_job_list(conn)
-            # Store in memory instead of file
-            vista_data_manager.set_job_data(jobs)
-            return jobs
+        try:
+            with self._get_connection() as conn:
+                jobs = self.fetch_job_list(conn)
+                # Store in memory instead of file
+                vista_data_manager.set_job_data(jobs)
+                return jobs
+        except Exception as e:
+            logger.error(f"Failed to fetch jobs: {e}")
+            raise
 
     def get_departments(self):
-        with self._get_connection() as conn:
-            departments = self.get_department_list(conn)
-            return departments
+        try:
+            with self._get_connection() as conn:
+                departments = self.get_department_list(conn)
+                return departments
+        except Exception as e:
+            logger.error(f"Failed to fetch departments: {e}")
+            raise
 
     def get_titles(self):
-        with self._get_connection() as conn:
-            titles = self.get_title_list(conn)
-            return titles
+        try:
+            with self._get_connection() as conn:
+                titles = self.get_title_list(conn)
+                return titles
+        except Exception as e:
+            logger.error(f"Failed to fetch titles: {e}")
+            raise
