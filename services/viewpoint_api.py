@@ -79,32 +79,29 @@ class ViewpointAPI:
 
 
     def fetch_recent_jobs(self, connection):
+        # Optimized query - using EXISTS instead of CTE for better performance
         query = text("""
-        WITH RankedRecords AS (
-            SELECT 
-                JC.PREndDate,
-                JC.Job,
-                JC.Employee,
-                JC.Class,
-                ROW_NUMBER() OVER (PARTITION BY JC.Employee ORDER BY JC.PREndDate DESC) AS RowNum
-            FROM 
-                bPRJC AS JC
-            LEFT JOIN bJCJM AS JM ON JM.JCCo = JC.PRCo AND JM.Job = JC.Job
-            WHERE
-                PREndDate > :start_date AND
-                JM.JobStatus = 1
-        )
         SELECT 
-            PREndDate,
-            Job,
-            Employee,
-            Class
+            JC.PREndDate,
+            JC.Job,
+            JC.Employee,
+            JC.Class
         FROM 
-            RankedRecords
-        WHERE 
-            RowNum = 1
+            bPRJC AS JC
+        INNER JOIN bJCJM AS JM ON JM.JCCo = JC.PRCo AND JM.Job = JC.Job
+        WHERE
+            PREndDate > :start_date AND
+            JM.JobStatus = 1 AND
+            JC.PREndDate = (
+                SELECT MAX(JC2.PREndDate)
+                FROM bPRJC AS JC2
+                INNER JOIN bJCJM AS JM2 ON JM2.JCCo = JC2.PRCo AND JM2.Job = JC2.Job
+                WHERE JC2.Employee = JC.Employee 
+                AND JC2.PREndDate > :start_date 
+                AND JM2.JobStatus = 1
+            )
         ORDER BY
-            Employee
+            JC.Employee
         """)
         recent_jobs = connection.execute(query, {"start_date": "2024-01-01"}).fetchall()
         return {row.Employee: row.Job.strip() if row.Job else None for row in recent_jobs}

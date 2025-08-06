@@ -1,4 +1,5 @@
 from utils.logger import get_logger
+from utils.cache_manager import CacheManager
 from services.safetyamp_api import SafetyAmpAPI
 from services.viewpoint_api import ViewpointAPI
 from services.graph_api import MSGraphAPI
@@ -14,6 +15,7 @@ class EmployeeSyncer:
         self.api_client = SafetyAmpAPI()
         self.viewpoint = ViewpointAPI()
         self.msgraph = MSGraphAPI()
+        self.cache_manager = CacheManager()
         logger.info("Fetching initial data for sync...")
         self.cluster_map = self._build_cluster_map()
         self.role_map = self._build_role_map()
@@ -204,6 +206,15 @@ class EmployeeSyncer:
         employees = self.viewpoint.get_employees()
         logger.info(f"Retrieved {len(employees)} employees from Viewpoint.")
 
+        # Track sync results for cache updates
+        sync_results = {
+            "created": 0,
+            "updated": 0,
+            "skipped": 0,
+            "errors": 0,
+            "processed_employees": []
+        }
+
         for emp in employees:
             emp_id = str(emp["Employee"])
             payload = self.map_employee_to_payload(emp)
@@ -212,6 +223,7 @@ class EmployeeSyncer:
 
             if not payload.get("home_site_id"):
                 logger.warning(f"Skipping employee {full_name} (ID: {emp_id}): No matching site for PRDept {emp.get('PRDept')} or Job {emp.get('Job')}")
+                sync_results["skipped"] += 1
                 continue
 
             if existing_user:
@@ -219,12 +231,16 @@ class EmployeeSyncer:
                 if updated_fields:
                     self.api_client.put(f"/api/users/{existing_user['id']}", updated_fields)
                     logger.info(f"Updated user {full_name} (ID: {emp_id}) with fields: {list(updated_fields.keys())}")
-                # else:
-                    # logger.info(f"No update needed for user {full_name} (ID: {emp_id})")
+                    sync_results["updated"] += 1
+                    sync_results["processed_employees"].append({"id": emp_id, "action": "updated", "fields": list(updated_fields.keys())})
+                else:
+                    sync_results["skipped"] += 1
             else:
                 try:
                     self.api_client.create_user(payload)
                     logger.info(f"Created user {full_name} (ID: {emp_id})")
+                    sync_results["created"] += 1
+                    sync_results["processed_employees"].append({"id": emp_id, "action": "created"})
                 except requests.HTTPError as e:
                     error_response = e.response.json()
                     logger.warning(
@@ -238,6 +254,75 @@ class EmployeeSyncer:
                         self.api_client.create_user(fallback_payload)
                         logger.info(
                             f"Created user {full_name} (ID: {emp_id}) on fallback attempt without email/phone")
+                        sync_results["created"] += 1
+                        sync_results["processed_employees"].append({"id": emp_id, "action": "created_fallback"})
                     except Exception as final_e:
                         logger.error(
                             f"Failed to create user {full_name} (ID: {emp_id}) after fallback: {str(final_e)}")
+                        sync_results["errors"] += 1
+
+        # Update cache with sync results
+        self._update_cache_after_sync(sync_results)
+        
+        logger.info(f"Employee sync completed: {sync_results['created']} created, {sync_results['updated']} updated, {sync_results['skipped']} skipped, {sync_results['errors']} errors")
+        
+        return {
+            "processed": len(employees),
+            "created": sync_results["created"],
+            "updated": sync_results["updated"],
+            "skipped": sync_results["skipped"],
+            "errors": sync_results["errors"]
+        }
+
+    def _update_cache_after_sync(self, sync_results):
+        """Update cache directly after sync operations with smart refresh logic"""
+        try:
+            cache_name = "safetyamp_users"
+            
+            # Check if it's time for a full cache refresh
+            if self.cache_manager.should_refresh_cache(cache_name):
+                logger.info("Performing full cache refresh (4-hour interval reached)")
+                # Get fresh user data from SafetyAmp API for cache update
+                fresh_users = self.api_client.get_users()
+                
+                if fresh_users:
+                    # Update cache directly with fresh data
+                    success = self.cache_manager.update_cache_directly(
+                        cache_name, 
+                        list(fresh_users.values()), 
+                        source="sync_employee_full_refresh"
+                    )
+                    
+                    if success:
+                        logger.info(f"Successfully performed full cache refresh with {len(fresh_users)} users")
+                        # Mark cache as refreshed
+                        self.cache_manager.mark_cache_refreshed(cache_name)
+                    else:
+                        logger.warning("Failed to perform full cache refresh")
+                else:
+                    logger.warning("No fresh user data available for full cache refresh")
+            else:
+                # Only update cache if there were actual changes
+                if sync_results["created"] > 0 or sync_results["updated"] > 0:
+                    logger.info("Performing incremental cache update (changes detected)")
+                    fresh_users = self.api_client.get_users()
+                    
+                    if fresh_users:
+                        success = self.cache_manager.update_cache_directly(
+                            cache_name, 
+                            list(fresh_users.values()), 
+                            source="sync_employee_incremental"
+                        )
+                        
+                        if success:
+                            logger.info(f"Successfully updated cache incrementally with {len(fresh_users)} users")
+                        else:
+                            logger.warning("Failed to update cache incrementally")
+                    else:
+                        logger.warning("No fresh user data available for incremental cache update")
+                else:
+                    logger.info("No changes detected, skipping cache update")
+                
+        except Exception as e:
+            logger.error(f"Error updating cache after sync: {e}")
+            # Don't fail the sync if cache update fails

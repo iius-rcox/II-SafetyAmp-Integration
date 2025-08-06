@@ -47,7 +47,9 @@ if SQL_AUTH_MODE == "managed_identity":
         "Authentication=ActiveDirectoryMSI;"
         "Encrypt=yes;"
         "TrustServerCertificate=yes;"
-        "Connection Timeout=30;"
+        "Connection Timeout=120;"
+        "Command Timeout=120;"
+        "Connect Timeout=120;"
     )
 elif SQL_AUTH_MODE == "sql_auth":
     # Fallback to SQL Authentication using secrets
@@ -61,7 +63,9 @@ elif SQL_AUTH_MODE == "sql_auth":
         f"PWD={SQL_PASSWORD};"
         "Encrypt=yes;"
         "TrustServerCertificate=yes;"
-        "Connection Timeout=30;"
+        "Connection Timeout=120;"
+        "Command Timeout=120;"
+        "Connect Timeout=120;"
     )
 else:
     raise ValueError(f"Invalid SQL_AUTH_MODE: {SQL_AUTH_MODE}. Must be 'managed_identity' or 'sql_auth'")
@@ -69,7 +73,7 @@ else:
 # Connection Pool Settings
 DB_POOL_SIZE = int(os.getenv('DB_POOL_SIZE', '5'))
 DB_MAX_OVERFLOW = int(os.getenv('DB_MAX_OVERFLOW', '10'))
-DB_POOL_TIMEOUT = int(os.getenv('DB_POOL_TIMEOUT', '30'))
+DB_POOL_TIMEOUT = int(os.getenv('DB_POOL_TIMEOUT', '60'))
 DB_POOL_RECYCLE = int(os.getenv('DB_POOL_RECYCLE', '3600'))
 
 # === Email Settings ===
@@ -95,7 +99,8 @@ SYNC_INTERVAL_MINUTES = int(os.getenv("SYNC_INTERVAL_MINUTES", "60"))
 PRODUCTION = os.getenv("ENV", "production").lower() == "production"
 
 # === Cache Settings ===
-CACHE_TTL_HOURS = int(os.getenv("CACHE_TTL_HOURS", "1"))
+CACHE_TTL_HOURS = int(os.getenv("CACHE_TTL_HOURS", "4"))
+CACHE_REFRESH_INTERVAL_HOURS = int(os.getenv("CACHE_REFRESH_INTERVAL_HOURS", "4"))
 API_RATE_LIMIT_CALLS = int(os.getenv("API_RATE_LIMIT_CALLS", "60"))
 API_RATE_LIMIT_PERIOD = int(os.getenv("API_RATE_LIMIT_PERIOD", "61"))
 MAX_RETRY_ATTEMPTS = int(os.getenv("MAX_RETRY_ATTEMPTS", "3"))

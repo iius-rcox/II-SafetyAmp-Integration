@@ -10,7 +10,7 @@ import threading
 import time
 import os
 from utils.logger import get_logger
-from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST, REGISTRY
 from circuitbreaker import circuit
 import structlog
 
@@ -64,13 +64,23 @@ def get_active_connection_count():
     with _connection_lock:
         return len(_active_connections)
 
-# Prometheus metrics
-sync_operations_total = Counter('safetyamp_sync_operations_total', 'Total sync operations', ['operation', 'status'])
-sync_duration_seconds = Histogram('safetyamp_sync_duration_seconds', 'Sync operation duration', ['operation'])
-records_processed_total = Counter('safetyamp_records_processed_total', 'Total records processed', ['sync_type'])
-current_sync_operations = Gauge('safetyamp_current_sync_operations', 'Current ongoing sync operations')
-health_check_duration = Histogram('safetyamp_health_check_duration_seconds', 'Health check duration')
-database_connections_active = Gauge('safetyamp_database_connections_active', 'Active database connections')
+# Prometheus metrics - create only if they don't exist
+def get_or_create_metric(metric_type, name, description, **kwargs):
+    """Get existing metric or create new one to avoid duplicates"""
+    try:
+        # Try to get existing metric
+        return REGISTRY._names_to_collectors[name]
+    except KeyError:
+        # Create new metric if it doesn't exist
+        return metric_type(name, description, **kwargs)
+
+# Initialize metrics safely
+sync_operations_total = get_or_create_metric(Counter, 'safetyamp_sync_operations_total', 'Total sync operations', labelnames=['operation', 'status'])
+sync_duration_seconds = get_or_create_metric(Histogram, 'safetyamp_sync_duration_seconds', 'Sync operation duration', labelnames=['operation'])
+records_processed_total = get_or_create_metric(Counter, 'safetyamp_records_processed_total', 'Total records processed', labelnames=['sync_type'])
+current_sync_operations = get_or_create_metric(Gauge, 'safetyamp_current_sync_operations', 'Current ongoing sync operations')
+health_check_duration = get_or_create_metric(Histogram, 'safetyamp_health_check_duration_seconds', 'Health check duration')
+database_connections_active = get_or_create_metric(Gauge, 'safetyamp_database_connections_active', 'Active database connections')
 
 # Global health status with enhanced tracking
 health_status = {

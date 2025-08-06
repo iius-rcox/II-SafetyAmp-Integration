@@ -36,9 +36,10 @@ data:
   LOG_LEVEL: "INFO"
   LOG_FORMAT: "json"  # For structured logging
   ENVIRONMENT: "production"
-  SYNC_INTERVAL: "3600"  # 1 hour
+  SYNC_INTERVAL: "900"  # 15 minutes
   BATCH_SIZE: "500"  # Larger batches for hourly sync
   CACHE_TTL_HOURS: "4"  # Longer cache for stable data
+  CACHE_REFRESH_INTERVAL_HOURS: "4"  # Full cache refresh every 4 hours
   API_RATE_LIMIT_CALLS: "60"
   API_RATE_LIMIT_PERIOD: "61"
   MAX_RETRY_ATTEMPTS: "5"  # More retries for reliability
@@ -132,6 +133,11 @@ spec:
             configMapKeyRef:
               name: safety-amp-config
               key: CACHE_TTL_HOURS
+        - name: CACHE_REFRESH_INTERVAL_HOURS
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: CACHE_REFRESH_INTERVAL_HOURS
         - name: BATCH_SIZE
           valueFrom:
             configMapKeyRef:
@@ -311,7 +317,7 @@ metadata:
     app: safety-amp
     component: sync-job
 spec:
-  schedule: "0 * * * *"  # Every hour at minute 0
+  schedule: "*/15 * * * *"  # Every 15 minutes
   timeZone: "America/Chicago"  # Explicit timezone (Kubernetes 1.24+)
   concurrencyPolicy: Forbid  # Prevent overlapping jobs
   failedJobsHistoryLimit: 3
