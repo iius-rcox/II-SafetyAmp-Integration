@@ -12,6 +12,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from services.samsara_api import SamsaraAPI
 from services.safetyamp_api import SafetyAmpAPI
 from utils.logger import get_logger
+from utils.data_validator import validator
 from datetime import datetime
 import requests
 import re
@@ -258,7 +259,16 @@ class VehicleSync:
                         error_count += 1
                         continue
                     
-                    vehicle_serial = asset_data.get("serial")
+                    # Validate asset data before processing
+                    vehicle_id = str(vehicle.get('id', 'unknown'))
+                    is_valid, validation_errors, cleaned_asset_data = validator.validate_vehicle_data(asset_data, vehicle_id)
+                    
+                    if not is_valid:
+                        logger.error(f"Validation failed for vehicle {vehicle_id}: {validation_errors}")
+                        error_count += 1
+                        continue
+                    
+                    vehicle_serial = cleaned_asset_data.get("serial")
                     if not vehicle_serial:
                         logger.warning(f"Vehicle {vehicle.get('id')} has no serial number, skipping")
                         skipped_count += 1
@@ -269,9 +279,9 @@ class VehicleSync:
                     
                     if existing_asset:
                         # Asset exists - check if update needed
-                        if self._needs_update(existing_asset, asset_data):
+                        if self._needs_update(existing_asset, cleaned_asset_data):
                             # Update existing asset
-                            result = self.safetyamp_api.update_asset(existing_asset["id"], asset_data)
+                            result = self.safetyamp_api.update_asset(existing_asset["id"], cleaned_asset_data)
                             if result:
                                 synced_count += 1
                                 logger.info(f"Updated asset {vehicle_serial}")
@@ -284,7 +294,7 @@ class VehicleSync:
                     else:
                         # Asset doesn't exist - create new one
                         # Create new asset
-                        result = self.safetyamp_api.create_asset(asset_data)
+                        result = self.safetyamp_api.create_asset(cleaned_asset_data)
                         if result:
                             synced_count += 1
                             logger.info(f"Created asset {vehicle_serial}")

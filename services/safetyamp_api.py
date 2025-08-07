@@ -3,6 +3,7 @@ import time
 from ratelimit import limits, sleep_and_retry
 from config import settings
 from utils.logger import get_logger
+from utils.data_validator import validator
 from utils.cache_manager import CacheManager
 
 logger = get_logger("safetyamp")
@@ -21,6 +22,46 @@ class SafetyAmpAPI:
             "Content-Type": "application/json"
         }
         self.cache_manager = CacheManager()
+
+    def _preprocess_payload(self, endpoint: str, data: dict, method: str) -> dict:
+        """Validate and clean payloads for write operations before sending to SafetyAmp.
+
+        Applies entity-specific validation for POST/PUT/PATCH requests.
+        Always returns a cleaned payload; logs validation errors for visibility.
+        """
+        if not isinstance(data, dict):
+            return data
+
+        cleaned_payload = data
+        validation_errors = []
+
+        try:
+            endpoint_lower = endpoint.lower()
+            if endpoint_lower.startswith("/api/users"):
+                # Employee payload validation
+                emp_id = str(data.get("emp_id", data.get("id", "unknown")))
+                full_name = f"{data.get('first_name', '')} {data.get('last_name', '')}".strip()
+                is_valid, errs, cleaned = validator.validate_employee_data(data, emp_id, full_name)
+                cleaned_payload = cleaned
+                validation_errors = errs
+            elif endpoint_lower.startswith("/api/assets"):
+                # Vehicle/asset payload validation (best-effort)
+                asset_id = str(data.get("id", data.get("serial", "unknown")))
+                is_valid, errs, cleaned = validator.validate_vehicle_data(data, asset_id)
+                cleaned_payload = cleaned
+                validation_errors = errs
+            elif endpoint_lower.startswith("/api/sites") or endpoint_lower.startswith("/api/site_clusters"):
+                site_id = str(data.get("id", data.get("external_code", "unknown")))
+                is_valid, errs, cleaned = validator.validate_site_data(data, site_id)
+                cleaned_payload = cleaned
+                validation_errors = errs
+        except Exception as e:
+            logger.warning(f"Validation preprocessing skipped due to error: {e}")
+
+        if validation_errors:
+            logger.warning(f"{method} {endpoint}: payload had validation issues: {validation_errors}")
+
+        return cleaned_payload
 
     @sleep_and_retry
     @limits(calls=CALLS, period=PERIOD)
@@ -85,7 +126,8 @@ class SafetyAmpAPI:
     def post(self, endpoint, data):
         url = f"{self.base_url}{endpoint}"
         try:
-            response = self._exponential_retry(self._rate_limited_request, requests.post, url, json=data)
+            cleaned = self._preprocess_payload(endpoint, data, "POST")
+            response = self._exponential_retry(self._rate_limited_request, requests.post, url, json=cleaned)
             return self._handle_response(response, "POST", url)
         except requests.RequestException as e:
             logger.error(f"POST {url} request failed: {e}")
@@ -94,7 +136,8 @@ class SafetyAmpAPI:
     def put(self, endpoint, data):
         url = f"{self.base_url}{endpoint}"
         try:
-            response = self._exponential_retry(self._rate_limited_request, requests.put, url, json=data)
+            cleaned = self._preprocess_payload(endpoint, data, "PUT")
+            response = self._exponential_retry(self._rate_limited_request, requests.put, url, json=cleaned)
             return self._handle_response(response, "PUT", url)
         except requests.RequestException as e:
             logger.error(f"PUT {url} request failed: {e}")
@@ -103,7 +146,8 @@ class SafetyAmpAPI:
     def patch(self, endpoint, data):
         url = f"{self.base_url}{endpoint}"
         try:
-            response = self._exponential_retry(self._rate_limited_request, requests.patch, url, json=data)
+            cleaned = self._preprocess_payload(endpoint, data, "PATCH")
+            response = self._exponential_retry(self._rate_limited_request, requests.patch, url, json=cleaned)
             return self._handle_response(response, "PATCH", url)
         except requests.RequestException as e:
             logger.error(f"PATCH {url} request failed: {e}")

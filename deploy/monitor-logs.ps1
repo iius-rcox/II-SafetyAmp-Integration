@@ -54,13 +54,13 @@ if (-not (Test-Path $logsDir)) {
 
 # Get pod name if not specified
 if (-not $Pod) {
-    $pods = kubectl get pods -n safety-amp -l app=safety-amp-agent -o jsonpath='{.items[0].metadata.name}' 2>$null
+    $pods = kubectl get pods -n safety-amp -l app=safety-amp,component=agent -o jsonpath='{.items[0].metadata.name}' 2>$null
     if ($pods) {
         $Pod = $pods
         Write-Host "📦 Using pod: $Pod" -ForegroundColor Yellow
     } else {
         Write-Host "❌ No SafetyAmp pods found!" -ForegroundColor Red
-        exit 1
+        return
     }
 }
 
@@ -246,7 +246,7 @@ switch ($Mode.ToLower()) {
     default {
         Write-Host "❌ Unknown mode: $Mode" -ForegroundColor Red
         Write-Host "Available modes: realtime, recent, errors, errors-history, errors-persistent, sync, health, summary" -ForegroundColor Yellow
-        exit 1
+        return
     }
 }
 
