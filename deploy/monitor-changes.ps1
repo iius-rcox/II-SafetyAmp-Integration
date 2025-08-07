@@ -164,7 +164,6 @@ function Start-RealTimeMonitoring {
     Write-ColorOutput "`n🔄 Starting real-time change monitoring..." "Info"
     Write-ColorOutput "Press Ctrl+C to stop monitoring" "Warning"
     
-    $lastCheck = Get-Date
     $lastSessionId = ""
     
     while ($true) {

@@ -36,8 +36,8 @@ data:
     auto-aof-rewrite-min-size 64mb
     aof-load-truncated yes
     aof-use-rdb-preamble yes
-    # Authentication
-    requirepass your-redis-password
+    # Authentication - disabled for now to fix connection issues
+    # requirepass your-redis-password
 ---
 apiVersion: v1
 kind: Service

@@ -22,7 +22,7 @@ stringData:
   AZURE_KEY_VAULT_URL: "https://iius-akv.vault.azure.net/"
   REDIS_HOST: "redis-service"
   REDIS_PORT: "6379"
-  REDIS_PASSWORD: "your-redis-password"
+  REDIS_PASSWORD: ""
 ---
 apiVersion: v1
 kind: ConfigMap
