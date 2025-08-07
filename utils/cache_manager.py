@@ -129,6 +129,87 @@ class CacheManager:
         
         return None
     
+    def get_cached_data_with_fallback(self, cache_name: str, fetch_func, 
+                                     max_age_hours: int = 1, 
+                                     force_refresh: bool = False) -> Optional[List[Dict[str, Any]]]:
+        """
+        Get cached data with fallback to fetch function if cache is invalid or missing
+        
+        Args:
+            cache_name: Name of the cache
+            fetch_func: Function to call if cache is invalid/missing
+            max_age_hours: Maximum age of cache in hours
+            force_refresh: Force refresh the cache
+            
+        Returns:
+            Cached data or freshly fetched data
+        """
+        # Check if we should use cached data
+        if not force_refresh:
+            cached_data = self.get_cached_data(cache_name)
+            if cached_data is not None:
+                # Check if cache is still valid
+                if self.is_cache_valid(cache_name, max_age_hours):
+                    logger.info(f"Using valid cached data for {cache_name}")
+                    return cached_data
+                else:
+                    logger.info(f"Cache for {cache_name} is expired, fetching fresh data")
+        
+        # Fetch fresh data
+        try:
+            logger.info(f"Fetching fresh data for {cache_name}")
+            fresh_data = fetch_func()
+            
+            if fresh_data is not None:
+                # Save to cache
+                self.save_cache(cache_name, fresh_data)
+                logger.info(f"Saved fresh data to cache for {cache_name}: {len(fresh_data)} items")
+                return fresh_data
+            else:
+                logger.warning(f"Fetch function returned None for {cache_name}")
+                # Return cached data even if expired as fallback
+                return self.get_cached_data(cache_name)
+                
+        except Exception as e:
+            logger.error(f"Error fetching fresh data for {cache_name}: {e}")
+            # Return cached data even if expired as fallback
+            return self.get_cached_data(cache_name)
+    
+    def is_cache_valid(self, cache_name: str, max_age_hours: int = 1) -> bool:
+        """
+        Check if cache is still valid based on age
+        
+        Args:
+            cache_name: Name of the cache
+            max_age_hours: Maximum age in hours
+            
+        Returns:
+            True if cache is valid, False otherwise
+        """
+        try:
+            # Check Redis metadata first
+            if self.redis_client:
+                metadata_key = self._get_metadata_key(cache_name)
+                metadata_json = self.redis_client.get(metadata_key)
+                if metadata_json:
+                    metadata = json.loads(metadata_json)
+                    cache_age_hours = (time.time() - metadata.get("last_updated", 0)) / 3600
+                    return cache_age_hours <= max_age_hours
+            
+            # Fallback to file-based metadata
+            metadata_file = self.cache_dir / f"{cache_name}_metadata.json"
+            if metadata_file.exists():
+                with open(metadata_file, 'r') as f:
+                    metadata = json.load(f)
+                cache_age_hours = (time.time() - metadata.get("last_updated", 0)) / 3600
+                return cache_age_hours <= max_age_hours
+                
+        except Exception as e:
+            logger.warning(f"Error checking cache validity for {cache_name}: {e}")
+        
+        # If we can't determine validity, assume invalid
+        return False
+    
     def save_cache(self, cache_name: str, data: List[Dict[str, Any]], 
                    metadata: Optional[Dict[str, Any]] = None) -> bool:
         """Save data to both Redis and file cache"""
@@ -235,26 +316,6 @@ class CacheManager:
             success = False
         
         return success
-    
-    def is_cache_valid(self, cache_name: str) -> bool:
-        """Check if cache is still valid (not expired)"""
-        if self.redis_client:
-            try:
-                cache_key = self._get_cache_key(cache_name)
-                return self.redis_client.exists(cache_key) > 0
-            except Exception as e:
-                logger.warning(f"Redis cache validation failed for {cache_name}: {e}")
-        
-        # Fallback to file-based validation
-        cache_file = self.cache_dir / f"{cache_name}.json"
-        if not cache_file.exists():
-            return False
-        
-        # Check file age
-        file_age = time.time() - cache_file.stat().st_mtime
-        max_age = self.cache_ttl_hours * 3600
-        
-        return file_age < max_age
     
     def get_cache_stats(self) -> Dict[str, Any]:
         """Get comprehensive cache statistics"""

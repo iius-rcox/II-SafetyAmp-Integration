@@ -156,7 +156,7 @@ class SafetyAmpAPI:
         def fetch_users():
             return self.get_all_paginated("/api/users", key_field="emp_id")
         
-        return self.cache_manager.get_cached_data(
+        return self.cache_manager.get_cached_data_with_fallback(
             "safetyamp_users", 
             fetch_users, 
             max_age_hours=max_age_hours,
@@ -168,7 +168,7 @@ class SafetyAmpAPI:
         def fetch_users():
             return self.get_all_paginated("/api/users", key_field="id")
         
-        return self.cache_manager.get_cached_data(
+        return self.cache_manager.get_cached_data_with_fallback(
             "safetyamp_users_by_id", 
             fetch_users, 
             max_age_hours=max_age_hours,
@@ -180,7 +180,7 @@ class SafetyAmpAPI:
         def fetch_sites():
             return self.get_all_paginated("/api/sites", key_field="id")
         
-        return self.cache_manager.get_cached_data(
+        return self.cache_manager.get_cached_data_with_fallback(
             "safetyamp_sites", 
             fetch_sites, 
             max_age_hours=max_age_hours,
@@ -192,7 +192,7 @@ class SafetyAmpAPI:
         def fetch_asset_types():
             return self.get_all_paginated("/api/asset_types", key_field="id")
         
-        return self.cache_manager.get_cached_data(
+        return self.cache_manager.get_cached_data_with_fallback(
             "safetyamp_asset_types", 
             fetch_asset_types, 
             max_age_hours=max_age_hours,
@@ -204,7 +204,7 @@ class SafetyAmpAPI:
         def fetch_titles():
             return self.get_all_paginated("/api/user_titles", key_field="id")
         
-        return self.cache_manager.get_cached_data(
+        return self.cache_manager.get_cached_data_with_fallback(
             "safetyamp_titles", 
             fetch_titles, 
             max_age_hours=max_age_hours,
@@ -216,7 +216,7 @@ class SafetyAmpAPI:
         def fetch_assets():
             return self.get_all_paginated("/api/assets", key_field="id")
         
-        return self.cache_manager.get_cached_data(
+        return self.cache_manager.get_cached_data_with_fallback(
             "safetyamp_assets", 
             fetch_assets, 
             max_age_hours=max_age_hours,
@@ -228,7 +228,7 @@ class SafetyAmpAPI:
         def fetch_roles():
             return self.get_all_paginated("/api/roles", key_field="id")
         
-        return self.cache_manager.get_cached_data(
+        return self.cache_manager.get_cached_data_with_fallback(
             "safetyamp_roles", 
             fetch_roles, 
             max_age_hours=max_age_hours,
