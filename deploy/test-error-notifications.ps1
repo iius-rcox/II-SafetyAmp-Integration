@@ -132,10 +132,10 @@ print('ERROR_LOG_END')
             
             if ($log_data.Count -gt 0) {
                 Write-ColorOutput "  Recent Errors:" "Info"
-                foreach ($error in $log_data[0..2]) {  # Show first 3 errors
-                    $timestamp = [datetime]::Parse($error.timestamp).ToString("HH:mm:ss")
-                    Write-ColorOutput "    [$timestamp] $($error.error_type) - $($error.entity_type) $($error.entity_id)" "Info"
-                    Write-ColorOutput "      Message: $($error.error_message)" "Warning"
+                foreach ($errorItem in $log_data[0..2]) {  # Show first 3 errors
+                    $timestamp = [datetime]::Parse($errorItem.timestamp).ToString("HH:mm:ss")
+                    Write-ColorOutput "    [$timestamp] $($errorItem.error_type) - $($errorItem.entity_type) $($errorItem.entity_id)" "Info"
+                    Write-ColorOutput "      Message: $($errorItem.error_message)" "Warning"
                 }
             }
         }
@@ -177,7 +177,7 @@ print('STATUS_END')
     }
 }
 
-function Cleanup-OldErrors {
+function Remove-OldErrors {
     param([string]$PodName)
     
     Write-ColorOutput "`n🧹 Cleaning up old errors..." "Header"
@@ -217,7 +217,7 @@ if ($Status) {
     Get-NotificationStatus -PodName $pod
 }
 elseif ($Cleanup) {
-    Cleanup-OldErrors -PodName $pod
+    Remove-OldErrors -PodName $pod
 }
 else {
     Test-ErrorNotification -PodName $pod

@@ -123,8 +123,8 @@ function Show-SyncSummary {
     $recentErrors = $logs | Select-String -Pattern "ERROR|Error|error|Exception|exception" | Select-Object -Last 3
     if ($recentErrors) {
         Write-Host "`n⚠️ Recent Errors:" -ForegroundColor Yellow
-        foreach ($error in $recentErrors) {
-            Write-Host "  - $($error.Line)" -ForegroundColor Red
+        foreach ($errorEntry in $recentErrors) {
+            Write-Host "  - $($errorEntry.Line)" -ForegroundColor Red
         }
     }
 }
