@@ -10,6 +10,7 @@ import threading
 import time
 import os
 from utils.logger import get_logger
+from utils.error_notifier import error_notifier
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST, REGISTRY
 from circuitbreaker import circuit
 import structlog
@@ -303,6 +304,12 @@ def run_sync_worker():
             logger.info("Sync operations completed successfully", 
                        duration_seconds=sync_duration)
             
+            # Check for error notifications (hourly)
+            try:
+                error_notifier.send_hourly_notification()
+            except Exception as e:
+                logger.error(f"Error sending hourly notification: {e}")
+            
             # Sleep for sync interval
             logger.info(f"Sleeping for {SYNC_INTERVAL} seconds until next sync")
             for i in range(SYNC_INTERVAL):
@@ -315,6 +322,22 @@ def run_sync_worker():
             logger.error(error_msg, exc_info=True)
             health_status['errors'].append(error_msg)
             sync_operations_total.labels(operation='general', status='error').inc()
+            
+            # Log to error notifier for email notifications
+            try:
+                error_notifier.log_error(
+                    error_type="sync_worker_error",
+                    entity_type="system",
+                    entity_id="sync_worker",
+                    error_message=error_msg,
+                    error_details={
+                        "exception_type": type(e).__name__,
+                        "sync_in_progress": health_status.get('sync_in_progress', False)
+                    },
+                    source="sync_worker"
+                )
+            except Exception as notifier_error:
+                logger.error(f"Failed to log error to notifier: {notifier_error}")
             
             # Don't mark as unhealthy for single sync failures
             # Allow recovery on next cycle

@@ -1,5 +1,7 @@
 from utils.logger import get_logger
 from utils.cache_manager import CacheManager
+from utils.change_tracker import ChangeTracker
+from utils.error_notifier import error_notifier
 from services.safetyamp_api import SafetyAmpAPI
 from services.viewpoint_api import ViewpointAPI
 from services.graph_api import MSGraphAPI
@@ -16,6 +18,7 @@ class EmployeeSyncer:
         self.viewpoint = ViewpointAPI()
         self.msgraph = MSGraphAPI()
         self.cache_manager = CacheManager()
+        self.change_tracker = ChangeTracker()
         logger.info("Fetching initial data for sync...")
         self.cluster_map = self._build_cluster_map()
         self.role_map = self._build_role_map()
@@ -68,7 +71,16 @@ class EmployeeSyncer:
     def _build_user_map(self):
         logger.info("Fetching existing users from SafetyAmp...")
         users = self.api_client.get_users_cached(max_age_hours=1)
-        user_map = {str(user.get("emp_id")): user for user in users.values() if "emp_id" in user}
+        
+        # Handle both list and dict formats from cache
+        if isinstance(users, dict):
+            user_map = {str(user.get("emp_id")): user for user in users.values() if "emp_id" in user}
+        elif isinstance(users, list):
+            user_map = {str(user.get("emp_id")): user for user in users if "emp_id" in user}
+        else:
+            logger.warning(f"Unexpected users data type: {type(users)}. Using empty map.")
+            user_map = {}
+            
         logger.info(f"User map built with {len(user_map)} entries.")
         return user_map
 
@@ -151,10 +163,18 @@ class EmployeeSyncer:
                 existing_value = self.format_date(existing_value) or ""
                 new_value = self.format_date(new_value) or ""
 
-            # Only include field if values are actually different
-            if existing_value != new_value:
-                # Use the original new_data value (not normalized) for the update
-                updated_fields[key] = new_data.get(key)
+            # Only include field if values are actually different AND new value is not empty/None
+            if existing_value != new_value and new_value:
+                # Use the normalized new value for the update to ensure consistency
+                if key in ["mobile_phone", "work_phone"]:
+                    updated_fields[key] = self.clean_phone(new_raw)
+                elif key == "gender":
+                    updated_fields[key] = self.normalize_gender(new_raw)
+                elif key in ["date_of_birth", "current_hire_date"]:
+                    updated_fields[key] = self.format_date(new_raw)
+                else:
+                    # For other fields, use the original value but ensure it's not None
+                    updated_fields[key] = new_raw if new_raw is not None else ""
 
         return updated_fields
 
@@ -203,6 +223,10 @@ class EmployeeSyncer:
 
     def sync(self):
         logger.info("Starting employee sync...")
+        
+        # Start change tracking
+        self.change_tracker.start_sync("employees")
+        
         employees = self.viewpoint.get_employees()
         logger.info(f"Retrieved {len(employees)} employees from Viewpoint.")
 
@@ -215,63 +239,267 @@ class EmployeeSyncer:
             "processed_employees": []
         }
 
+        # Track consecutive errors to prevent infinite error loops
+        consecutive_errors = 0
+        max_consecutive_errors = 10
+        
         for emp in employees:
+            # Safety check: stop if too many consecutive errors
+            if consecutive_errors >= max_consecutive_errors:
+                error_msg = f"Stopping sync due to {consecutive_errors} consecutive errors"
+                logger.error(error_msg)
+                self.change_tracker.log_error("sync", "system", error_msg, "safety_stop")
+                
+                # Log to error notifier for email notifications
+                error_notifier.log_error(
+                    error_type="safety_stop",
+                    entity_type="sync",
+                    entity_id="system",
+                    error_message=error_msg,
+                    error_details={
+                        "consecutive_errors": consecutive_errors,
+                        "max_consecutive_errors": max_consecutive_errors,
+                        "processed_count": len(sync_results["processed_employees"])
+                    },
+                    source="sync_safety"
+                )
+                break
+                
             emp_id = str(emp["Employee"])
             payload = self.map_employee_to_payload(emp)
             existing_user = self.existing_users.get(emp_id)
             full_name = f"{payload.get('first_name', '')} {payload.get('last_name', '')}".strip()
 
             if not payload.get("home_site_id"):
-                logger.warning(f"Skipping employee {full_name} (ID: {emp_id}): No matching site for PRDept {emp.get('PRDept')} or Job {emp.get('Job')}")
+                reason = f"No matching site for PRDept {emp.get('PRDept')} or Job {emp.get('Job')}"
+                logger.warning(f"Skipping employee {full_name} (ID: {emp_id}): {reason}")
+                self.change_tracker.log_skip("employee", emp_id, reason)
                 sync_results["skipped"] += 1
                 continue
 
             if existing_user:
                 updated_fields = self.get_updated_fields(existing_user, payload)
                 if updated_fields:
-                    self.api_client.put(f"/api/users/{existing_user['id']}", updated_fields)
-                    logger.info(f"Updated user {full_name} (ID: {emp_id}) with fields: {list(updated_fields.keys())}")
-                    sync_results["updated"] += 1
-                    sync_results["processed_employees"].append({"id": emp_id, "action": "updated", "fields": list(updated_fields.keys())})
+                    try:
+                        self.api_client.put(f"/api/users/{existing_user['id']}", updated_fields)
+                        logger.info(f"Updated user {full_name} (ID: {emp_id}) with fields: {list(updated_fields.keys())}")
+                        self.change_tracker.log_update("employee", emp_id, updated_fields, existing_user)
+                        sync_results["updated"] += 1
+                        sync_results["processed_employees"].append({"id": emp_id, "action": "updated", "fields": list(updated_fields.keys())})
+                        consecutive_errors = 0  # Reset error counter on success
+                    except requests.HTTPError as e:
+                        consecutive_errors += 1
+                        if e.response.status_code == 422:
+                            error_response = e.response.json()
+                            error_msg = f"Validation error (422): {error_response}"
+                            logger.error(f"Validation error updating user {full_name} (ID: {emp_id}): {error_msg}")
+                            self.change_tracker.log_error("employee", emp_id, error_msg, "update", payload)
+                            
+                            # Log to error notifier for email notifications
+                            error_notifier.log_error(
+                                error_type="validation_error",
+                                entity_type="employee",
+                                entity_id=emp_id,
+                                error_message=error_msg,
+                                error_details={
+                                    "status_code": 422,
+                                    "failed_fields": list(updated_fields.keys()),
+                                    "payload": payload,
+                                    "employee_name": full_name
+                                },
+                                source="sync_update"
+                            )
+                            sync_results["errors"] += 1
+                            
+                            # Log the problematic fields for debugging
+                            logger.error(f"Failed update fields for {full_name}: {updated_fields}")
+                        else:
+                            error_msg = f"HTTP error {e.response.status_code}: {str(e)}"
+                            logger.error(f"Error updating user {full_name} (ID: {emp_id}): {error_msg}")
+                            self.change_tracker.log_error("employee", emp_id, error_msg, "update", payload)
+                            
+                            # Log to error notifier for email notifications
+                            error_notifier.log_error(
+                                error_type="http_error",
+                                entity_type="employee",
+                                entity_id=emp_id,
+                                error_message=error_msg,
+                                error_details={
+                                    "status_code": e.response.status_code,
+                                    "payload": payload,
+                                    "employee_name": full_name
+                                },
+                                source="sync_update"
+                            )
+                            sync_results["errors"] += 1
+                    except Exception as e:
+                        consecutive_errors += 1
+                        error_msg = f"Unexpected error updating user: {str(e)}"
+                        logger.error(f"Error updating user {full_name} (ID: {emp_id}): {error_msg}")
+                        self.change_tracker.log_error("employee", emp_id, error_msg, "update", payload)
+                        
+                        # Log to error notifier for email notifications
+                        error_notifier.log_error(
+                            error_type="unexpected_error",
+                            entity_type="employee",
+                            entity_id=emp_id,
+                            error_message=error_msg,
+                            error_details={
+                                "exception_type": type(e).__name__,
+                                "payload": payload,
+                                "employee_name": full_name
+                            },
+                            source="sync_update"
+                        )
+                        sync_results["errors"] += 1
                 else:
                     sync_results["skipped"] += 1
             else:
                 try:
                     self.api_client.create_user(payload)
                     logger.info(f"Created user {full_name} (ID: {emp_id})")
+                    self.change_tracker.log_creation("employee", emp_id, payload)
                     sync_results["created"] += 1
                     sync_results["processed_employees"].append({"id": emp_id, "action": "created"})
+                    consecutive_errors = 0  # Reset error counter on success
                 except requests.HTTPError as e:
-                    error_response = e.response.json()
-                    logger.warning(
-                        f"Initial creation failed for {full_name} (ID: {emp_id}), attempting fallback. Reason: {error_response}")
-
-                    # Fallback logic for known validation errors
-                    fallback_payload = payload.copy()
-                    for field in ["email", "mobile_phone", "work_phone"]:
-                        fallback_payload.pop(field, None)
-                    try:
-                        self.api_client.create_user(fallback_payload)
-                        logger.info(
-                            f"Created user {full_name} (ID: {emp_id}) on fallback attempt without email/phone")
-                        sync_results["created"] += 1
-                        sync_results["processed_employees"].append({"id": emp_id, "action": "created_fallback"})
-                    except Exception as final_e:
-                        logger.error(
-                            f"Failed to create user {full_name} (ID: {emp_id}) after fallback: {str(final_e)}")
+                    consecutive_errors += 1
+                    if e.response.status_code == 422:
+                        error_response = e.response.json()
+                        error_msg = f"Validation error (422): {error_response}"
+                        logger.error(f"Validation error creating user {full_name} (ID: {emp_id}): {error_msg}")
+                        
+                        # Log to error notifier for email notifications
+                        error_notifier.log_error(
+                            error_type="validation_error",
+                            entity_type="employee",
+                            entity_id=emp_id,
+                            error_message=error_msg,
+                            error_details={
+                                "status_code": 422,
+                                "payload": payload,
+                                "employee_name": full_name,
+                                "operation": "create"
+                            },
+                            source="sync_create"
+                        )
+                        
+                        # Log the problematic payload for debugging
+                        logger.error(f"Failed create payload for {full_name}: {payload}")
+                        
+                        # Attempt fallback for known validation errors
+                        fallback_payload = payload.copy()
+                        for field in ["email", "mobile_phone", "work_phone"]:
+                            fallback_payload.pop(field, None)
+                        try:
+                            self.api_client.create_user(fallback_payload)
+                            logger.info(f"Created user {full_name} (ID: {emp_id}) on fallback attempt without email/phone")
+                            self.change_tracker.log_creation("employee", emp_id, fallback_payload)
+                            sync_results["created"] += 1
+                            sync_results["processed_employees"].append({"id": emp_id, "action": "created_fallback"})
+                            consecutive_errors = 0  # Reset on successful fallback
+                        except requests.HTTPError as fallback_e:
+                            consecutive_errors += 1
+                            if fallback_e.response.status_code == 422:
+                                fallback_error_response = fallback_e.response.json()
+                                fallback_error_msg = f"Fallback validation error (422): {fallback_error_response}"
+                                logger.error(f"Fallback failed for {full_name} (ID: {emp_id}): {fallback_error_msg}")
+                                self.change_tracker.log_error("employee", emp_id, fallback_error_msg, "create_fallback", fallback_payload)
+                                
+                                # Log fallback error to notifier
+                                error_notifier.log_error(
+                                    error_type="fallback_validation_error",
+                                    entity_type="employee",
+                                    entity_id=emp_id,
+                                    error_message=fallback_error_msg,
+                                    error_details={
+                                        "status_code": 422,
+                                        "fallback_payload": fallback_payload,
+                                        "original_payload": payload,
+                                        "employee_name": full_name
+                                    },
+                                    source="sync_create_fallback"
+                                )
+                                sync_results["errors"] += 1
+                            else:
+                                fallback_error_msg = f"Fallback HTTP error {fallback_e.response.status_code}: {str(fallback_e)}"
+                                logger.error(f"Fallback failed for {full_name} (ID: {emp_id}): {fallback_error_msg}")
+                                self.change_tracker.log_error("employee", emp_id, fallback_error_msg, "create_fallback", fallback_payload)
+                                
+                                # Log fallback error to notifier
+                                error_notifier.log_error(
+                                    error_type="fallback_http_error",
+                                    entity_type="employee",
+                                    entity_id=emp_id,
+                                    error_message=fallback_error_msg,
+                                    error_details={
+                                        "status_code": fallback_e.response.status_code,
+                                        "fallback_payload": fallback_payload,
+                                        "original_payload": payload,
+                                        "employee_name": full_name
+                                    },
+                                    source="sync_create_fallback"
+                                )
+                                sync_results["errors"] += 1
+                        except Exception as final_e:
+                            consecutive_errors += 1
+                            error_msg = f"Unexpected error in fallback: {str(final_e)}"
+                            logger.error(f"Unexpected error in fallback for {full_name} (ID: {emp_id}): {error_msg}")
+                            self.change_tracker.log_error("employee", emp_id, error_msg, "create_fallback", fallback_payload)
+                            
+                            # Log fallback error to notifier
+                            error_notifier.log_error(
+                                error_type="fallback_unexpected_error",
+                                entity_type="employee",
+                                entity_id=emp_id,
+                                error_message=error_msg,
+                                error_details={
+                                    "exception_type": type(final_e).__name__,
+                                    "fallback_payload": fallback_payload,
+                                    "original_payload": payload,
+                                    "employee_name": full_name
+                                },
+                                source="sync_create_fallback"
+                            )
+                            sync_results["errors"] += 1
+                    else:
+                        consecutive_errors += 1
+                        error_msg = f"HTTP error {e.response.status_code}: {str(e)}"
+                        logger.error(f"Error creating user {full_name} (ID: {emp_id}): {error_msg}")
+                        self.change_tracker.log_error("employee", emp_id, error_msg, "create", payload)
+                        
+                        # Log to error notifier for email notifications
+                        error_notifier.log_error(
+                            error_type="http_error",
+                            entity_type="employee",
+                            entity_id=emp_id,
+                            error_message=error_msg,
+                            error_details={
+                                "status_code": e.response.status_code,
+                                "payload": payload,
+                                "employee_name": full_name,
+                                "operation": "create"
+                            },
+                            source="sync_create"
+                        )
                         sync_results["errors"] += 1
 
-        # Update cache with sync results
+                # Update cache with sync results
         self._update_cache_after_sync(sync_results)
-        
+
+        # End change tracking and get summary
+        session_summary = self.change_tracker.end_sync()
+
         logger.info(f"Employee sync completed: {sync_results['created']} created, {sync_results['updated']} updated, {sync_results['skipped']} skipped, {sync_results['errors']} errors")
-        
+
         return {
             "processed": len(employees),
             "created": sync_results["created"],
             "updated": sync_results["updated"],
             "skipped": sync_results["skipped"],
-            "errors": sync_results["errors"]
+            "errors": sync_results["errors"],
+            "session_id": session_summary["session_id"],
+            "duration_seconds": session_summary["summary"]["duration_seconds"]
         }
 
     def _update_cache_after_sync(self, sync_results):

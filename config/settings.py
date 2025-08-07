@@ -47,9 +47,9 @@ if SQL_AUTH_MODE == "managed_identity":
         "Authentication=ActiveDirectoryMSI;"
         "Encrypt=yes;"
         "TrustServerCertificate=yes;"
-        "Connection Timeout=120;"
-        "Command Timeout=120;"
-        "Connect Timeout=120;"
+        "Connection Timeout=300;"
+        "Command Timeout=300;"
+        "Connect Timeout=300;"
     )
 elif SQL_AUTH_MODE == "sql_auth":
     # Fallback to SQL Authentication using secrets
@@ -63,9 +63,9 @@ elif SQL_AUTH_MODE == "sql_auth":
         f"PWD={SQL_PASSWORD};"
         "Encrypt=yes;"
         "TrustServerCertificate=yes;"
-        "Connection Timeout=120;"
-        "Command Timeout=120;"
-        "Connect Timeout=120;"
+        "Connection Timeout=300;"
+        "Command Timeout=300;"
+        "Connect Timeout=300;"
     )
 else:
     raise ValueError(f"Invalid SQL_AUTH_MODE: {SQL_AUTH_MODE}. Must be 'managed_identity' or 'sql_auth'")
@@ -73,7 +73,7 @@ else:
 # Connection Pool Settings
 DB_POOL_SIZE = int(os.getenv('DB_POOL_SIZE', '5'))
 DB_MAX_OVERFLOW = int(os.getenv('DB_MAX_OVERFLOW', '10'))
-DB_POOL_TIMEOUT = int(os.getenv('DB_POOL_TIMEOUT', '60'))
+DB_POOL_TIMEOUT = int(os.getenv('DB_POOL_TIMEOUT', '300'))
 DB_POOL_RECYCLE = int(os.getenv('DB_POOL_RECYCLE', '3600'))
 
 # === Email Settings ===

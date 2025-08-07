@@ -97,10 +97,30 @@ spec:
       serviceAccountName: safety-amp-workload-identity-sa  # Use Workload Identity SA
       imagePullSecrets:
       - name: acr-secret
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.azure.com/mode
+                operator: In
+                values:
+                - user
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - safety-amp
+              topologyKey: kubernetes.io/hostname
       containers:
       - name: safety-amp-agent
         # Update this image to your actual SafetyAmp Python agent image
-        image: iiusacr.azurecr.io/safety-amp-agent:latest
+        image: safetyampacr.azurecr.io/safetyamp-integration:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
@@ -255,11 +275,11 @@ spec:
               key: REDIS_PASSWORD
         resources:
           requests:
-            memory: "768Mi"  # Increased for larger batches
-            cpu: "300m"      # Increased for processing
+            memory: "256Mi"  # Reduced to comply with policy
+            cpu: "100m"      # Reduced to comply with policy
           limits:
-            memory: "1.5Gi"  # Allow for spikes
-            cpu: "1500m"     # Higher ceiling for 5000 records/hour
+            memory: "512Mi"  # Reduced to comply with policy (max 1Gi)
+            cpu: "200m"      # Reduced to comply with policy (max 200m)
         livenessProbe:
           httpGet:
             path: /health
