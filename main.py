@@ -11,7 +11,7 @@ import time
 import os
 from utils.logger import get_logger
 from utils.error_notifier import error_notifier
-from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST, REGISTRY
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST, REGISTRY, start_http_server
 from circuitbreaker import circuit
 import structlog
 
@@ -82,6 +82,8 @@ records_processed_total = get_or_create_metric(Counter, 'safetyamp_records_proce
 current_sync_operations = get_or_create_metric(Gauge, 'safetyamp_current_sync_operations', 'Current ongoing sync operations')
 health_check_duration = get_or_create_metric(Histogram, 'safetyamp_health_check_duration_seconds', 'Health check duration')
 database_connections_active = get_or_create_metric(Gauge, 'safetyamp_database_connections_active', 'Active database connections')
+sync_in_progress_gauge = get_or_create_metric(Gauge, 'safetyamp_sync_in_progress', 'Whether a sync is currently in progress (0/1)')
+last_sync_timestamp_seconds = get_or_create_metric(Gauge, 'safetyamp_last_sync_timestamp_seconds', 'Epoch seconds of last completed sync')
 
 # Global health status with enhanced tracking
 health_status = {
@@ -233,6 +235,7 @@ def run_sync_worker():
             logger.info("Starting sync operations")
             health_status['sync_in_progress'] = True
             current_sync_operations.inc()
+            sync_in_progress_gauge.set(1)
             
             start_time = time.time()
             
@@ -300,6 +303,8 @@ def run_sync_worker():
             health_status['ready'] = True
             health_status['errors'] = []  # Clear previous errors
             sync_duration = time.time() - start_time
+            # Update last completed sync timestamp metric
+            last_sync_timestamp_seconds.set(health_status['last_sync'])
             
             logger.info("Sync operations completed successfully", 
                        duration_seconds=sync_duration)
@@ -347,6 +352,7 @@ def run_sync_worker():
         finally:
             health_status['sync_in_progress'] = False
             current_sync_operations.dec()
+            sync_in_progress_gauge.set(0)
 
 def signal_handler(signum, frame):
     """Enhanced graceful shutdown handler"""
@@ -392,5 +398,12 @@ if __name__ == "__main__":
     sync_thread = threading.Thread(target=run_sync_worker, daemon=True)
     sync_thread.start()
     
+    # Start dedicated Prometheus metrics HTTP server on :9090 for scrapers
+    try:
+        start_http_server(9090, addr="0.0.0.0")
+        logger.info("Prometheus metrics server started", extra={"port": 9090})
+    except Exception as e:
+        logger.error(f"Failed to start Prometheus metrics server on :9090: {e}")
+
     # Start Flask app
     app.run(host='0.0.0.0', port=8080, threaded=True)

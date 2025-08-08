@@ -2,10 +2,46 @@ groups:
   - name: safetyamp.rules
     rules:
       - alert: SafetyAmpCacheStale
-        expr: time() - max by (cache) (safetyamp_cache_last_updated_timestamp_seconds) > 3600
+        expr: (time() - max by (cache) (safetyamp_cache_last_updated_timestamp_seconds)) > (max by (cache) (safetyamp_cache_ttl_seconds) * 1.25)
         for: 15m
         labels:
           severity: warning
+          service: safety-amp
+          team: integrations
         annotations:
           summary: "SafetyAmp cache is stale"
-          description: "Cache {{ $labels.cache }} has not updated in >60 minutes."
+          description: "Cache {{ $labels.cache }} exceeded TTL by >25%."
+          runbook_url: "file://deploy/dev/observability/RUNBOOK.md#high-log-ingestion-cost"
+      - alert: SafetyAmpErrorSurge
+        expr: sum(increase(safetyamp_errors_total[15m])) > 20
+        for: 5m
+        labels:
+          severity: critical
+          service: safety-amp
+          team: integrations
+        annotations:
+          summary: "Error surge detected"
+          description: "More than 20 errors recorded in the last 15 minutes. Investigate recent changes and logs."
+          runbook_url: "file://deploy/dev/observability/RUNBOOK.md#alert-noise"
+      - alert: SafetyAmpMissingSync
+        expr: time() - max(safetyamp_last_sync_timestamp_seconds) > 5400
+        for: 10m
+        labels:
+          severity: warning
+          service: safety-amp
+          team: integrations
+        annotations:
+          summary: "Missing sync activity"
+          description: "No completed sync detected for >90 minutes. Verify worker health and /ready endpoint."
+          runbook_url: "file://deploy/dev/observability/RUNBOOK.md#dashboards-blank-metrics"
+      - alert: SafetyAmpLongRunningSyncP95
+        expr: histogram_quantile(0.95, sum by (le, operation) (rate(safetyamp_sync_duration_seconds_bucket[15m]))) > 600
+        for: 10m
+        labels:
+          severity: warning
+          service: safety-amp
+          team: integrations
+        annotations:
+          summary: "Long-running syncs (P95)"
+          description: "P95 of sync duration exceeds 10 minutes for at least one operation. Check source/destination APIs."
+          runbook_url: "file://deploy/dev/observability/RUNBOOK.md#dashboards-blank-logs"

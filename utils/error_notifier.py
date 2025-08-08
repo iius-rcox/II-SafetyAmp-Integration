@@ -15,8 +15,15 @@ from collections import defaultdict
 from utils.logger import get_logger
 from utils.emailer import send_error_email
 from utils.change_tracker import ChangeTracker
+from utils.metrics import get_or_create_counter
 
 logger = get_logger("error_notifier")
+
+_errors_counter = get_or_create_counter(
+    'safetyamp_errors_total',
+    'Total error events by error type, entity type, and source',
+    labelnames=['error_type', 'entity_type', 'source']
+)
 
 class ErrorNotifier:
     """Manages error collection and hourly email notifications"""
@@ -70,6 +77,11 @@ class ErrorNotifier:
         self._save_errors()
         
         logger.info(f"Logged error: {error_type} for {entity_type} {entity_id}")
+        # Increment Prometheus error counter (low cardinality)
+        try:
+            _errors_counter.labels(error_type=error_type, entity_type=entity_type, source=source).inc()
+        except Exception:
+            pass
     
     def get_errors_since(self, hours: int = 1) -> List[Dict[str, Any]]:
         """Get errors from the last N hours"""

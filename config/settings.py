@@ -93,6 +93,11 @@ REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)  # No Redis password by defau
 # === Logging ===
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 LOG_DIR = os.getenv("LOG_DIR", "output/logs")
+LOG_FORMAT = os.getenv("LOG_FORMAT", "text").lower()  # 'text' or 'json'
+STRUCTURED_LOGGING_ENABLED = (
+    os.getenv("STRUCTURED_LOGGING_ENABLED", "").lower() in ("1", "true", "yes")
+    or LOG_FORMAT == "json"
+)
 
 # === Runtime Settings ===
 SYNC_INTERVAL_MINUTES = int(os.getenv("SYNC_INTERVAL_MINUTES", "60"))

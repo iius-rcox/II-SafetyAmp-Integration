@@ -6,7 +6,7 @@ This repository contains Kubernetes configuration files and deployment scripts f
 
 ### **AKS Cluster: dev-aks**
 - **Location:** South Central US
-- **Resource Group:** dev-group
+- **Resource Group:** rg-prod
 - **Kubernetes Version:** v1.32.5
 - **Network:** Azure CNI Overlay with Cilium
 - **Private Cluster:** ✅ Enabled
@@ -54,7 +54,7 @@ This repository contains Kubernetes configuration files and deployment scripts f
 ### Get Cluster Credentials
 
 ```bash
-az aks get-credentials --resource-group dev-group --name dev-aks
+az aks get-credentials --resource-group rg-prod --name dev-aks
 ```
 
 ### Deploy Everything

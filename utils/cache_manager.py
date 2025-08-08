@@ -13,8 +13,26 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 from utils.logger import get_logger
 import redis
+from utils.metrics import get_or_create_gauge
 
 logger = get_logger("cache_manager")
+
+# Prometheus gauges for cache telemetry (low-cardinality per cache name)
+_cache_last_updated_ts = get_or_create_gauge(
+    'safetyamp_cache_last_updated_timestamp_seconds',
+    'Epoch seconds of last cache update',
+    labelnames=['cache']
+)
+_cache_items_total = get_or_create_gauge(
+    'safetyamp_cache_items_total',
+    'Number of items stored for a given cache',
+    labelnames=['cache']
+)
+_cache_ttl_seconds = get_or_create_gauge(
+    'safetyamp_cache_ttl_seconds',
+    'Configured TTL seconds for a given cache (remaining TTL when saved)',
+    labelnames=['cache']
+)
 
 class CacheManager:
     """Enhanced cache manager with Redis support and direct update capabilities"""
@@ -90,6 +108,13 @@ class CacheManager:
                             "size_bytes": size,
                             "expires_in": f"{ttl//3600}h {(ttl%3600)//60}m" if ttl > 0 else "expired"
                         }
+                        # Update gauges opportunistically
+                        try:
+                            _cache_items_total.labels(cache=cache_name).set(size)
+                            if ttl is not None and ttl >= 0:
+                                _cache_ttl_seconds.labels(cache=cache_name).set(ttl)
+                        except Exception:
+                            pass
                 
                 return cache_info
             except Exception as e:
@@ -214,6 +239,7 @@ class CacheManager:
                    metadata: Optional[Dict[str, Any]] = None) -> bool:
         """Save data to both Redis and file cache"""
         success = True
+        now_ts = time.time()
         
         # Save to Redis
         if self.redis_client:
@@ -228,11 +254,11 @@ class CacheManager:
                 # Save metadata
                 if metadata is None:
                     metadata = {
-                        "created": time.time(),
+                        "created": now_ts,
                         "items": len(data),
                         "source": "api"
                     }
-                metadata["last_updated"] = time.time()
+                metadata["last_updated"] = now_ts
                 self.redis_client.setex(metadata_key, ttl_seconds, json.dumps(metadata))
                 
                 logger.info(f"Saved {len(data)} items to Redis cache: {cache_name}")
@@ -250,11 +276,11 @@ class CacheManager:
             
             if metadata is None:
                 metadata = {
-                    "created": time.time(),
+                    "created": now_ts,
                     "items": len(data),
                     "source": "api"
                 }
-            metadata["last_updated"] = time.time()
+            metadata["last_updated"] = now_ts
             
             with open(metadata_file, 'w') as f:
                 json.dump(metadata, f, indent=2)
@@ -264,6 +290,15 @@ class CacheManager:
             logger.error(f"File save failed for {cache_name}: {e}")
             success = False
         
+        # Update Prometheus gauges
+        try:
+            _cache_items_total.labels(cache=cache_name).set(len(data))
+            _cache_last_updated_ts.labels(cache=cache_name).set(now_ts)
+            # Use full TTL horizon for visibility
+            _cache_ttl_seconds.labels(cache=cache_name).set(self.cache_ttl_hours * 3600)
+        except Exception:
+            pass
+
         return success
     
     def update_cache_directly(self, cache_name: str, data: List[Dict[str, Any]], 
@@ -421,6 +456,11 @@ class CacheManager:
                 json.dump(metadata, f, indent=2)
             
             logger.info(f"Marked cache {cache_name} as refreshed")
+            # Also bump last updated timestamp gauge (no item count change)
+            try:
+                _cache_last_updated_ts.labels(cache=cache_name).set(time.time())
+            except Exception:
+                pass
             return True
         except Exception as e:
             logger.error(f"Error marking cache {cache_name} as refreshed: {e}")

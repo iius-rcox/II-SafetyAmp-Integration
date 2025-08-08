@@ -2,13 +2,110 @@
   "title": "SafetyAmp Sync Overview (Placeholder)",
   "editable": true,
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "timezone": "browser",
-  "panels": [],
-  "annotations": {
-    "list": []
-  },
-  "templating": {
-    "list": []
-  }
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Sync In Progress",
+      "targets": [
+        { "expr": "max(safetyamp_sync_in_progress)" }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "textMode": "value",
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "Idle" }, "1": { "text": "Running" } } }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [{"color":"green","value":null},{"color":"red","value":1}] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 0 }
+    },
+    {
+      "type": "stat",
+      "title": "Minutes Since Last Sync",
+      "targets": [
+        { "expr": "(time() - max(safetyamp_last_sync_timestamp_seconds)) / 60" }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "textMode": "value",
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "mode": "absolute", "steps": [{"color":"green","value":null},{"color":"orange","value":60},{"color":"red","value":90}] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 0 }
+    },
+    {
+      "type": "stat",
+      "title": "Cache Last Update (minutes by cache)",
+      "targets": [
+        { "expr": "(time() - max by (cache) (safetyamp_cache_last_updated_timestamp_seconds)) / 60" }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^.*$/", "values": false },
+        "orientation": "auto",
+        "textMode": "value",
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 }
+    },
+    {
+      "type": "bargauge",
+      "title": "Cache Items (per cache)",
+      "targets": [
+        { "expr": "max by (cache) (safetyamp_cache_items_total)" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 }
+    },
+    {
+      "type": "bargauge",
+      "title": "Recent Sync Runs (24h) by operation/status",
+      "targets": [
+        { "expr": "sum by (operation, status) (increase(safetyamp_sync_operations_total[24h]))" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Sync Duration P95 by operation",
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum by (le, operation) (rate(safetyamp_sync_duration_seconds_bucket[15m])))" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 }
+    },
+    {
+      "type": "bargauge",
+      "title": "Changes (24h) by Entity/Operation",
+      "targets": [
+        { "expr": "sum by (entity_type, operation) (increase(safetyamp_changes_total[24h]))" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 }
+    },
+    {
+      "type": "bargauge",
+      "title": "Errors (24h) by Type/Entity",
+      "targets": [
+        { "expr": "sum by (error_type, entity_type) (increase(safetyamp_errors_total[24h]))" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 }
+    }
+  ],
+  "annotations": { "list": [] },
+  "templating": { "list": [] }
 }

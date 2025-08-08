@@ -13,8 +13,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from utils.logger import get_logger
+from utils.metrics import get_or_create_counter
 
 logger = get_logger("change_tracker")
+
+_changes_counter = get_or_create_counter(
+    'safetyamp_changes_total',
+    'Total change events by entity type, operation, and status',
+    labelnames=['entity_type', 'operation', 'status']
+)
 
 class ChangeTracker:
     """Tracks all changes made during sync operations"""
@@ -73,6 +80,10 @@ class ChangeTracker:
         self.current_session["changes"]["created"].append(change_record)
         self.current_session["summary"]["total_created"] += 1
         self.current_session["summary"]["total_processed"] += 1
+        try:
+            _changes_counter.labels(entity_type=entity_type, operation='created', status='success').inc()
+        except Exception:
+            pass
         
         logger.info(f"Created {entity_type} {entity_id} in {target_system}")
         
@@ -95,6 +106,10 @@ class ChangeTracker:
         self.current_session["changes"]["updated"].append(change_record)
         self.current_session["summary"]["total_updated"] += 1
         self.current_session["summary"]["total_processed"] += 1
+        try:
+            _changes_counter.labels(entity_type=entity_type, operation='updated', status='success').inc()
+        except Exception:
+            pass
         
         logger.info(f"Updated {entity_type} {entity_id} in {target_system} with changes: {list(changes.keys())}")
         
@@ -115,6 +130,10 @@ class ChangeTracker:
         self.current_session["changes"]["deleted"].append(change_record)
         self.current_session["summary"]["total_deleted"] += 1
         self.current_session["summary"]["total_processed"] += 1
+        try:
+            _changes_counter.labels(entity_type=entity_type, operation='deleted', status='success').inc()
+        except Exception:
+            pass
         
         logger.info(f"Deleted {entity_type} {entity_id} from {target_system} - Reason: {reason}")
         
@@ -134,6 +153,10 @@ class ChangeTracker:
         self.current_session["changes"]["skipped"].append(skip_record)
         self.current_session["summary"]["total_skipped"] += 1
         self.current_session["summary"]["total_processed"] += 1
+        try:
+            _changes_counter.labels(entity_type=entity_type, operation='skipped', status='success').inc()
+        except Exception:
+            pass
         
         logger.warning(f"Skipped {entity_type} {entity_id} - Reason: {reason}")
         
@@ -156,6 +179,10 @@ class ChangeTracker:
         self.current_session["changes"]["errors"].append(error_record)
         self.current_session["summary"]["total_errors"] += 1
         self.current_session["summary"]["total_processed"] += 1
+        try:
+            _changes_counter.labels(entity_type=entity_type, operation=operation or 'unknown', status='error').inc()
+        except Exception:
+            pass
         
         logger.error(f"Error {operation} {entity_type} {entity_id}: {error}")
         

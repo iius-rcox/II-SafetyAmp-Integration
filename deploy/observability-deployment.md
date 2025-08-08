@@ -53,6 +53,7 @@ Notes:
 - Gauge: `safetyamp_sync_in_progress` (0/1)
 - Gauge: `safetyamp_last_sync_timestamp_seconds`
 
+
 Guidance:
 - Keep label sets low-cardinality (no IDs)
 - Timestamps as epoch seconds
@@ -402,3 +403,340 @@ kubectl create secret generic log-analytics-secrets \
 ## 15) Summary
 
 This plan blends Managed Prometheus/Grafana (fast metrics, alerting) with Azure Monitor Workbooks (structured logs, governance). It uses the app’s existing `/metrics` and augments metrics/logging in a minimal, low-risk manner to deliver the four required views with near real-time performance.
+
+---
+
+## 16) Recommendations and Phased Rollout
+
+- Start simple:
+  - Ship existing sync metrics first; stand up Managed Prometheus + Managed Grafana and basic panels
+  - Add cache/change/error metrics next; only add Fluent Bit sidecar if Container Insights proves insufficient
+- Establish baseline:
+  - Run for 7 days to capture baseline before enabling alerts; use percentiles to avoid noisy thresholds
+- Feature flag structured logging:
+  - Add an environment toggle (e.g., `STRUCTURED_LOGGING_ENABLED=true`) or reuse `LOG_FORMAT=json` to control JSON log volume during rollout
+  - Gradually enable in one replica, then all
+- KQL resilience:
+  - Use `todynamic()` and `coalesce()` to handle malformed JSON safely; guard with `isnotnull()` checks
+- Gradual rollout:
+  - Dev → Staging → Prod; canaries for metrics/logging enabled pods; monitor ingestion volume and costs
+
+---
+
+## 17) Exact Instrumentation Targets (Application)
+
+Implement missing metrics in these files:
+- `utils/cache_manager.py`
+  - Emit: `safetyamp_cache_last_updated_timestamp_seconds{cache}`, `safetyamp_cache_items_total{cache}`, and optionally `safetyamp_cache_ttl_seconds{cache}` when `save_cache`, `mark_cache_refreshed`, and `get_cache_info` run
+- `utils/change_tracker.py`
+  - Increment: `safetyamp_changes_total{entity_type,operation,status}` in `log_creation`, `log_update`, `log_deletion`, `log_skip`
+- `utils/error_notifier.py`
+  - Increment: `safetyamp_errors_total{error_type,entity_type,source}` in `log_error`
+- `main.py`
+  - Maintain: `safetyamp_sync_in_progress` gauge around `run_sync_worker`
+  - Set: `safetyamp_last_sync_timestamp_seconds` on successful cycle completion
+
+Status:
+- Currently implemented: sync op counters + durations (`safetyamp_sync_operations_total`, `safetyamp_sync_duration_seconds`, `safetyamp_records_processed_total`)
+- Missing: cache, changes, errors, sync state gauges — required for dashboards/alerts in Sections 6/8
+
+---
+
+## 18) Workbook Parameterization and KQL Hardening
+
+Add workbook parameters to avoid hard-coded container names and to tolerate malformed JSON:
+
+- Define parameters in Workbook:
+  - `containerName` (default: `safety-amp-agent`)
+  - `namespace` (default: `safety-amp`)
+
+- Use in queries:
+```kusto
+let containerName = '{containerName}';
+let ns = '{namespace}';
+ContainerLogV2
+| where TimeGenerated >= ago(24h)
+| where Namespace == ns
+| where ContainerName =~ containerName
+| extend d = todynamic(LogMessage)
+| where isnotnull(d)
+```
+
+- Safer projections with fallbacks:
+```kusto
+| extend op = tostring(d.operation), et = tostring(d.entity_type)
+| extend metrics = todynamic(d.metrics)
+| extend duration = todouble(metrics.session_duration_seconds)
+| project-away LogMessage
+```
+
+Replace earlier examples with the pattern above where applicable or provide an alternate “hardened” version alongside.
+
+### 18.1 Workbook parameters (define once)
+
+Add parameters in the Workbook UI (or via ARM):
+- `containerName` (string) default: `safety-amp-agent`
+- `namespace` (string) default: `safety-amp`
+
+Example ARM parameters block (inline in workbook template):
+```json
+{
+  "id": "containerName",
+  "version": "KqlParameterItem/1.0",
+  "name": "containerName",
+  "type": 1,
+  "value": "safety-amp-agent"
+},
+{
+  "id": "namespace",
+  "version": "KqlParameterItem/1.0",
+  "name": "namespace",
+  "type": 1,
+  "value": "safety-amp"
+}
+```
+
+### 18.2 Parameterized and hardened KQL examples
+
+Use these forms instead of hard-coding container names. All queries conform to:
+```kusto
+let containerName = '{containerName}';
+let ns = '{namespace}';
+ContainerLogV2
+| where TimeGenerated >= ago(24h)
+| where Namespace == ns
+| where ContainerName =~ containerName
+| extend d = todynamic(LogMessage)
+| where isnotnull(d)
+```
+
+- Last Cache Update (parameterized):
+```kusto
+let containerName = '{containerName}';
+let ns = '{namespace}';
+ContainerLogV2
+| where TimeGenerated >= ago(24h)
+| where Namespace == ns
+| where ContainerName =~ containerName
+| extend d = todynamic(LogMessage)
+| where isnotnull(d)
+| where tostring(d.operation) in ("cache_status", "cache_update") or LogMessage contains "cache_status" or LogMessage contains "cache_update"
+| extend cache_name = tostring(d.cache_name),
+         metrics = todynamic(d.metrics),
+         cache_size_bytes = todouble(metrics.cache_size_bytes),
+         items_cached = todouble(metrics.items_cached),
+         cache_ttl_seconds = todouble(metrics.cache_ttl_seconds),
+         cache_valid = tobool(metrics.cache_valid)
+| where isnotempty(cache_name)
+| summarize LastUpdate = max(TimeGenerated),
+            Size = max(cache_size_bytes),
+            Items = max(items_cached),
+            TTL = max(cache_ttl_seconds),
+            Valid = max(cache_valid)
+  by CacheName = cache_name
+| extend AgeMinutes = round((now() - LastUpdate) / 1m, 0)
+```
+
+- Recent Sync Runs (parameterized):
+```kusto
+let containerName = '{containerName}';
+let ns = '{namespace}';
+ContainerLogV2
+| where TimeGenerated >= ago(24h)
+| where Namespace == ns
+| where ContainerName =~ containerName
+| extend d = todynamic(LogMessage)
+| where isnotnull(d)
+| where tostring(d.operation) in ("sync_start", "sync_complete", "sync_failed")
+| extend session_id = tostring(d.session_id),
+         sync_type = tostring(d.sync_type),
+         metrics = todynamic(d.metrics),
+         duration = todouble(metrics.session_duration_seconds),
+         records_processed = todouble(metrics.records_processed)
+| where isnotempty(session_id)
+| summarize StartTime = minif(TimeGenerated, tostring(d.operation)=="sync_start"),
+            EndTime = maxif(TimeGenerated, tostring(d.operation) in ("sync_complete","sync_failed")),
+            Status = iff(countif(tostring(d.operation)=="sync_complete")>0, "Success",
+                         iff(countif(tostring(d.operation)=="sync_failed")>0, "Failed", "Running")),
+            RecordsProcessed = maxif(records_processed, tostring(d.operation)=="sync_complete"),
+            DurationSeconds = maxif(duration, tostring(d.operation)=="sync_complete")
+  by SessionId = session_id, SyncType = sync_type
+| order by StartTime desc
+```
+
+- Changes/Errors (parameterized):
+```kusto
+let containerName = '{containerName}';
+let ns = '{namespace}';
+ContainerLogV2
+| where TimeGenerated >= ago(24h)
+| where Namespace == ns
+| where ContainerName =~ containerName
+| extend d = todynamic(LogMessage)
+| where isnotnull(d)
+| extend op = tostring(d.operation), et = tostring(d.entity_type), err = tostring(d.error_type)
+| where op in ("created","updated","deleted","error_logged") or LogLevel == "Error"
+| summarize Count = count()
+  by Action = op, EntityType = coalesce(et, "unknown"), ErrorType = coalesce(err, "")
+| order by Count desc
+```
+
+---
+
+## 19) Fluent Bit Sidecar — Full Deployment Example
+
+The ConfigMap alone is insufficient. Mount shared volumes so the sidecar can tail app-written files, and inject workspace secrets.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: safety-amp-agent
+  namespace: safety-amp
+spec:
+  template:
+    spec:
+      volumes:
+        - name: changes-volume
+          emptyDir: {}
+        - name: errors-volume
+          emptyDir: {}
+        - name: fluentbit-config
+          configMap:
+            name: fluentbit-config
+      containers:
+        - name: safety-amp-agent
+          image: safetyampacr.azurecr.io/safetyamp-integration:latest
+          volumeMounts:
+            - name: changes-volume
+              mountPath: /app/output/changes
+            - name: errors-volume
+              mountPath: /app/output/errors
+          env:
+            - name: STRUCTURED_LOGGING_ENABLED
+              value: "true"  # feature flag
+        - name: fluentbit-sidecar
+          image: fluent/fluent-bit:2.2.0
+          volumeMounts:
+            - name: changes-volume
+              mountPath: /app/output/changes
+              readOnly: true
+            - name: errors-volume
+              mountPath: /app/output/errors
+              readOnly: true
+            - name: fluentbit-config
+              mountPath: /fluent-bit/etc
+          env:
+            - name: WORKSPACE_ID
+              valueFrom:
+                secretKeyRef:
+                  name: log-analytics-secrets
+                  key: workspace-id
+            - name: WORKSPACE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: log-analytics-secrets
+                  key: workspace-key
+```
+
+Secret for workspace credentials:
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: log-analytics-secrets
+  namespace: safety-amp
+type: Opaque
+stringData:
+  workspace-id: "<LAW_CUSTOMER_ID>"
+  workspace-key: "<LAW_PRIMARY_KEY>"
+```
+
+Notes:
+- Ensure the app writes change/error files under `/app/output/changes` and `/app/output/errors` (default paths already align)
+- Consider scoping tail inputs to limit volume (e.g., only latest files)
+
+---
+
+## 20) Dashboard Panel Clarifications
+
+- Current Sync State: split into two panels for clarity
+  - Panel A (Stat): Sync in progress
+    ```promql
+    max(safetyamp_sync_in_progress)
+    ```
+    Value mappings: 0 → “Idle”, 1 → “Running”
+  - Panel B (Stat): Minutes since last sync
+    ```promql
+    (time() - max(safetyamp_last_sync_timestamp_seconds)) / 60
+    ```
+    Thresholds: warn > 60, critical > 90 (tune to schedule)
+
+- Add panel descriptions/tooltips documenting expected ranges and SLOs
+
+---
+
+## 21) Alert Thresholds After Baseline
+
+After 7-day baseline, set initial thresholds:
+- Cache staleness: > TTL + 25% buffer
+- Error surge: 95th percentile of 15m increases + 20% buffer
+- Missing sync: expected cadence + 50% buffer
+- Long-running syncs: P95 duration + 25% buffer
+
+Review/adjust monthly based on incident postmortems.
+
+---
+
+## 22) Baseline-First Alert Rollout
+
+- Baseline window: operate without alerts for 7 days; record 15m windows of error increases, sync durations, and cache update intervals
+- Initial thresholds (examples):
+  - Error surge: `sum(increase(safetyamp_errors_total[15m])) > P95_baseline * 1.2`
+  - Cache staleness: `TTL + 25%` buffer
+  - Missing sync: `expected cadence + 50%`
+  - Long-running syncs: `P95 + 25%`
+- Gradual enablement: start with warning-only; escalate to critical after validation
+
+## 23) CI/CD Hooks and Post-Deploy Validation
+
+- Pipeline gates:
+  - Lint/format and unit tests
+  - Deploy to dev; wait for `DeploymentAvailable` and `/ready` success
+  - Post-deploy probes:
+    - Query metrics endpoint and assert presence of: `safetyamp_sync_in_progress`, `safetyamp_last_sync_timestamp_seconds`, `safetyamp_changes_total`, `safetyamp_errors_total`, cache gauges
+    - If Fluent Bit used: check pod has `fluentbit-sidecar` and ConfigMap mounted
+- Observability smoke tests:
+  - Trigger a small sync cycle and confirm metrics increments
+  - Run a sample error path (mock) and confirm `safetyamp_errors_total` increments
+
+## 24) Panel Design Clarifications
+
+- Split Current Sync State into two stat panels (Running/Idle, Minutes Since Last Sync) with thresholds and value mappings (example JSON in `deploy/dev/observability/grafana/safetyamp-sync-overview.json`)
+- Add panel descriptions and SLO notes to aid interpretation
+
+---
+
+## 25) Pre-Deploy Assets (Dev Only)
+
+- Scripts:
+  - `deploy/dev/observability/scripts/metrics-smoke-test.ps1` and `.sh`
+- Grafana:
+  - `deploy/dev/observability/grafana/safetyamp-sync-overview.json`
+  - `deploy/dev/observability/grafana/safetyamp-observability.json`
+- Prometheus:
+  - `deploy/dev/observability/prometheus/safetyamp-alerts.yaml` (placeholders)
+  - `deploy/dev/observability/prometheus/servicemonitor.yaml` (self-hosted only)
+- Workbooks:
+  - `deploy/dev/observability/workbooks/workbook-deployment-template.json` (with parameters)
+- K8s:
+  - `deploy/dev/observability/k8s/fluentbit-config.yaml` and `fluentbit-sidecar-example.yaml`
+  - `deploy/dev/observability/k8s/networkpolicy-monitoring.yaml`
+- Docs:
+  - `deploy/dev/observability/ALERT_DESIGN.md`
+  - `deploy/dev/observability/SECURITY_GOVERNANCE.md`
+  - `deploy/dev/observability/COST_GUARDRAILS.md`
+  - `deploy/dev/observability/CI_STEPS.md`
+  - `deploy/dev/observability/RUNBOOK.md`
+
+Use these for reviews and local verification before any cluster rollout.
