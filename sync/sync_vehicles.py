@@ -36,6 +36,12 @@ class VehicleSync:
             "updated_by": "system",
             "deleted_at": None
         }
+
+        # Default site and asset type fallbacks
+        # When a vehicle cannot be resolved to a site via driver/home_site,
+        # default all vehicles to site 5145 and use that site's "Vehicles" asset type (3183)
+        self.default_site_id = 5145
+        self.default_vehicle_asset_type_id = 3183
         
         # Cache for SafetyAmp users lookup (emp_id -> user_id)
         self.safetyamp_users_cache = {}
@@ -63,21 +69,24 @@ class VehicleSync:
             
             # Look for a vehicle asset type that matches the site
             for asset_type_id, asset_type in asset_types.items():
-                if (asset_type.get("name", "").lower() in ["vehicles", "vehicle"] and 
-                    asset_type.get("site_id") == site_id):
+                name = str(asset_type.get("name", "")).lower()
+                at_site_id = asset_type.get("site_id")
+                # Normalize site id types
+                try:
+                    at_site_id_int = int(at_site_id) if at_site_id is not None else None
+                    site_id_int = int(site_id) if site_id is not None else None
+                except Exception:
+                    at_site_id_int = at_site_id
+                    site_id_int = site_id
+                if ("vehicle" in name and at_site_id_int is not None and site_id_int is not None and at_site_id_int == site_id_int):
                     return int(asset_type_id)
             
-            # If no site-specific vehicle type found, look for any vehicle type
-            for asset_type_id, asset_type in asset_types.items():
-                if asset_type.get("name", "").lower() in ["vehicles", "vehicle"]:
-                    return int(asset_type_id)
-            
-            # Fallback to the default vehicle type
-            return 3183
+            # No suitable asset type found
+            return None
             
         except Exception as e:
             logger.error(f"Error getting asset type for site {site_id}: {e}")
-            return 3183
+            return None
     
     def _get_site_for_asset_type(self, asset_type_id):
         """Get the site ID that an asset type is valid for"""
@@ -177,6 +186,10 @@ class VehicleSync:
             created_at = vehicle.get("createdAtTime", "")
             updated_at = vehicle.get("updatedAtTime", "")
             
+            # Force all vehicles to default site and asset type per request
+            site_to_use = self.default_site_id
+            resolved_asset_type_id = self.default_vehicle_asset_type_id
+
             # Build SafetyAmp asset data
             asset_data = {
                 # Direct mappings
@@ -189,7 +202,8 @@ class VehicleSync:
                 
                 # Derived mappings
                 "code": license_plate or f"Unit_{vehicle_id[-4:]}" if vehicle_id else "",
-                "asset_type_id": 3183,  # Use default vehicle asset type
+                # Always include asset_type_id (will be resolved for default site)
+                "asset_type_id": resolved_asset_type_id,
                 "status": self.status_mapping.get(regulation_mode, 1),
                 "location_id": None,  # Optional field
                 
@@ -199,9 +213,10 @@ class VehicleSync:
                 "deleted_at": self.defaults["deleted_at"]
             }
             
-            # Only add current_user_id if we have a valid user
-            if safetyamp_user_id:
-                asset_data["current_user_id"] = safetyamp_user_id
+            # Set the asset's site_id to the default site (5145)
+            asset_data["site_id"] = site_to_use
+
+            # Do not set current_user_id on create to avoid 422; can be set in a later update if needed
             
             # Add VIN as additional identifier if available
             if vin:
@@ -293,6 +308,12 @@ class VehicleSync:
                             skipped_count += 1
                     else:
                         # Asset doesn't exist - create new one
+                        # Skip create if required fields (e.g., site_id) are missing
+                        if not cleaned_asset_data.get("site_id"):
+                            logger.error(f"Missing required site_id for asset {vehicle_serial}, skipping create")
+                            skipped_count += 1
+                            continue
+
                         # Create new asset
                         result = self.safetyamp_api.create_asset(cleaned_asset_data)
                         if result:

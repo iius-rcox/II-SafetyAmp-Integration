@@ -60,6 +60,12 @@ class SafetyAmpAPI:
 
         if validation_errors:
             logger.warning(f"{method} {endpoint}: payload had validation issues: {validation_errors}")
+            # For partial updates (PATCH), allow missing required fields to pass so single-field updates can proceed.
+            # For full creates (POST), still block missing requireds.
+            if method.upper() == "POST":
+                has_missing_required = any(str(err).startswith("Missing required field:") for err in validation_errors)
+                if has_missing_required:
+                    raise requests.HTTPError("Validation failed: missing required fields", response=requests.Response())
 
         return cleaned_payload
 

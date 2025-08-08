@@ -25,7 +25,8 @@ class DataValidator:
             },
             "vehicle": {
                 "name": "Vehicle name",
-                "code": "Vehicle code"
+                "code": "Vehicle code",
+                "site_id": "Site id"
             },
             "site": {
                 "name": "Site name",
@@ -41,14 +42,8 @@ class DataValidator:
             "date": r'^\d{4}-\d{2}-\d{2}$'
         }
         
-        # Default values for missing required fields
-        self.default_values = {
-            "first_name": "Unknown",
-            "last_name": "Unknown",
-            "email": None,  # Will be generated from name
-            "mobile_phone": None,
-            "work_phone": None
-        }
+        # No default substitution for required employee fields. Records missing
+        # required fields must be skipped rather than populated with placeholders.
 
     def validate_employee_data(self, payload: Dict[str, Any], emp_id: str, full_name: str) -> Tuple[bool, List[str], Dict[str, Any]]:
         """
@@ -70,40 +65,19 @@ class DataValidator:
             value = cleaned_payload.get(field)
             if not value or str(value).strip() == "":
                 validation_errors.append(f"Missing required field: {field_name}")
-                # Try to generate a default value for missing fields
-                if field == "first_name":
-                    cleaned_payload[field] = self.default_values["first_name"]
-                    logger.warning(f"Generated default first_name '{self.default_values['first_name']}' for employee {emp_id} ({full_name})")
-                elif field == "last_name":
-                    cleaned_payload[field] = self.default_values["last_name"]
-                    logger.warning(f"Generated default last_name '{self.default_values['last_name']}' for employee {emp_id} ({full_name})")
-                elif field == "email":
-                    # Generate email from name if possible
-                    first_name = cleaned_payload.get("first_name", "unknown")
-                    last_name = cleaned_payload.get("last_name", "unknown")
-                    if first_name != self.default_values["first_name"] and last_name != self.default_values["last_name"]:
-                        generated_email = self._generate_email(first_name, last_name)
-                        cleaned_payload[field] = generated_email
-                        logger.warning(f"Generated email '{generated_email}' for employee {emp_id} ({full_name})")
-                    else:
-                        validation_errors.append(f"Cannot generate email for employee {emp_id} - missing name data")
+                # Do not attempt to synthesize placeholders or emails; skip upstream
         
-        # Validate email format if present
+        # Validate email format if present; remove invalid emails to avoid API 422
         email = cleaned_payload.get("email")
-        if email and email != self.default_values["first_name"]:
+        if email:
             if not self._validate_email(email):
                 validation_errors.append(f"Invalid email format: {email}")
-                # Generate a valid email as fallback
-                first_name = cleaned_payload.get("first_name", "unknown")
-                last_name = cleaned_payload.get("last_name", "unknown")
-                fallback_email = self._generate_email(first_name, last_name)
-                cleaned_payload["email"] = fallback_email
-                logger.warning(f"Generated fallback email '{fallback_email}' for employee {emp_id} due to invalid email format")
+                cleaned_payload.pop("email", None)
         
         # Validate phone numbers if present
         for phone_field in ["mobile_phone", "work_phone"]:
             phone = cleaned_payload.get(phone_field)
-            if phone and phone != self.default_values["first_name"]:
+            if phone:
                 cleaned_phone = self._clean_phone(phone)
                 if cleaned_phone:
                     cleaned_payload[phone_field] = cleaned_phone
@@ -215,18 +189,14 @@ class DataValidator:
         
         return is_valid, validation_errors, cleaned_payload
 
-    def _generate_email(self, first_name: str, last_name: str) -> str:
-        """Generate email address from first and last name"""
+    def _generate_email(self, first_name: str, last_name: str) -> Optional[str]:
+        """Generate email address from first and last name if both provided; else None"""
         if not first_name or not last_name:
-            return "unknown@company.com"
-        
-        # Clean names for email generation
+            return None
         clean_first = re.sub(r'[^a-zA-Z]', '', first_name.lower())
         clean_last = re.sub(r'[^a-zA-Z]', '', last_name.lower())
-        
         if not clean_first or not clean_last:
-            return "unknown@company.com"
-        
+            return None
         return f"{clean_first}.{clean_last}@company.com"
 
     def _validate_email(self, email: str) -> bool:

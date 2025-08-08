@@ -175,6 +175,12 @@ class EmployeeSyncer:
                     # For other fields, use the original value but ensure it's not None
                     updated_fields[key] = new_raw if new_raw is not None else ""
 
+        # Vista feed represents active employees; ensure system_access = 1 only if different
+        existing_sa = existing_user.get("system_access")
+        existing_sa_str = str(existing_sa).strip().lower()
+        if existing_sa_str not in ("1", "true"):
+            updated_fields["system_access"] = 1
+
         return updated_fields
 
     def map_employee_to_payload(self, emp):
@@ -210,7 +216,9 @@ class EmployeeSyncer:
             "mobile_phone": self.clean_phone(emp.get("Phone")),
             "work_phone": self.clean_phone(emp.get("Phone")),
             "home_site_id": home_site_id,
-            "system_access": 0,
+            # For newly created users, default to enabled access and opt-out of texts
+            "system_access": 1,
+            "text_opt_out": 1,
             "timezone": "America/Chicago",
             "roles": [{"id": self.role_map["Field"]}] if "Field" in self.role_map else [],
             "sites": [],
@@ -315,12 +323,33 @@ class EmployeeSyncer:
                         consecutive_errors += 1
                         continue
                     
+                    # Use sanitized values from the cleaned payload to avoid sending invalid data (e.g., bad phone/email)
+                    sanitized_update_fields = {k: cleaned_update_payload.get(k) for k in updated_fields.keys() if k in cleaned_update_payload}
+
+                    # SafetyAmp requires core fields even on PATCH; include them from the existing record
+                    required_core_fields = {}
+                    for core_key in ["first_name", "last_name", "email"]:
+                        if existing_user.get(core_key) is not None:
+                            required_core_fields[core_key] = existing_user.get(core_key)
+                    # If we're enabling system access, prioritize that change alone to avoid
+                    # unrelated validation failures (e.g., phone format) blocking the update.
+                    if sanitized_update_fields.get("system_access") == 1:
+                        patch_payload = {**required_core_fields, "system_access": 1}
+                    else:
+                        patch_payload = {**required_core_fields, **sanitized_update_fields}
+                    # If validation removed all fields (e.g., invalid phones), skip update
+                    if not sanitized_update_fields:
+                        sync_results["skipped"] += 1
+                        consecutive_errors = 0
+                        continue
+                    
                     try:
-                        self.api_client.put(f"/api/users/{existing_user['id']}", updated_fields)
-                        logger.info(f"Updated user {full_name} (ID: {emp_id}) with fields: {list(updated_fields.keys())}")
-                        self.change_tracker.log_update("employee", emp_id, updated_fields, existing_user)
+                        # Use PATCH for partial updates (including required core fields)
+                        self.api_client.patch(f"/api/users/{existing_user['id']}", patch_payload)
+                        logger.info(f"Updated user {full_name} (ID: {emp_id}) with fields: {list(sanitized_update_fields.keys())}")
+                        self.change_tracker.log_update("employee", emp_id, patch_payload, existing_user)
                         sync_results["updated"] += 1
-                        sync_results["processed_employees"].append({"id": emp_id, "action": "updated", "fields": list(updated_fields.keys())})
+                        sync_results["processed_employees"].append({"id": emp_id, "action": "updated", "fields": list(sanitized_update_fields.keys())})
                         consecutive_errors = 0  # Reset error counter on success
                     except requests.HTTPError as e:
                         consecutive_errors += 1
@@ -328,7 +357,7 @@ class EmployeeSyncer:
                             error_response = e.response.json()
                             error_msg = f"Validation error (422): {error_response}"
                             logger.error(f"Validation error updating user {full_name} (ID: {emp_id}): {error_msg}")
-                            self.change_tracker.log_error("employee", emp_id, error_msg, "update", updated_fields)
+                            self.change_tracker.log_error("employee", emp_id, error_msg, "update", sanitized_update_fields)
                             
                             # Log to error notifier for email notifications
                             error_notifier.log_error(
@@ -338,8 +367,8 @@ class EmployeeSyncer:
                                 error_message=error_msg,
                                 error_details={
                                     "status_code": 422,
-                                    "failed_fields": list(updated_fields.keys()),
-                                    "payload": updated_fields,
+                                     "failed_fields": list(sanitized_update_fields.keys()),
+                                     "payload": sanitized_update_fields,
                                     "employee_name": full_name
                                 },
                                 source="sync_update"
@@ -351,7 +380,7 @@ class EmployeeSyncer:
                         else:
                             error_msg = f"HTTP error {e.response.status_code}: {str(e)}"
                             logger.error(f"Error updating user {full_name} (ID: {emp_id}): {error_msg}")
-                            self.change_tracker.log_error("employee", emp_id, error_msg, "update", updated_fields)
+                            self.change_tracker.log_error("employee", emp_id, error_msg, "update", sanitized_update_fields)
                             
                             # Log to error notifier for email notifications
                             error_notifier.log_error(
@@ -361,7 +390,7 @@ class EmployeeSyncer:
                                 error_message=error_msg,
                                 error_details={
                                     "status_code": e.response.status_code,
-                                    "payload": updated_fields,
+                                 "payload": sanitized_update_fields,
                                     "employee_name": full_name
                                 },
                                 source="sync_update"
@@ -371,7 +400,7 @@ class EmployeeSyncer:
                         consecutive_errors += 1
                         error_msg = f"Unexpected error updating user: {str(e)}"
                         logger.error(f"Error updating user {full_name} (ID: {emp_id}): {error_msg}")
-                        self.change_tracker.log_error("employee", emp_id, error_msg, "update", updated_fields)
+                        self.change_tracker.log_error("employee", emp_id, error_msg, "update", sanitized_update_fields)
                         
                         # Log to error notifier for email notifications
                         error_notifier.log_error(
@@ -381,7 +410,7 @@ class EmployeeSyncer:
                             error_message=error_msg,
                             error_details={
                                 "exception_type": type(e).__name__,
-                                "payload": updated_fields,
+                                "payload": sanitized_update_fields,
                                 "employee_name": full_name
                             },
                             source="sync_update"
