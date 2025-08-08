@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: safetyamp-alerts
+  namespace: safety-amp
+  labels:
+    app: safety-amp
+    role: alert-rules
+spec:
+  groups:
+  - name: safetyamp.rules
+    rules:
+    - alert: SafetyAmpSyncFailure
+      expr: increase(safetyamp_sync_operations_total{status="error"}[5m]) > 0
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: "SafetyAmp sync operation failed"
+        description: "One or more sync operations failed in the last 5 minutes."

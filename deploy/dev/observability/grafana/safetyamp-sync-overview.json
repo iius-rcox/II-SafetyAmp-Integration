@@ -1,0 +1,14 @@
+{
+  "title": "SafetyAmp Sync Overview (Placeholder)",
+  "editable": true,
+  "schemaVersion": 39,
+  "version": 1,
+  "timezone": "browser",
+  "panels": [],
+  "annotations": {
+    "list": []
+  },
+  "templating": {
+    "list": []
+  }
+}

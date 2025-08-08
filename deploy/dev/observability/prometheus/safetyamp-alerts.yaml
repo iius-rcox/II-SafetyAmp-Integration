@@ -1,0 +1,11 @@
+groups:
+  - name: safetyamp.rules
+    rules:
+      - alert: SafetyAmpCacheStale
+        expr: time() - max by (cache) (safetyamp_cache_last_updated_timestamp_seconds) > 3600
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "SafetyAmp cache is stale"
+          description: "Cache {{ $labels.cache }} has not updated in >60 minutes."
