@@ -398,12 +398,18 @@ if __name__ == "__main__":
     sync_thread = threading.Thread(target=run_sync_worker, daemon=True)
     sync_thread.start()
     
-    # Start dedicated Prometheus metrics HTTP server on :9090 for scrapers
+    # Resolve bind addresses and ports from environment (defaults appropriate for containers)
+    bind_address = os.getenv('BIND_ADDRESS', '0.0.0.0')
+    metrics_bind_address = os.getenv('METRICS_BIND_ADDRESS', bind_address)
+    metrics_port = int(os.getenv('METRICS_PORT', '9090'))
+    app_port = int(os.getenv('PORT', '8080'))
+
+    # Start dedicated Prometheus metrics HTTP server for scrapers
     try:
-        start_http_server(9090, addr="0.0.0.0")
-        logger.info("Prometheus metrics server started", extra={"port": 9090})
+        start_http_server(metrics_port, addr=metrics_bind_address)
+        logger.info("Prometheus metrics server started", extra={"port": metrics_port})
     except Exception as e:
-        logger.error(f"Failed to start Prometheus metrics server on :9090: {e}")
+        logger.error(f"Failed to start Prometheus metrics server on :{metrics_port}: {e}")
 
     # Start Flask app
-    app.run(host='0.0.0.0', port=8080, threaded=True)
+    app.run(host=bind_address, port=app_port, threaded=True)
