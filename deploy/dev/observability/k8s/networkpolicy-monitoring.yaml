@@ -14,7 +14,10 @@ spec:
     - from:
         - namespaceSelector:
             matchLabels:
-              name: kube-system  # adjust to monitoring agents' namespace if different
+              name: kube-system  # Managed addons/agents
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring  # kube-prometheus-stack namespace
       ports:
         - protocol: TCP
           port: 9090
