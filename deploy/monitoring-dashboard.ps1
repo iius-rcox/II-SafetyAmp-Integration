@@ -111,12 +111,13 @@ try {
 # 8. Connectivity Test
 Write-SectionHeader "Connectivity Test"
 try {
-    $connectivityResult = kubectl exec -n safety-amp $latestPod -- python test-connections.py 2>$null
-    if ($connectivityResult -match "All services are connected successfully") {
-        Write-Status "All external services connected" $true
+    $exit = 0
+    kubectl exec -n safety-amp $latestPod -- python test-connections.py 2>$null
+    $exit = $LASTEXITCODE
+    if ($exit -eq 0) {
+        Write-Status "Unified health endpoint indicates healthy or degraded" $true
     } else {
-        Write-Status "Some services failed to connect" $false
-        Write-Host $connectivityResult
+        Write-Status "Unified health endpoint indicates unhealthy" $false
     }
 } catch {
     Write-Status "Cannot run connectivity test" $false

@@ -75,7 +75,7 @@ Phase 3: Test & Validate
 # Tail logs and validate health
 kubectl logs -f deployment/safety-amp-agent -n safety-amp
 kubectl port-forward -n safety-amp svc/safety-amp-service 8080:8080
-curl http://localhost:8080/health/detailed
+curl http://localhost:8080/health
 ```
 
 Phase 4: Rollout
