@@ -120,6 +120,7 @@ def metrics_endpoint():
         pass
     return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
 
+
 def run_sync_worker():
     """Enhanced background sync worker with connection pooling"""
     logger.info("Starting background sync worker", 
