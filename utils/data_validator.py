@@ -8,6 +8,7 @@ that all required fields are present and valid before sending data to APIs.
 
 import re
 from typing import Dict, List, Tuple, Any, Optional
+from datetime import datetime, date
 from utils.logger import get_logger
 
 logger = get_logger("data_validator")
@@ -237,6 +238,35 @@ class DataValidator:
         if not date_str:
             return False
         return bool(re.match(self.validation_patterns["date"], str(date_str)))
+
+    def clean_phone(self, phone: Any) -> Optional[str]:
+        """Public helper to clean and validate phone numbers"""
+        return self._clean_phone(phone)
+
+    def normalize_gender(self, gender_raw: Any) -> Optional[str]:
+        """Normalize various gender representations to 'M'/'F' or None"""
+        if not gender_raw:
+            return None
+        gender = str(gender_raw).strip().lower()
+        if gender in ['m', 'male', '1']:
+            return 'M'
+        elif gender in ['f', 'female', '2']:
+            return 'F'
+        return None
+
+    def format_date(self, val: Any) -> Optional[str]:
+        """Format various date inputs to ISO YYYY-MM-DD string or return None"""
+        if not val:
+            return None
+        if isinstance(val, datetime):
+            return val.date().isoformat()
+        if isinstance(val, date):
+            return val.isoformat()
+        try:
+            return datetime.strptime(str(val).split()[0], "%Y-%m-%d").date().isoformat()
+        except Exception:
+            logger.warning(f"Invalid date format: {val}")
+            return None
 
     def sanitize_string_field(self, value: Any, field_name: str) -> Optional[str]:
         """Sanitize string field value"""

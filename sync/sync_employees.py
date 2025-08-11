@@ -7,8 +7,6 @@ from services.safetyamp_api import SafetyAmpAPI
 from services.viewpoint_api import ViewpointAPI
 from services.graph_api import MSGraphAPI
 
-from datetime import datetime, date
-import re
 import requests
 
 logger = get_logger("sync_employees")
@@ -88,34 +86,13 @@ class EmployeeSyncer:
         return home_office_map
 
     def clean_phone(self, phone):
-        if not phone:
-            return None
-        # Remove all non-digit characters
-        cleaned = re.sub(r'\D', '', str(phone))
-        return cleaned if len(cleaned) >= 10 else None
+        return validator.clean_phone(phone)
 
     def normalize_gender(self, gender_raw):
-        if not gender_raw:
-            return None
-        gender = str(gender_raw).strip().lower()
-        if gender in ['m', 'male', '1']:
-            return 'M'
-        elif gender in ['f', 'female', '2']:
-            return 'F'
-        return None
+        return validator.normalize_gender(gender_raw)
 
     def format_date(self, val):
-        if not val:
-            return None
-        if isinstance(val, datetime):
-            return val.date().isoformat()
-        if isinstance(val, date):
-            return val.isoformat()
-        try:
-            return datetime.strptime(str(val).split()[0], "%Y-%m-%d").date().isoformat()
-        except Exception:
-            logger.warning(f"Invalid date format: {val}")
-            return None
+        return validator.format_date(val)
 
     def validate_required_fields(self, payload, emp_id, full_name):
         """
