@@ -1,6 +1,6 @@
 #!/usr/bin/env pwsh
 param(
-  [string]$ResourceGroup = "rg-prod",
+  [string]$ResourceGroup = "rg_prod",
   [string]$AksName = "dev-aks",
   [string]$Namespace = "safety-amp",
   [string]$Image = "safetyampacr.azurecr.io/safetyamp-integration",
