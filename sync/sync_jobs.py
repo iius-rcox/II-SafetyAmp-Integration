@@ -1,13 +1,13 @@
 from utils.logger import get_logger
 from services.safetyamp_api import SafetyAmpAPI
 from services.viewpoint_api import ViewpointAPI
+from sync.sync_base import SyncOperation
 
 logger = get_logger("sync_jobs")
 
-class JobSyncer:
+class JobSyncer(SyncOperation):
     def __init__(self):
-        self.api_client = SafetyAmpAPI()
-        self.viewpoint = ViewpointAPI()
+        super().__init__(name="sync_jobs", sync_type="jobs", entity_type="site")
         logger.info("Fetching existing sites from SafetyAmp...")
         sites_data = self.api_client.get_sites_cached(max_age_hours=1)
         self.existing_sites = sites_data.values()
@@ -46,9 +46,7 @@ class JobSyncer:
                 patch_data["name"] = name
                 self.api_client.put(f"/api/sites/{existing_site['id']}", patch_data)
                 logger.info(f"Updated site: {name} with changes: {patch_data}")
-            # else:
-                # logger.info(f"No update needed for existing site: {name}")
-            return
+            return True, False  # processed, created
 
         site_data = {
             "name": name,
@@ -65,17 +63,38 @@ class JobSyncer:
         created = self.api_client.create_site(site_data)
         if isinstance(created, dict):
             logger.info(f"Created site: {name} under cluster {cluster_id}")
+            return True, True
         else:
             logger.warning(f"Failed to create site: {name}")
+            return False, False
 
-    def sync(self):
+    def perform_sync(self):
         logger.info("Starting job site sync...")
+        created = 0
+        updated = 0
+        skipped = 0
+        errors = 0
+
         for job in self.jobs:
             dept = job.get("Department")
             cluster_id = self.dept_cluster_map.get(dept)
             if not cluster_id:
                 logger.warning(f"Skipping job {job['Job']} — unknown department: {dept}")
+                skipped += 1
                 continue
 
-            self.ensure_site(job, cluster_id)
+            try:
+                processed, was_created = self.ensure_site(job, cluster_id)
+                if processed:
+                    if was_created:
+                        created += 1
+                    else:
+                        updated += 1
+                else:
+                    errors += 1
+            except Exception as e:
+                errors += 1
+                self.logger.error(f"Error ensuring site for job {job.get('Job')}: {e}")
+
         logger.info("Job site sync complete.")
+        return {"processed": len(self.jobs), "created": created, "updated": updated, "skipped": skipped, "errors": errors}

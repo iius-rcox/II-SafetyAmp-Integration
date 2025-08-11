@@ -1,11 +1,11 @@
 from utils.logger import get_logger
 from utils.cache_manager import CacheManager
-from utils.change_tracker import ChangeTracker
 from utils.error_notifier import error_notifier
 from utils.data_validator import validator
 from services.safetyamp_api import SafetyAmpAPI
-from services.viewpoint_api import ViewpointAPI
+from services.viewpoint_api import ViewpointAPI  # kept for type hints only
 from services.graph_api import MSGraphAPI
+from sync.sync_base import SyncOperation
 
 from datetime import datetime, date
 import re
@@ -13,13 +13,11 @@ import requests
 
 logger = get_logger("sync_employees")
 
-class EmployeeSyncer:
+class EmployeeSyncer(SyncOperation):
     def __init__(self):
-        self.api_client = SafetyAmpAPI()
-        self.viewpoint = ViewpointAPI()
+        super().__init__(name="sync_employees", sync_type="employees", entity_type="employee")
         self.msgraph = MSGraphAPI()
         self.cache_manager = CacheManager()
-        self.change_tracker = ChangeTracker()
         logger.info("Fetching initial data for sync...")
         self.cluster_map = self._build_cluster_map()
         self.role_map = self._build_role_map()
@@ -228,11 +226,8 @@ class EmployeeSyncer:
             "emp_id": emp_id
         }
 
-    def sync(self):
+    def perform_sync(self):
         logger.info("Starting employee sync...")
-        
-        # Start change tracking
-        self.change_tracker.start_sync("employees")
         
         employees = self.viewpoint.get_employees()
         logger.info(f"Retrieved {len(employees)} employees from Viewpoint.")
@@ -561,18 +556,12 @@ class EmployeeSyncer:
                 # Update cache with sync results
         self._update_cache_after_sync(sync_results)
 
-        # End change tracking and get summary
-        session_summary = self.change_tracker.end_sync()
-
-        logger.info(f"Employee sync completed: {sync_results['created']} created, {sync_results['updated']} updated, {sync_results['skipped']} skipped, {sync_results['errors']} errors")
-
         return {
             "processed": len(employees),
             "created": sync_results["created"],
             "updated": sync_results["updated"],
             "skipped": sync_results["skipped"],
             "errors": sync_results["errors"],
-            "session_summary": session_summary
         }
 
     def _update_cache_after_sync(self, sync_results):

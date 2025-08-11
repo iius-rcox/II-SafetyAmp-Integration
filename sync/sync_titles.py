@@ -1,13 +1,13 @@
 from utils.logger import get_logger
 from services.safetyamp_api import SafetyAmpAPI
 from services.viewpoint_api import ViewpointAPI
+from sync.sync_base import SyncOperation
 
 logger = get_logger("sync_titles")
 
-class TitleSyncer:
+class TitleSyncer(SyncOperation):
     def __init__(self):
-        self.api_client = SafetyAmpAPI()
-        self.viewpoint = ViewpointAPI()
+        super().__init__(name="sync_titles", sync_type="titles", entity_type="title")
         logger.info("Initializing TitleSyncer and fetching existing titles from SafetyAmp...")
         self.title_map = self._build_title_map()
 
@@ -24,10 +24,8 @@ class TitleSyncer:
     def ensure_title(self, title_name):
         title_name = title_name.strip()
         if title_name in self.title_map:
-            # logger.info(f"Title already exists: '{title_name}'")
             return self.title_map[title_name]
 
-        # logger.info(f"Creating new title: '{title_name}'")
         new_title = {"name": title_name}
         created = self.api_client.create_title(new_title)
         if isinstance(created, dict) and "id" in created:
@@ -39,12 +37,28 @@ class TitleSyncer:
         logger.warning(f"Failed to create title '{title_name}'")
         return None
 
-    def sync(self):
+    def perform_sync(self):
         logger.info("Starting title sync from Viewpoint...")
         titles = self.viewpoint.get_titles()
         logger.info(f"Retrieved {len(titles)} titles from Viewpoint.")
 
+        created = 0
+        skipped = 0
+        errors = 0
+
         for title in titles:
             title_name = title.get("udEmpTitle")
-            if title_name:
-                self.ensure_title(title_name)
+            if not title_name:
+                skipped += 1
+                continue
+            try:
+                existing = self.title_map.get(title_name.strip())
+                if existing:
+                    continue
+                if self.ensure_title(title_name):
+                    created += 1
+            except Exception as e:
+                errors += 1
+                self.logger.error(f"Error ensuring title '{title_name}': {e}")
+
+        return {"processed": len(titles), "created": created, "updated": 0, "skipped": skipped, "errors": errors}
