@@ -95,7 +95,7 @@ schedule: "*/15 * * * *"  # Every 15 minutes
 - Future integration points for Slack, Teams, email
 
 ### 3. Enhanced Health Checks
-**Endpoint**: `/health/detailed`
+**Endpoint**: `/health`
 ```json
 {
   "status": "healthy",
@@ -187,7 +187,7 @@ kubectl top pods -n safety-amp
 
 # Test endpoints
 kubectl port-forward svc/safety-amp-service 8080:8080 -n safety-amp
-curl http://localhost:8080/health/detailed
+curl http://localhost:8080/health
 ```
 
 ---
@@ -242,7 +242,7 @@ kubectl get jobs -n safety-amp
 kubectl logs -f deployment/safety-amp-agent -n safety-amp
 
 # Health checks
-curl http://localhost:8080/health/detailed
+curl http://localhost:8080/health
 ```
 
 ### Alert Response

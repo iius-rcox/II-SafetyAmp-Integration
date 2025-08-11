@@ -303,7 +303,7 @@ Create Azure Monitor alert rule with a threshold and Action Group (Email/Teams/P
   - Apply Grafana dashboards and alert rules
   - Deploy Workbook template
 - Secrets: store Log Analytics workspace ID/key for Fluent Bit in a Kubernetes Secret
-- Health gates: block rollout if `/ready` fails; validate presence of key metrics post-deploy
+- Health gates: block rollout if `/health` fails; validate presence of key metrics post-deploy
 
 ---
 

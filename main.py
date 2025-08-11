@@ -125,32 +125,19 @@ def check_external_apis():
         logger.error(f"External API health check failed: {e}")
         raise
 
-@app.route('/health')
-def health():
-    """Enhanced liveness probe endpoint"""
+def build_health_response():
+    """Run comprehensive health checks and build a unified response."""
     with health_check_duration.time():
-        if health_status['healthy'] and not shutdown_requested:
-            return jsonify({
-                'status': 'healthy', 
-                'timestamp': time.time(),
-                'sync_in_progress': health_status['sync_in_progress']
-            }), 200
-        else:
-            return jsonify({
-                'status': 'unhealthy', 
-                'errors': health_status['errors'],
-                'shutdown_requested': shutdown_requested
-            }), 503
-
-@app.route('/ready')
-def ready():
-    """Enhanced readiness probe endpoint with graceful degradation"""
-    with health_check_duration.time():
-        overall_status = 'ready'
+        overall_status = 'healthy'
         status_code = 200
         details = {}
-        
-        # Check database health
+
+        # Respect shutdown request
+        if not health_status['healthy'] or shutdown_requested:
+            overall_status = 'unhealthy'
+            status_code = 503
+
+        # Check database health (degrades but doesn't hard-fail readiness)
         try:
             check_database_health()
             health_status['database_status'] = 'healthy'
@@ -158,10 +145,10 @@ def ready():
         except Exception as e:
             health_status['database_status'] = 'degraded'
             details['database'] = 'degraded'
-            overall_status = 'degraded'
-            logger.warning(f"Database health degraded: {e}")
-        
-        # Check external APIs
+            if overall_status == 'healthy':
+                overall_status = 'degraded'
+
+        # Check external APIs (degrades but doesn't hard-fail readiness)
         try:
             check_external_apis()
             health_status['external_apis_status'] = 'healthy'
@@ -169,58 +156,63 @@ def ready():
         except Exception as e:
             health_status['external_apis_status'] = 'degraded'
             details['external_apis'] = 'degraded'
-            if overall_status == 'ready':
+            if overall_status == 'healthy':
                 overall_status = 'degraded'
-            logger.warning(f"External APIs health degraded: {e}")
-        
-        # Allow readiness during initial sync or if already ready
-        if health_status['ready'] or health_status['sync_in_progress'] or overall_status == 'degraded':
-            return jsonify({
-                'status': overall_status,
-                'timestamp': time.time(),
-                'details': details,
-                'last_sync': health_status['last_sync'],
-                'sync_in_progress': health_status['sync_in_progress']
-            }), status_code
-        else:
-            return jsonify({
-                'status': 'not ready',
-                'details': details
-            }), 503
 
-@app.route('/metrics')
-def metrics():
-    """Enhanced Prometheus metrics endpoint"""
-    # Update connection pool metrics with actual active connections
-    database_connections_active.set(get_active_connection_count())
-    
-    return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
+        # Cache and rate limit telemetry (best-effort)
+        cache_status = {'status': 'unknown'}
+        rate_limit_status = {}
+        try:
+            from utils.cache_manager import CacheManager
+            cache_manager = CacheManager()
+            if hasattr(cache_manager, 'get_cache_info'):
+                cache_status = cache_manager.get_cache_info()
+        except Exception:
+            # Leave cache_status as unknown
+            pass
+        try:
+            from utils.circuit_breaker import SmartRateLimiter
+            rate_limit_status = {
+                'safetyamp': SmartRateLimiter('safetyamp').status(),
+                'samsara': SmartRateLimiter('samsara').status(),
+            }
+        except Exception:
+            rate_limit_status = {}
+
+        response = {
+            'status': overall_status,
+            'timestamp': time.time(),
+            'details': details,
+            'last_sync': health_status['last_sync'],
+            'sync_in_progress': health_status['sync_in_progress'],
+            'active_connections': get_active_connection_count(),
+            'database_status': health_status['database_status'],
+            'external_apis_status': health_status['external_apis_status'],
+            'cache_status': cache_status,
+            'rate_limit_status': rate_limit_status,
+            'errors': health_status['errors'][-5:] if health_status['errors'] else []
+        }
+        return jsonify(response), status_code
+
+# Replace simple liveness with unified health
+@app.route('/health')
+def health():
+    return build_health_response()
+
+# Make legacy endpoints delegate to the unified builder to avoid duplication
+@app.route('/ready')
+def ready():
+    return build_health_response()
 
 @app.route('/health/detailed')
 def detailed_health():
-    """Enhanced health check for production monitoring"""
-    from utils.cache_manager import CacheManager
-    from utils.circuit_breaker import SmartRateLimiter
-    
-    cache_manager = CacheManager()
-    safetyamp_rate_limiter = SmartRateLimiter("safetyamp")
-    samsara_rate_limiter = SmartRateLimiter("samsara")
-    
-    return jsonify({
-        'status': 'healthy' if health_status['healthy'] else 'unhealthy',
-        'timestamp': time.time(),
-        'last_sync': health_status['last_sync'],
-        'active_connections': get_active_connection_count(),
-        'database_status': health_status['database_status'],
-        'external_apis_status': health_status['external_apis_status'],
-        'cache_status': getattr(cache_manager, 'get_cache_info', lambda: {'status': 'unknown'})(),
-        'rate_limit_status': {
-            'safetyamp': safetyamp_rate_limiter.status(),
-            'samsara': samsara_rate_limiter.status()
-        },
-        'sync_in_progress': health_status['sync_in_progress'],
-        'errors': health_status['errors'][-5:] if health_status['errors'] else []  # Last 5 errors
-    })
+    return build_health_response()
+
+@app.route('/metrics')
+def metrics():
+    """Prometheus metrics endpoint"""
+    database_connections_active.set(get_active_connection_count())
+    return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
 
 def run_sync_worker():
     """Enhanced background sync worker with connection pooling"""

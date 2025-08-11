@@ -32,7 +32,7 @@ groups:
           team: integrations
         annotations:
           summary: "Missing sync activity"
-          description: "No completed sync detected for >90 minutes. Verify worker health and /ready endpoint."
+          description: "No completed sync detected for >90 minutes. Verify worker health and /health endpoint."
           runbook_url: "file://deploy/dev/observability/RUNBOOK.md#dashboards-blank-metrics"
       - alert: SafetyAmpLongRunningSyncP95
         expr: histogram_quantile(0.95, sum by (le, operation) (rate(safetyamp_sync_duration_seconds_bucket[15m]))) > 600

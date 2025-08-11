@@ -238,7 +238,7 @@ switch ($Mode.ToLower()) {
     "health" {
         Write-Host "💚 Showing health check logs..." -ForegroundColor Green
         Write-Host ""
-        & kubectl logs -n safety-amp $Pod | Select-String -Pattern "health|Health|ready|Ready|GET /health|GET /ready"
+        & kubectl logs -n safety-amp $Pod | Select-String -Pattern "health|Health|GET /health"
     }
     "summary" {
         Show-ErrorSummary -PodName $Pod -HoursBack $Hours
