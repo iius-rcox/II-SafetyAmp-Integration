@@ -1,4 +1,5 @@
 from utils.logger import get_logger
+from services.event_manager import event_manager
 from services.safetyamp_api import SafetyAmpAPI
 from services.viewpoint_api import ViewpointAPI
 from services.data_manager import data_manager
@@ -39,13 +40,22 @@ class TitleSyncer:
             title_id = created["id"]
             self.title_map[title_name] = title_id
             logger.info(f"Created new title '{title_name}' with id {title_id}")
+            try:
+                event_manager.log_creation("title", str(title_id), new_title)
+            except Exception:
+                pass
             return title_id
 
         logger.warning(f"Failed to create title '{title_name}'")
+        try:
+            event_manager.log_error("create_failed", "title", title_name, f"Failed to create title '{title_name}'")
+        except Exception:
+            pass
         return None
 
     def sync(self):
         logger.info("Starting title sync from Viewpoint...")
+        event_manager.start_sync("titles")
         titles = self.viewpoint.get_titles()
         logger.info(f"Retrieved {len(titles)} titles from Viewpoint.")
 
@@ -53,3 +63,10 @@ class TitleSyncer:
             title_name = title.get("udEmpTitle")
             if title_name:
                 self.ensure_title(title_name)
+            else:
+                try:
+                    event_manager.log_skip("title", "unknown", "missing udEmpTitle")
+                except Exception:
+                    pass
+        summary = event_manager.end_sync()
+        return summary

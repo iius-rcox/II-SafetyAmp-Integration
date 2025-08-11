@@ -180,6 +180,9 @@ Migration mapping (old → new):
 Applied so far:
 - `main.py`: switched hourly notifications and error logging to `event_manager`.
 - `sync/sync_employees.py`: migrated session lifecycle and all event/error calls to `event_manager`.
+- `sync/sync_jobs.py`: session start/end; creation/update/skip/error events for sites.
+- `sync/sync_titles.py`: session start/end; creation/skip/error events for titles.
+- `sync/sync_vehicles.py`: session start/end; creation/update/error events for assets.
 
 Testing steps:
 - Start a session, emit creation and error events, end session; assert summary counts.

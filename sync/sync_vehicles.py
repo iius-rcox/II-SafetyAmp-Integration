@@ -11,6 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from services.samsara_api import SamsaraAPI
 from services.safetyamp_api import SafetyAmpAPI
+from services.event_manager import event_manager
 from services.data_manager import data_manager
 from utils.logger import get_logger
 from utils.data_validator import validator
@@ -259,6 +260,7 @@ class VehicleSync:
     def sync_vehicles(self):
         """Sync vehicles from Samsara to SafetyAmp"""
         logger.info("Starting vehicle sync from Samsara to SafetyAmp")
+        event_manager.start_sync("vehicles")
         
         try:
             # Get vehicles from Samsara
@@ -311,12 +313,20 @@ class VehicleSync:
                         if self._needs_update(existing_asset, cleaned_asset_data):
                             # Update existing asset
                             result = self.safetyamp_api.update_asset(existing_asset["id"], cleaned_asset_data)
-                            if result:
+                        if result:
                                 synced_count += 1
                                 logger.info(f"Updated asset {vehicle_serial}")
+                            try:
+                                event_manager.log_update("asset", str(existing_asset["id"]), cleaned_asset_data, existing_asset)
+                            except Exception:
+                                pass
                             else:
                                 error_count += 1
                                 logger.error(f"Failed to update asset {vehicle_serial}")
+                            try:
+                                event_manager.log_error("update_failed", "asset", str(existing_asset.get("id", vehicle_serial)), f"Failed to update asset {vehicle_serial}")
+                            except Exception:
+                                pass
                         else:
                             logger.debug(f"Asset {vehicle_serial} is up to date")
                             skipped_count += 1
@@ -333,9 +343,17 @@ class VehicleSync:
                         if result:
                             synced_count += 1
                             logger.info(f"Created asset {vehicle_serial}")
+                            try:
+                                event_manager.log_creation("asset", str(result.get("id", vehicle_serial)), cleaned_asset_data)
+                            except Exception:
+                                pass
                         else:
                             error_count += 1
                             logger.error(f"Failed to create asset {vehicle_serial}")
+                            try:
+                                event_manager.log_error("create_failed", "asset", vehicle_serial, f"Failed to create asset {vehicle_serial}")
+                            except Exception:
+                                pass
                 
                 except Exception as e:
                     error_count += 1
@@ -347,6 +365,7 @@ class VehicleSync:
             logger.info(f"  Errors: {error_count}")
             logger.info(f"  Skipped: {skipped_count}")
             
+            summary = event_manager.end_sync()
             return {
                 "synced": synced_count,
                 "errors": error_count,
@@ -355,6 +374,7 @@ class VehicleSync:
             
         except Exception as e:
             logger.error(f"Error during vehicle sync: {e}")
+            summary = event_manager.end_sync()
             return {"synced": 0, "errors": 1, "skipped": 0}
     
     def _needs_update(self, existing_asset, new_data):

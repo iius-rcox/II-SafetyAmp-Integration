@@ -1,4 +1,5 @@
 from utils.logger import get_logger
+from services.event_manager import event_manager
 from services.safetyamp_api import SafetyAmpAPI
 from services.viewpoint_api import ViewpointAPI
 from services.data_manager import data_manager
@@ -51,6 +52,10 @@ class JobSyncer:
                 patch_data["name"] = name
                 self.api_client.put(f"/api/sites/{existing_site['id']}", patch_data)
                 logger.info(f"Updated site: {name} with changes: {patch_data}")
+                try:
+                    event_manager.log_update("site", str(existing_site['id']), patch_data, existing_site)
+                except Exception:
+                    pass
             # else:
                 # logger.info(f"No update needed for existing site: {name}")
             return
@@ -70,17 +75,32 @@ class JobSyncer:
         created = self.api_client.create_site(site_data)
         if isinstance(created, dict):
             logger.info(f"Created site: {name} under cluster {cluster_id}")
+            try:
+                event_manager.log_creation("site", str(created.get("id", name)), site_data)
+            except Exception:
+                pass
         else:
             logger.warning(f"Failed to create site: {name}")
+            try:
+                event_manager.log_error("create_failed", "site", name, f"Failed to create site {name}")
+            except Exception:
+                pass
 
     def sync(self):
         logger.info("Starting job site sync...")
+        event_manager.start_sync("jobs")
         for job in self.jobs:
             dept = job.get("Department")
             cluster_id = self.dept_cluster_map.get(dept)
             if not cluster_id:
                 logger.warning(f"Skipping job {job['Job']} — unknown department: {dept}")
+                try:
+                    event_manager.log_skip("job", job.get("Job"), f"unknown department: {dept}")
+                except Exception:
+                    pass
                 continue
 
             self.ensure_site(job, cluster_id)
+        summary = event_manager.end_sync()
         logger.info("Job site sync complete.")
+        return summary
