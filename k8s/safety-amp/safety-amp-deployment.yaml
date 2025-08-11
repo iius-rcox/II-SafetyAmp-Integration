@@ -119,8 +119,7 @@ spec:
               topologyKey: kubernetes.io/hostname
       containers:
       - name: safety-amp-agent
-        # Update this image to your actual SafetyAmp Python agent image
-        image: safetyampacr.azurecr.io/safetyamp-integration:latest
+        image: iiusacr.azurecr.io/safety-amp-agent:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
