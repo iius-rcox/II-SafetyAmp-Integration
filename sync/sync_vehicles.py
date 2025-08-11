@@ -11,6 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from services.samsara_api import SamsaraAPI
 from services.safetyamp_api import SafetyAmpAPI
+from services.data_manager import data_manager
 from utils.logger import get_logger
 from utils.data_validator import validator
 from datetime import datetime
@@ -51,13 +52,15 @@ class VehicleSync:
         """Load SafetyAmp users into cache for efficient lookup"""
         try:
             logger.info("Loading SafetyAmp users cache...")
-            safetyamp_users = self.safetyamp_api.get_users_by_id_cached(max_age_hours=1)
-            
+            safetyamp_users = data_manager.get_cached_data_with_fallback(
+                "safetyamp_users_by_id",
+                lambda: self.safetyamp_api.get_all_paginated("/api/users", key_field="id"),
+                max_age_hours=1,
+            )
             # Store full user objects in cache
             self.safetyamp_users_cache = safetyamp_users or {}
-            
             logger.info(f"Loaded {len(self.safetyamp_users_cache)} SafetyAmp users into cache")
-            
+        
         except Exception as e:
             logger.error(f"Error loading SafetyAmp users cache: {e}")
             self.safetyamp_users_cache = {}
@@ -65,7 +68,11 @@ class VehicleSync:
     def _get_asset_type_for_site(self, site_id):
         """Get the appropriate asset type ID for a given site"""
         try:
-            asset_types = self.safetyamp_api.get_asset_types_cached(max_age_hours=1)
+            asset_types = data_manager.get_cached_data_with_fallback(
+                "safetyamp_asset_types",
+                lambda: self.safetyamp_api.get_all_paginated("/api/asset_types", key_field="id"),
+                max_age_hours=1,
+            )
             
             # Look for a vehicle asset type that matches the site
             for asset_type_id, asset_type in asset_types.items():
@@ -91,7 +98,11 @@ class VehicleSync:
     def _get_site_for_asset_type(self, asset_type_id):
         """Get the site ID that an asset type is valid for"""
         try:
-            asset_types = self.safetyamp_api.get_asset_types_cached(max_age_hours=1)
+            asset_types = data_manager.get_cached_data_with_fallback(
+                "safetyamp_asset_types",
+                lambda: self.safetyamp_api.get_all_paginated("/api/asset_types", key_field="id"),
+                max_age_hours=1,
+            )
             if str(asset_type_id) in asset_types:
                 return asset_types[str(asset_type_id)].get("site_id")
             return None
@@ -126,7 +137,6 @@ class VehicleSync:
                 return None, None
             
             # Look for employee ID in notes (4+ digits)
-            import re
             match = re.search(r'(\d{4,})', notes)
             if not match:
                 logger.warning(f"No employee ID found in driver notes for ID: {driver_id}")
@@ -236,7 +246,11 @@ class VehicleSync:
     def get_existing_assets(self):
         """Get existing SafetyAmp assets for comparison"""
         try:
-            assets = self.safetyamp_api.get_assets_cached(max_age_hours=1)
+            assets = data_manager.get_cached_data_with_fallback(
+                "safetyamp_assets",
+                lambda: self.safetyamp_api.get_all_paginated("/api/assets", key_field="id"),
+                max_age_hours=1,
+            )
             return {asset.get("serial"): asset for asset in assets.values() if asset.get("serial")}
         except Exception as e:
             logger.error(f"Error fetching existing assets: {e}")
@@ -365,7 +379,11 @@ class VehicleSync:
         try:
             # Get counts from both systems
             samsara_vehicles = self.samsara_api.get_all_vehicles()
-            safetyamp_assets = self.safetyamp_api.get_assets_cached(max_age_hours=1)
+            safetyamp_assets = data_manager.get_cached_data_with_fallback(
+                "safetyamp_assets",
+                lambda: self.safetyamp_api.get_all_paginated("/api/assets", key_field="id"),
+                max_age_hours=1,
+            )
             
             # Count vehicles with serial numbers (can be synced)
             syncable_vehicles = [v for v in samsara_vehicles if v.get("serial")]

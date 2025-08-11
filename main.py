@@ -180,10 +180,9 @@ def metrics_endpoint():
 @app.route('/health/detailed')
 def detailed_health():
     """Enhanced health check for production monitoring"""
-    from utils.cache_manager import CacheManager
+    from services.data_manager import data_manager
     from utils.circuit_breaker import SmartRateLimiter
     
-    cache_manager = CacheManager()
     safetyamp_rate_limiter = SmartRateLimiter("safetyamp")
     samsara_rate_limiter = SmartRateLimiter("samsara")
     
@@ -194,7 +193,7 @@ def detailed_health():
         'active_connections': get_active_connection_count(),
         'database_status': health_status['database_status'],
         'external_apis_status': health_status['external_apis_status'],
-        'cache_status': getattr(cache_manager, 'get_cache_info', lambda: {'status': 'unknown'})(),
+        'cache_status': getattr(data_manager, 'get_cache_info', lambda: {'status': 'unknown'})(),
         'rate_limit_status': {
             'safetyamp': safetyamp_rate_limiter.status(),
             'samsara': samsara_rate_limiter.status()

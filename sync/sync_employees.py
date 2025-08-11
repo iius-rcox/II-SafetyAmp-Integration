@@ -1,10 +1,11 @@
 from utils.logger import get_logger
-from utils.cache_manager import CacheManager
-from utils.error_manager import ErrorManager, error_manager
+from utils.change_tracker import ChangeTracker
+from utils.error_notifier import error_notifier
 from utils.data_validator import validator
 from services.safetyamp_api import SafetyAmpAPI
 from services.viewpoint_api import ViewpointAPI
 from services.graph_api import MSGraphAPI
+from services.data_manager import data_manager
 
 import requests
 
@@ -15,8 +16,7 @@ class EmployeeSyncer:
         self.api_client = SafetyAmpAPI()
         self.viewpoint = ViewpointAPI()
         self.msgraph = MSGraphAPI()
-        self.cache_manager = CacheManager()
-        self.error_manager: ErrorManager = error_manager
+        self.change_tracker = ChangeTracker()
         logger.info("Fetching initial data for sync...")
         self.cluster_map = self._build_cluster_map()
         self.role_map = self._build_role_map()
@@ -35,7 +35,11 @@ class EmployeeSyncer:
             if cluster.get("external_code") and cluster.get("parent_cluster_id") is not None
         }
 
-        sites_dict = self.api_client.get_sites_cached(max_age_hours=1)
+        sites_dict = data_manager.get_cached_data_with_fallback(
+            "safetyamp_sites",
+            lambda: self.api_client.get_all_paginated("/api/sites", key_field="id"),
+            max_age_hours=1,
+        )
         for site in sites_dict.values():
             ext_id = site.get("external_code")
             if ext_id and ext_id not in cluster_map:
@@ -45,7 +49,11 @@ class EmployeeSyncer:
         return cluster_map
 
     def _build_role_map(self):
-        roles = self.api_client.get_roles_cached(max_age_hours=1)
+        roles = data_manager.get_cached_data_with_fallback(
+            "safetyamp_roles",
+            lambda: self.api_client.get_all_paginated("/api/roles", key_field="id"),
+            max_age_hours=1,
+        )
         role_map = {
             r["name"].strip(): r["id"]
             for r in roles.values()
@@ -55,7 +63,11 @@ class EmployeeSyncer:
         return role_map
 
     def _build_title_map(self):
-        titles = self.api_client.get_titles_cached(max_age_hours=1)
+        titles = data_manager.get_cached_data_with_fallback(
+            "safetyamp_titles",
+            lambda: self.api_client.get_all_paginated("/api/user_titles", key_field="id"),
+            max_age_hours=1,
+        )
         title_map = {
             t["name"].strip(): t["id"]
             for t in titles.values()
@@ -65,22 +77,22 @@ class EmployeeSyncer:
         return title_map
 
     def _build_user_map(self):
-        users = self.api_client.get_users_by_id_cached(max_age_hours=1)
-        user_map = {
-            user["emp_id"]: user
-            for user in users.values()
-            if user.get("emp_id")
-        }
+        users = data_manager.get_cached_data_with_fallback(
+            "safetyamp_users_by_id",
+            lambda: self.api_client.get_all_paginated("/api/users", key_field="id"),
+            max_age_hours=1,
+        )
+        user_map = {user["emp_id"]: user for user in users.values() if user.get("emp_id")}
         logger.info(f"User map built with {len(user_map)} entries.")
         return user_map
 
     def _build_home_office_map(self):
-        sites = self.api_client.get_sites_cached(max_age_hours=1)
-        home_office_map = {
-            site["cluster_id"]: site["id"]
-            for site in sites.values()
-            if site.get("cluster_id") and site.get("id")
-        }
+        sites = data_manager.get_cached_data_with_fallback(
+            "safetyamp_sites",
+            lambda: self.api_client.get_all_paginated("/api/sites", key_field="id"),
+            max_age_hours=1,
+        )
+        home_office_map = {site["cluster_id"]: site["id"] for site in sites.values() if site.get("cluster_id") and site.get("id")}
         logger.info(f"Home office map built with {len(home_office_map)} entries.")
         return home_office_map
 

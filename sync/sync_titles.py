@@ -1,6 +1,7 @@
 from utils.logger import get_logger
 from services.safetyamp_api import SafetyAmpAPI
 from services.viewpoint_api import ViewpointAPI
+from services.data_manager import data_manager
 
 logger = get_logger("sync_titles")
 
@@ -12,7 +13,11 @@ class TitleSyncer:
         self.title_map = self._build_title_map()
 
     def _build_title_map(self):
-        titles = self.api_client.get_titles_cached(max_age_hours=1)
+        titles = data_manager.get_cached_data_with_fallback(
+            "safetyamp_titles",
+            lambda: self.api_client.get_all_paginated("/api/user_titles", key_field="id"),
+            max_age_hours=1,
+        )
         title_map = {
             t["name"].strip(): t["id"]
             for t in titles.values()

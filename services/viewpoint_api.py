@@ -8,7 +8,7 @@ from sqlalchemy.engine import Engine
 from urllib.parse import quote_plus
 from config import settings
 from utils.logger import get_logger
-from .vista_data_manager import vista_data_manager
+from .data_manager import data_manager
 
 logger = get_logger("viewpoint")
 
@@ -195,14 +195,14 @@ class ViewpointAPI:
             recent_job_map = self.fetch_recent_jobs(conn)
             employees = self.build_employee_json(conn, recent_job_map)
             # Store in memory instead of file
-            vista_data_manager.set_employee_data(employees)
+            data_manager.set_employee_data(employees)
             return employees
 
     def get_jobs(self):
         with self._get_connection() as conn:
             jobs = self.fetch_job_list(conn)
             # Store in memory instead of file
-            vista_data_manager.set_job_data(jobs)
+            data_manager.set_job_data(jobs)
             return jobs
 
     def get_departments(self):
