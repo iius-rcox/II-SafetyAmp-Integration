@@ -15,15 +15,11 @@ from collections import defaultdict
 from utils.logger import get_logger
 from utils.emailer import send_error_email
 from utils.change_tracker import ChangeTracker
-from utils.metrics import get_or_create_counter
+from utils.metrics import metrics
 
 logger = get_logger("error_notifier")
 
-_errors_counter = get_or_create_counter(
-    'safetyamp_errors_total',
-    'Total error events by error type, entity type, and source',
-    labelnames=['error_type', 'entity_type', 'source']
-)
+_errors_counter = metrics.errors_total
 
 class ErrorNotifier:
     """Manages error collection and hourly email notifications"""

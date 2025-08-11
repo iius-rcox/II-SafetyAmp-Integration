@@ -13,15 +13,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from utils.logger import get_logger
-from utils.metrics import get_or_create_counter
+from utils.metrics import metrics
 
 logger = get_logger("change_tracker")
 
-_changes_counter = get_or_create_counter(
-    'safetyamp_changes_total',
-    'Total change events by entity type, operation, and status',
-    labelnames=['entity_type', 'operation', 'status']
-)
+_changes_counter = metrics.changes_total
 
 class ChangeTracker:
     """Tracks all changes made during sync operations"""
