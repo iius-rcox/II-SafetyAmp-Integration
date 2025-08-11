@@ -10,7 +10,7 @@ import threading
 import time
 import os
 from utils.logger import get_logger
-from utils.error_notifier import error_notifier
+from utils.error_manager import error_manager
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST, REGISTRY, start_http_server
 from circuitbreaker import circuit
 import structlog
@@ -311,7 +311,7 @@ def run_sync_worker():
             
             # Check for error notifications (hourly)
             try:
-                error_notifier.send_hourly_notification()
+                error_manager.send_hourly_notification()
             except Exception as e:
                 logger.error(f"Error sending hourly notification: {e}")
             
