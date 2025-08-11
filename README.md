@@ -1,22 +1,23 @@
-# AKS Deployment for dev-aks Cluster
+# SafetyAmp Integration
 
-This repository contains Kubernetes configuration and deployment assets for n8n, the SafetyAmp Integration, and the Samsara Integration on AKS.
+## Container build
 
-## Start Here
-- docs/Getting-Started.md — minimal steps to deploy core components
-- docs/Deployment-Operations-Guide.md — single comprehensive guide (deployment + operations)
-- docs/Operations-Runbook.md — day-2 operations, debugging, and procedures
-- docs/Observability.md — metrics, logs, dashboards, and alerts overview
+Use a single, parameterized build:
 
-## Project Structure
-```
-k8s/               # Kubernetes manifests
-services/          # Application services
-utils/             # Utilities
-deploy/            # Scripts and tooling (kept lean)
-docs/              # Centralized documentation (new)
+```bash
+make build REGISTRY=iiusacr.azurecr.io IMAGE_NAME=safety-amp-agent TAG=latest
 ```
 
-## Notes
-- Never commit secrets. Use Kubernetes Secrets, Azure Key Vault, or similar.
-- Update image references to your container registry before deploying.
+Multi-arch build and push:
+
+```bash
+make buildx REGISTRY=iiusacr.azurecr.io IMAGE_NAME=safety-amp-agent TAG=latest PLATFORM=linux/amd64,linux/arm64
+```
+
+## Kubernetes deploy with kustomize
+
+Update the image once in `k8s/safety-amp/kustomization.yaml` and apply:
+
+```bash
+kubectl apply -k k8s/safety-amp
+```

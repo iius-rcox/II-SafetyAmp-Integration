@@ -207,7 +207,7 @@ spec:
             secretKeyRef:
               key: REDIS_PASSWORD
               name: safety-amp-secrets
-        image: safetyampacr.azurecr.io/safetyamp-integration:latest
+        image: safety-amp
         imagePullPolicy: Always
         livenessProbe:
           failureThreshold: 3
