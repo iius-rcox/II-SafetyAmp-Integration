@@ -1,6 +1,6 @@
 import smtplib
 from email.message import EmailMessage
-from config import settings
+from config import config
 from utils.logger import get_logger
 
 logger = get_logger("emailer")

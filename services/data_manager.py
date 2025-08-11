@@ -1,6 +1,5 @@
 import asyncio
 import json
-import os
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -11,6 +10,7 @@ import redis
 from utils.logger import get_logger
 from utils.metrics import metrics
 from utils.data_validator import validator
+from config import config
 
 logger = get_logger("data_manager")
 
@@ -32,24 +32,24 @@ class DataManager:
         self.cache_dir = Path("cache")
         self.cache_dir.mkdir(exist_ok=True)
 
-        self.redis_host = os.getenv("REDIS_HOST", "localhost")
-        self.redis_port = int(os.getenv("REDIS_PORT", 6379))
-        self.redis_db = int(os.getenv("REDIS_DB", 0))
-        self.redis_password = os.getenv("REDIS_PASSWORD")
+        self.redis_host = config.REDIS_HOST
+        self.redis_port = int(config.REDIS_PORT)
+        self.redis_db = int(config.REDIS_DB)
+        self.redis_password = config.REDIS_PASSWORD
 
         self.redis_client = None
         self._init_redis()
 
         # TTL settings
-        self.cache_ttl_hours = int(os.getenv("CACHE_TTL_HOURS", "4"))
-        self.cache_refresh_interval_hours = int(os.getenv("CACHE_REFRESH_INTERVAL_HOURS", "4"))
+        self.cache_ttl_hours = int(config.CACHE_TTL_HOURS)
+        self.cache_refresh_interval_hours = int(config.CACHE_REFRESH_INTERVAL_HOURS)
 
         # Vista in-memory lifecycle
         self._employee_data: List[Dict[str, Any]] = []
         self._job_data: List[Dict[str, Any]] = []
         self._last_employee_refresh: Optional[datetime] = None
         self._last_job_refresh: Optional[datetime] = None
-        self._refresh_interval = timedelta(minutes=int(os.getenv("VISTA_REFRESH_MINUTES", "30")))
+        self._refresh_interval = timedelta(minutes=int(config.VISTA_REFRESH_MINUTES))
         self._lock = asyncio.Lock()
 
     # ===== Redis/File cache =====

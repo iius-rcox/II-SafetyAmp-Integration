@@ -7,7 +7,7 @@ from services.viewpoint_api import ViewpointAPI
 from services.safetyamp_api import SafetyAmpAPI
 from services.samsara_api import SamsaraAPI
 from utils.cache_manager import CacheManager
-from config import settings
+from config import config
 
 logger = get_logger("health")
 
@@ -41,8 +41,8 @@ def check_samsara() -> Dict[str, Any]:
     start = time.time()
     try:
         # Use direct request to keep it lightweight
-        url = f"{settings.SAMSARA_DOMAIN.rstrip('/')}/fleet/vehicles"
-        headers = {"Authorization": f"Bearer {settings.SAMSARA_API_KEY}", "Accept": "application/json"}
+        url = f"{config.SAMSARA_DOMAIN.rstrip('/')}/fleet/vehicles"
+        headers = {"Authorization": f"Bearer {config.SAMSARA_API_KEY}", "Accept": "application/json"}
         resp = requests.get(url, headers=headers, params={"limit": 1}, timeout=5)
         resp.raise_for_status()
         return {"status": "healthy", "latency_ms": (time.time() - start) * 1000}

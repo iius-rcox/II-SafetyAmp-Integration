@@ -55,9 +55,9 @@ Verification: `pip install -r requirements.txt` should succeed.
 ### Phase 1: Standardize Configuration (ConfigManager)
 
 Files to create/modify:
-- Create/Replace: `config/__init__.py` (unified `ConfigManager` and exported singleton `config` and alias `settings`).
-- Modify: `main.py` (startup config validation/logging).
-- Modify: service modules that read configuration to import from `config`.
+- Create/Replace: `config/__init__.py` (unified `ConfigManager` and exported singleton `config` and alias `settings`). [Implemented]
+- Modify: `main.py` (startup config validation/logging). [Implemented]
+- Modify: service modules that read configuration to import from `config`. [Implemented: `services/data_manager.py`, `services/viewpoint_api.py`, `services/safetyamp_api.py`, `services/samsara_api.py`, `services/graph_api.py`, `utils/health.py`, `utils/emailer.py`]
 
 Design:
 - Precedence: env → Azure Key Vault → .env → defaults.
@@ -87,6 +87,7 @@ logger.info(f"Configuration loaded: {status['validation']['is_valid']}")
 Testing steps:
 - Run a small script to print `config.get_configuration_status()`.
 - Toggle missing envs and assert validation fails with actionable messages.
+- Verify `main.py` respects `ENABLE_UNIFIED_CONFIG` feature flag.
 
 ---
 

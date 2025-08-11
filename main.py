@@ -41,11 +41,12 @@ structlog.configure(
 app = Flask(__name__)
 logger = get_logger("main")
 
-# Configuration from environment
-DB_POOL_SIZE = int(os.getenv('DB_POOL_SIZE', '5'))
-DB_MAX_OVERFLOW = int(os.getenv('DB_MAX_OVERFLOW', '10'))
-DB_POOL_TIMEOUT = int(os.getenv('DB_POOL_TIMEOUT', '30'))
-SYNC_INTERVAL = int(os.getenv('SYNC_INTERVAL', '3600'))
+# Configuration from unified config manager
+DB_POOL_SIZE = config.DB_POOL_SIZE
+DB_MAX_OVERFLOW = config.DB_MAX_OVERFLOW
+DB_POOL_TIMEOUT = config.DB_POOL_TIMEOUT
+# Convert minutes to seconds for sync interval
+SYNC_INTERVAL = max(1, int(config.SYNC_INTERVAL_MINUTES) * 60)
 HEALTH_CHECK_TIMEOUT = int(os.getenv('HEALTH_CHECK_TIMEOUT', '5'))
 
 # Database connection tracking
@@ -287,12 +288,13 @@ if __name__ == "__main__":
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
     
-    # Validate configuration before starting services
-    if not config.validate_required_secrets():
+    # Validate configuration before starting services (feature flaggable)
+    enable_unified_config = (os.getenv('ENABLE_UNIFIED_CONFIG', '1') or '1').lower() in ('1', 'true', 'yes')
+    if enable_unified_config and not config.validate_required_secrets():
         logger.critical("Configuration validation failed", extra={"missing": config.get_configuration_status()["validation"]["missing"]})
         sys.exit(1)
 
-    status = config.get_configuration_status()
+    status = config.get_configuration_status() if enable_unified_config else {"validation": {"is_valid": True}, "azure": {}}
     logger.info(
         "Starting SafetyAmp integration service",
         extra={
@@ -301,7 +303,7 @@ if __name__ == "__main__":
             'db_max_overflow': DB_MAX_OVERFLOW,
             'sync_interval': SYNC_INTERVAL,
             'config_validation': status['validation']['is_valid'],
-            'azure_key_vault_enabled': status['azure']['azure_key_vault_enabled'],
+            'azure_key_vault_enabled': status.get('azure', {}).get('azure_key_vault_enabled'),
         }
     )
     

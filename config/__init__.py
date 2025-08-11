@@ -208,6 +208,7 @@ class ConfigManager:
 
         # Runtime
         self.SYNC_INTERVAL_MINUTES: int = int(self.get_env("SYNC_INTERVAL_MINUTES", "60"))
+        self.VISTA_REFRESH_MINUTES: int = int(self.get_env("VISTA_REFRESH_MINUTES", "30"))
         self.PRODUCTION: bool = (self.get_env("ENV", "production") or "production").lower() == "production"
 
         # Cache / Retry / HTTP

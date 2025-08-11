@@ -1,7 +1,7 @@
 import requests
 import time
 from ratelimit import limits, sleep_and_retry
-from config import settings
+from config import config
 from utils.logger import get_logger
 from utils.data_validator import validator
 
@@ -13,10 +13,10 @@ class SafetyAmpAPI:
     MAX_RETRY_WAIT = 60
 
     def __init__(self):
-        self.base_url = settings.SAFETYAMP_DOMAIN.rstrip("/")
+        self.base_url = config.SAFETYAMP_DOMAIN.rstrip("/")
         self.headers = {
-            "Authorization": f"Bearer {settings.SAFETYAMP_TOKEN}",
-            "Fqdn": settings.SAFETYAMP_FQDN,
+            "Authorization": f"Bearer {config.SAFETYAMP_TOKEN}",
+            "Fqdn": config.SAFETYAMP_FQDN,
             "Accept": "application/json",
             "Content-Type": "application/json"
         }

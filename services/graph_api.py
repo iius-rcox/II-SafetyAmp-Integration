@@ -1,6 +1,6 @@
 import requests
 from msal import ConfidentialClientApplication
-from config import settings
+from config import config
 from utils.logger import get_logger
 
 logger = get_logger("msgraph_api")
