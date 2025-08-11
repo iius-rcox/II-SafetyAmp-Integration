@@ -14,6 +14,7 @@ from utils.error_manager import error_manager
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST, REGISTRY, start_http_server
 from circuitbreaker import circuit
 import structlog
+from utils.metrics import metrics
 
 # Initialize structured logging
 structlog.configure(
@@ -65,26 +66,6 @@ def get_active_connection_count():
     with _connection_lock:
         return len(_active_connections)
 
-# Prometheus metrics - create only if they don't exist
-def get_or_create_metric(metric_type, name, description, **kwargs):
-    """Get existing metric or create new one to avoid duplicates"""
-    try:
-        # Try to get existing metric
-        return REGISTRY._names_to_collectors[name]
-    except KeyError:
-        # Create new metric if it doesn't exist
-        return metric_type(name, description, **kwargs)
-
-# Initialize metrics safely
-sync_operations_total = get_or_create_metric(Counter, 'safetyamp_sync_operations_total', 'Total sync operations', labelnames=['operation', 'status'])
-sync_duration_seconds = get_or_create_metric(Histogram, 'safetyamp_sync_duration_seconds', 'Sync operation duration', labelnames=['operation'])
-records_processed_total = get_or_create_metric(Counter, 'safetyamp_records_processed_total', 'Total records processed', labelnames=['sync_type'])
-current_sync_operations = get_or_create_metric(Gauge, 'safetyamp_current_sync_operations', 'Current ongoing sync operations')
-health_check_duration = get_or_create_metric(Histogram, 'safetyamp_health_check_duration_seconds', 'Health check duration')
-database_connections_active = get_or_create_metric(Gauge, 'safetyamp_database_connections_active', 'Active database connections')
-sync_in_progress_gauge = get_or_create_metric(Gauge, 'safetyamp_sync_in_progress', 'Whether a sync is currently in progress (0/1)')
-last_sync_timestamp_seconds = get_or_create_metric(Gauge, 'safetyamp_last_sync_timestamp_seconds', 'Epoch seconds of last completed sync')
-
 # Global health status with enhanced tracking
 health_status = {
     'healthy': True,
@@ -128,7 +109,7 @@ def check_external_apis():
 @app.route('/health')
 def health():
     """Enhanced liveness probe endpoint"""
-    with health_check_duration.time():
+    with metrics.health_check_duration.time():
         if health_status['healthy'] and not shutdown_requested:
             return jsonify({
                 'status': 'healthy', 
@@ -145,7 +126,7 @@ def health():
 @app.route('/ready')
 def ready():
     """Enhanced readiness probe endpoint with graceful degradation"""
-    with health_check_duration.time():
+    with metrics.health_check_duration.time():
         overall_status = 'ready'
         status_code = 200
         details = {}
@@ -189,10 +170,10 @@ def ready():
             }), 503
 
 @app.route('/metrics')
-def metrics():
+def metrics_endpoint():
     """Enhanced Prometheus metrics endpoint"""
     # Update connection pool metrics with actual active connections
-    database_connections_active.set(get_active_connection_count())
+    metrics.database_connections_active.set(get_active_connection_count())
     
     return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
 
@@ -234,69 +215,69 @@ def run_sync_worker():
         try:
             logger.info("Starting sync operations")
             health_status['sync_in_progress'] = True
-            current_sync_operations.inc()
-            sync_in_progress_gauge.set(1)
+            metrics.current_sync_operations.inc()
+            metrics.sync_in_progress_gauge.set(1)
             
             start_time = time.time()
             
             # Employee sync (currently active)
-            with sync_duration_seconds.labels(operation='employees').time():
+            with metrics.sync_duration_seconds.labels(operation='employees').time():
                 try:
                     ee_syncer = EmployeeSyncer()
                     result = ee_syncer.sync()
-                    sync_operations_total.labels(operation='employees', status='success').inc()
+                    metrics.sync_operations_total.labels(operation='employees', status='success').inc()
                     if result and 'processed' in result:
-                        records_processed_total.labels(sync_type='employees').inc(result['processed'])
+                        metrics.records_processed_total.labels(sync_type='employees').inc(result['processed'])
                 except Exception as e:
-                    sync_operations_total.labels(operation='employees', status='error').inc()
+                    metrics.sync_operations_total.labels(operation='employees', status='error').inc()
                     raise e
             
             # Department sync
-            with sync_duration_seconds.labels(operation='departments').time():
+            with metrics.sync_duration_seconds.labels(operation='departments').time():
                 try:
                     dept_syncer = DepartmentSyncer()
                     result = dept_syncer.sync()
-                    sync_operations_total.labels(operation='departments', status='success').inc()
+                    metrics.sync_operations_total.labels(operation='departments', status='success').inc()
                     if result and 'processed' in result:
-                        records_processed_total.labels(sync_type='departments').inc(result['processed'])
+                        metrics.records_processed_total.labels(sync_type='departments').inc(result['processed'])
                 except Exception as e:
-                    sync_operations_total.labels(operation='departments', status='error').inc()
+                    metrics.sync_operations_total.labels(operation='departments', status='error').inc()
                     raise e
             
             # Job sync
-            with sync_duration_seconds.labels(operation='jobs').time():
+            with metrics.sync_duration_seconds.labels(operation='jobs').time():
                 try:
                     job_syncer = JobSyncer()
                     result = job_syncer.sync()
-                    sync_operations_total.labels(operation='jobs', status='success').inc()
+                    metrics.sync_operations_total.labels(operation='jobs', status='success').inc()
                     if result and 'processed' in result:
-                        records_processed_total.labels(sync_type='jobs').inc(result['processed'])
+                        metrics.records_processed_total.labels(sync_type='jobs').inc(result['processed'])
                 except Exception as e:
-                    sync_operations_total.labels(operation='jobs', status='error').inc()
+                    metrics.sync_operations_total.labels(operation='jobs', status='error').inc()
                     raise e
             
             # Title sync
-            with sync_duration_seconds.labels(operation='titles').time():
+            with metrics.sync_duration_seconds.labels(operation='titles').time():
                 try:
                     title_syncer = TitleSyncer()
                     result = title_syncer.sync()
-                    sync_operations_total.labels(operation='titles', status='success').inc()
+                    metrics.sync_operations_total.labels(operation='titles', status='success').inc()
                     if result and 'processed' in result:
-                        records_processed_total.labels(sync_type='titles').inc(result['processed'])
+                        metrics.records_processed_total.labels(sync_type='titles').inc(result['processed'])
                 except Exception as e:
-                    sync_operations_total.labels(operation='titles', status='error').inc()
+                    metrics.sync_operations_total.labels(operation='titles', status='error').inc()
                     raise e
             
             # Vehicle sync
-            with sync_duration_seconds.labels(operation='vehicles').time():
+            with metrics.sync_duration_seconds.labels(operation='vehicles').time():
                 try:
                     vehicle_syncer = VehicleSync()
                     result = vehicle_syncer.sync_vehicles()
-                    sync_operations_total.labels(operation='vehicles', status='success').inc()
+                    metrics.sync_operations_total.labels(operation='vehicles', status='success').inc()
                     if result and 'synced' in result:
-                        records_processed_total.labels(sync_type='vehicles').inc(result['synced'])
+                        metrics.records_processed_total.labels(sync_type='vehicles').inc(result['synced'])
                 except Exception as e:
-                    sync_operations_total.labels(operation='vehicles', status='error').inc()
+                    metrics.sync_operations_total.labels(operation='vehicles', status='error').inc()
                     raise e
             
             health_status['last_sync'] = time.time()
@@ -304,7 +285,7 @@ def run_sync_worker():
             health_status['errors'] = []  # Clear previous errors
             sync_duration = time.time() - start_time
             # Update last completed sync timestamp metric
-            last_sync_timestamp_seconds.set(health_status['last_sync'])
+            metrics.last_sync_timestamp_seconds.set(health_status['last_sync'])
             
             logger.info("Sync operations completed successfully", 
                        duration_seconds=sync_duration)
@@ -326,7 +307,7 @@ def run_sync_worker():
             error_msg = f"Sync worker error: {str(e)}"
             logger.error(error_msg, exc_info=True)
             health_status['errors'].append(error_msg)
-            sync_operations_total.labels(operation='general', status='error').inc()
+            metrics.sync_operations_total.labels(operation='general', status='error').inc()
             
             # Log to error notifier for email notifications
             try:
@@ -351,8 +332,8 @@ def run_sync_worker():
             
         finally:
             health_status['sync_in_progress'] = False
-            current_sync_operations.dec()
-            sync_in_progress_gauge.set(0)
+            metrics.current_sync_operations.dec()
+            metrics.sync_in_progress_gauge.set(0)
 
 def signal_handler(signum, frame):
     """Enhanced graceful shutdown handler"""
@@ -398,12 +379,18 @@ if __name__ == "__main__":
     sync_thread = threading.Thread(target=run_sync_worker, daemon=True)
     sync_thread.start()
     
-    # Start dedicated Prometheus metrics HTTP server on :9090 for scrapers
+    # Resolve bind addresses and ports from environment (defaults appropriate for containers)
+    bind_address = os.getenv('BIND_ADDRESS', '0.0.0.0')
+    metrics_bind_address = os.getenv('METRICS_BIND_ADDRESS', bind_address)
+    metrics_port = int(os.getenv('METRICS_PORT', '9090'))
+    app_port = int(os.getenv('PORT', '8080'))
+
+    # Start dedicated Prometheus metrics HTTP server for scrapers
     try:
-        start_http_server(9090, addr="0.0.0.0")
-        logger.info("Prometheus metrics server started", extra={"port": 9090})
+        start_http_server(metrics_port, addr=metrics_bind_address)
+        logger.info("Prometheus metrics server started", extra={"port": metrics_port})
     except Exception as e:
-        logger.error(f"Failed to start Prometheus metrics server on :9090: {e}")
+        logger.error(f"Failed to start Prometheus metrics server on :{metrics_port}: {e}")
 
     # Start Flask app
-    app.run(host='0.0.0.0', port=8080, threaded=True)
+    app.run(host=bind_address, port=app_port, threaded=True)

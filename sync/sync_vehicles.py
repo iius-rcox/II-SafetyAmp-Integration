@@ -328,7 +328,7 @@ class VehicleSync:
                     logger.error(f"Error processing vehicle {vehicle.get('id', 'unknown')}: {e}")
             
             # Log summary
-            logger.info(f"Vehicle sync completed:")
+            logger.info("Vehicle sync completed:")
             logger.info(f"  Synced: {synced_count}")
             logger.info(f"  Errors: {error_count}")
             logger.info(f"  Skipped: {skipped_count}")

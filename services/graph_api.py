@@ -36,7 +36,7 @@ class MSGraphAPI:
         users = {}
 
         while endpoint:
-            response = requests.get(endpoint, headers=headers)
+            response = requests.get(endpoint, headers=headers, timeout=settings.HTTP_REQUEST_TIMEOUT)
             if response.status_code == 200:
                 data = response.json()
                 for user in data.get('value', []):
@@ -53,5 +53,5 @@ class MSGraphAPI:
                 logger.error(f"Failed to fetch active users: {response.text}")
                 response.raise_for_status()
 
-        logger.info(f"Fetched active users.")
+        logger.info("Fetched active users.")
         return users

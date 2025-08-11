@@ -18,11 +18,7 @@ from utils.metrics import get_or_create_counter
 
 logger = get_logger("error_notifier")
 
-_errors_counter = get_or_create_counter(
-    'safetyamp_errors_total',
-    'Total error events by error type, entity type, and source',
-    labelnames=['error_type', 'entity_type', 'source']
-)
+_errors_counter = metrics.errors_total
 
 class ErrorNotifier:
     """Manages error collection and hourly email notifications"""
