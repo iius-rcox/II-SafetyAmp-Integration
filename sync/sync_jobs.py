@@ -1,6 +1,7 @@
 from utils.logger import get_logger
 from services.safetyamp_api import SafetyAmpAPI
 from services.viewpoint_api import ViewpointAPI
+from services.data_manager import data_manager
 
 logger = get_logger("sync_jobs")
 
@@ -9,7 +10,11 @@ class JobSyncer:
         self.api_client = SafetyAmpAPI()
         self.viewpoint = ViewpointAPI()
         logger.info("Fetching existing sites from SafetyAmp...")
-        sites_data = self.api_client.get_sites_cached(max_age_hours=1)
+        sites_data = data_manager.get_cached_data_with_fallback(
+            "safetyamp_sites",
+            lambda: self.api_client.get_all_paginated("/api/sites", key_field="id"),
+            max_age_hours=1,
+        )
         self.existing_sites = sites_data.values()
         logger.info(f"Retrieved {len(self.existing_sites)} existing sites.")
         logger.info("Fetching jobs from Viewpoint...")
