@@ -46,7 +46,10 @@ class JobSyncer(SyncOperation):
                 patch_data["name"] = name
                 self.api_client.put(f"/api/sites/{existing_site['id']}", patch_data)
                 logger.info(f"Updated site: {name} with changes: {patch_data}")
-            return True, False  # processed, created
+                return True, False, True  # processed, created, updated
+            # No changes needed
+            logger.info(f"No changes for existing site: {name}")
+            return True, False, False  # processed, created, updated
 
         site_data = {
             "name": name,
@@ -63,10 +66,10 @@ class JobSyncer(SyncOperation):
         created = self.api_client.create_site(site_data)
         if isinstance(created, dict):
             logger.info(f"Created site: {name} under cluster {cluster_id}")
-            return True, True
+            return True, True, False
         else:
             logger.warning(f"Failed to create site: {name}")
-            return False, False
+            return False, False, False
 
     def perform_sync(self):
         logger.info("Starting job site sync...")
@@ -84,12 +87,15 @@ class JobSyncer(SyncOperation):
                 continue
 
             try:
-                processed, was_created = self.ensure_site(job, cluster_id)
+                processed, was_created, was_updated = self.ensure_site(job, cluster_id)
                 if processed:
                     if was_created:
                         created += 1
-                    else:
+                    elif was_updated:
                         updated += 1
+                    else:
+                        # No-op for existing site with no changes
+                        pass
                 else:
                     errors += 1
             except Exception as e:
