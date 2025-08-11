@@ -146,8 +146,8 @@ Testing steps:
 Files to create/modify:
 - Create: `services/event_manager.py` (unified event model and sinks). [Implemented]
 - Remove later: `utils/error_manager.py`, `utils/change_tracker.py`, `utils/error_notifier.py`.
-- Modify: `sync/sync_employees.py`, `sync/sync_departments.py`, `sync/sync_jobs.py`, `sync/sync_titles.py`, `sync/sync_vehicles.py`, `main.py` to use `event_manager`. [Partially implemented: `main.py`, `sync/sync_employees.py`]
-- Modify: `deploy/monitor-changes.ps1`, `deploy/monitor-validation.ps1`, `deploy/test-error-notifications.ps1` if they import old modules.
+- Modify: `sync/sync_employees.py`, `sync/sync_departments.py`, `sync/sync_jobs.py`, `sync/sync_titles.py`, `sync/sync_vehicles.py`, `main.py` to use `event_manager`. [Implemented]
+- Modify: `deploy/monitor-changes.ps1`, `deploy/monitor-validation.ps1`, `deploy/test-error-notifications.ps1` if they import old modules. [Implemented]
 
 Design:
 - Event schema: `{event_id, timestamp, severity, category, entity_type, entity_id, session_id, attributes, error}`.
@@ -188,6 +188,7 @@ Testing steps:
 - Start a session, emit creation and error events, end session; assert summary counts.
 - Induce notifier failure (e.g., bad SMTP) to confirm non-fatal behavior and backoff.
 - Verify structured logs and (optional) OpenTelemetry spans are emitted.
+- Validate `deploy/*` scripts now interact via `event_manager` and `data_manager` only.
 
 ---
 
