@@ -18,11 +18,11 @@ metadata:
     app: safety-amp
 type: Opaque
 stringData:
-  # These will be populated from Azure Key Vault
   AZURE_KEY_VAULT_URL: "https://iius-akv.vault.azure.net/"
   REDIS_HOST: "redis-service"
   REDIS_PORT: "6379"
   REDIS_PASSWORD: ""
+  REDIS_DB: "0"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -32,40 +32,29 @@ metadata:
   labels:
     app: safety-amp
 data:
-  # Application configuration optimized for hourly sync
   LOG_LEVEL: "INFO"
-  LOG_FORMAT: "json"  # For structured logging
+  LOG_FORMAT: "json"
   ENVIRONMENT: "production"
-  SYNC_INTERVAL: "900"  # 15 minutes
-  BATCH_SIZE: "500"  # Larger batches for hourly sync
-  CACHE_TTL_HOURS: "4"  # Longer cache for stable data
-  CACHE_REFRESH_INTERVAL_HOURS: "4"  # Full cache refresh every 4 hours
+  SYNC_INTERVAL: "900"
+  BATCH_SIZE: "500"
+  CACHE_TTL_HOURS: "4"
+  CACHE_REFRESH_INTERVAL_HOURS: "4"
   API_RATE_LIMIT_CALLS: "60"
   API_RATE_LIMIT_PERIOD: "61"
-  MAX_RETRY_ATTEMPTS: "5"  # More retries for reliability
+  MAX_RETRY_ATTEMPTS: "5"
   RETRY_DELAY_SECONDS: "30"
   HEALTH_CHECK_PORT: "8080"
   HEALTH_CHECK_TIMEOUT: "5"
   METRICS_PORT: "9090"
-  
-  # Database authentication mode - use sql_auth for immediate connectivity
   SQL_AUTH_MODE: "sql_auth"
-  
-  # Database connection pooling configuration - optimized for higher throughput
-  DB_POOL_SIZE: "8"  # Increased connection pool
-  DB_MAX_OVERFLOW: "15"  # More overflow connections
+  DB_POOL_SIZE: "8"
+  DB_MAX_OVERFLOW: "15"
   DB_POOL_TIMEOUT: "30"
   DB_POOL_RECYCLE: "3600"
-  
-  # Safety Amp specific settings
   SAFETY_AMP_BASE_URL: "https://api.safetyamp.com"
   SAFETY_AMP_TIMEOUT: "30"
-  
-  # Circuit breaker configuration - more tolerance for production
-  CIRCUIT_BREAKER_FAILURE_THRESHOLD: "5"  # More tolerance
+  CIRCUIT_BREAKER_FAILURE_THRESHOLD: "5"
   CIRCUIT_BREAKER_RECOVERY_TIMEOUT: "30"
-  
-  # Memory profiling settings
   MEMORY_PROFILER_ENABLED: "false"
   MEMORY_PROFILER_INTERVAL: "300"
 ---
@@ -78,7 +67,7 @@ metadata:
     app: safety-amp
     component: agent
 spec:
-  replicas: 1  # Single replica to prevent duplicate syncs
+  replicas: 1
   selector:
     matchLabels:
       app: safety-amp
@@ -88,13 +77,13 @@ spec:
       labels:
         app: safety-amp
         component: agent
-        azure.workload.identity/use: "true"  # Enable Workload Identity
+        azure.workload.identity/use: "true"
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9090"
         prometheus.io/path: "/metrics"
     spec:
-      serviceAccountName: safety-amp-workload-identity-sa  # Use Workload Identity SA
+      serviceAccountName: safety-amp-workload-identity-sa
       imagePullSecrets:
       - name: acr-secret
       affinity:
@@ -272,13 +261,18 @@ spec:
             secretKeyRef:
               name: safety-amp-secrets
               key: REDIS_PASSWORD
+        - name: REDIS_DB
+          valueFrom:
+            secretKeyRef:
+              name: safety-amp-secrets
+              key: REDIS_DB
         resources:
           requests:
-            memory: "256Mi"  # Reduced to comply with policy
-            cpu: "100m"      # Reduced to comply with policy
+            memory: "256Mi"
+            cpu: "100m"
           limits:
-            memory: "512Mi"  # Reduced to comply with policy (max 1Gi)
-            cpu: "200m"      # Reduced to comply with policy (max 200m)
+            memory: "512Mi"
+            cpu: "200m"
         livenessProbe:
           httpGet:
             path: /health
@@ -293,15 +287,6 @@ spec:
           initialDelaySeconds: 15
           periodSeconds: 10
           timeoutSeconds: 5
-        # Add volume mounts if needed for data persistence
-        # volumeMounts:
-        # - name: data-volume
-        #   mountPath: /app/data
-      # Add volumes if needed
-      # volumes:
-      # - name: data-volume
-      #   persistentVolumeClaim:
-      #     claimName: safety-amp-data
 ---
 apiVersion: v1
 kind: Service
@@ -326,7 +311,6 @@ spec:
     app: safety-amp
     component: agent
 ---
-# CronJob for scheduled SafetyAmp synchronization
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -336,9 +320,9 @@ metadata:
     app: safety-amp
     component: sync-job
 spec:
-  schedule: "*/15 * * * *"  # Every 15 minutes
-  timeZone: "America/Chicago"  # Explicit timezone (Kubernetes 1.24+)
-  concurrencyPolicy: Forbid  # Prevent overlapping jobs
+  schedule: "*/15 * * * *"
+  timeZone: "America/Chicago"
+  concurrencyPolicy: Forbid
   failedJobsHistoryLimit: 3
   successfulJobsHistoryLimit: 1
   jobTemplate:
@@ -349,17 +333,16 @@ spec:
           labels:
             app: safety-amp
             component: sync-job
-            azure.workload.identity/use: "true"  # Enable Workload Identity for CronJob
+            azure.workload.identity/use: "true"
         spec:
-          restartPolicy: Never  # Use Never for batch jobs
-          serviceAccountName: safety-amp-workload-identity-sa  # Use Workload Identity SA
+          restartPolicy: Never
+          serviceAccountName: safety-amp-workload-identity-sa
           containers:
           - name: safety-amp-sync
             image: iiusacr.azurecr.io/safety-amp-agent:latest
             imagePullPolicy: Always
-            command: ["python", "sync_batch.py"]  # Dedicated batch sync script
+            command: ["python", "sync_batch.py"]
             env:
-            # Copy all environment variables from the main deployment
             - name: LOG_LEVEL
               valueFrom:
                 configMapKeyRef:
@@ -376,31 +359,266 @@ spec:
                   name: safety-amp-config
                   key: ENVIRONMENT
             - name: DB_POOL_SIZE
-              value: "2"  # Smaller pool for batch jobs
+              value: "2"
             - name: DB_MAX_OVERFLOW
               value: "5"
             - name: BATCH_MODE
               value: "true"
-            resources:
-              requests:
-                memory: "256Mi"
-                cpu: "100m"
-              limits:
-                memory: "512Mi"
-                cpu: "500m"
+            - name: REDIS_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: safety-amp-secrets
+                  key: REDIS_HOST
+            - name: REDIS_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: safety-amp-secrets
+                  key: REDIS_PORT
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: safety-amp-secrets
+                  key: REDIS_PASSWORD
+            - name: REDIS_DB
+              valueFrom:
+                secretKeyRef:
+                  name: safety-amp-secrets
+                  key: REDIS_DB
 ---
-# Optional: Create a PVC if the agent needs persistent storage
-# apiVersion: v1
-# kind: PersistentVolumeClaim
-# metadata:
-#   name: safety-amp-data
-#   namespace: safety-amp
-#   labels:
-#     app: safety-amp
-# spec:
-#   accessModes:
-#     - ReadWriteOnce
-#   storageClassName: managed-csi
-#   resources:
-#     requests:
-#       storage: 5Gi
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: safety-amp-integration-hpa
+  namespace: safety-amp
+  labels:
+    app: safety-amp
+    component: agent
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: safety-amp-agent
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  - type: Pods
+    pods:
+      metric:
+        name: safetyamp_current_sync_operations
+      target:
+        type: AverageValue
+        averageValue: "2"
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+      - type: Pods
+        value: 1
+        periodSeconds: 60
+      selectPolicy: Min
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 60
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+      selectPolicy: Max
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: safety-amp-integration-netpol
+  namespace: safety-amp
+  labels:
+    app: safety-amp
+spec:
+  podSelector:
+    matchLabels:
+      app: safety-amp
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 9090
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8080
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: safety-amp
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 9090
+  egress:
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 80
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: safety-amp
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  namespace: safety-amp
+  labels:
+    app: redis
+data:
+  redis.conf: |
+    bind 0.0.0.0
+    port 6379
+    timeout 0
+    tcp-keepalive 300
+    daemonize no
+    supervised no
+    pidfile /var/run/redis_6379.pid
+    loglevel notice
+    logfile ""
+    databases 16
+    save 900 1
+    save 300 10
+    save 60 10000
+    stop-writes-on-bgsave-error yes
+    rdbcompression yes
+    rdbchecksum yes
+    dbfilename dump.rdb
+    dir /data
+    maxmemory 200mb
+    maxmemory-policy allkeys-lru
+    appendonly yes
+    appendfilename "appendonly.aof"
+    appendfsync everysec
+    no-appendfsync-on-rewrite no
+    auto-aof-rewrite-percentage 100
+    auto-aof-rewrite-min-size 64mb
+    aof-load-truncated yes
+    aof-use-rdb-preamble yes
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: safety-amp
+  labels:
+    app: redis
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379
+    protocol: TCP
+    name: redis
+  selector:
+    app: redis
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: safety-amp
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        command: ["redis-server", "/etc/redis/redis.conf"]
+        ports:
+        - containerPort: 6379
+          name: redis
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+        - name: redis-config
+          mountPath: /etc/redis
+      volumes:
+      - name: redis-data
+        emptyDir: {}
+      - name: redis-config
+        configMap:
+          name: redis-config
