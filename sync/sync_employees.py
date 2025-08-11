@@ -1,6 +1,6 @@
 from utils.logger import get_logger
 from utils.change_tracker import ChangeTracker
-from utils.error_notifier import error_notifier
+from services.event_manager import event_manager
 from utils.data_validator import validator
 from services.safetyamp_api import SafetyAmpAPI
 from services.viewpoint_api import ViewpointAPI
@@ -220,7 +220,7 @@ class EmployeeSyncer:
         logger.info("Starting employee sync...")
         
         # Start change tracking
-        self.error_manager.start_sync("employees")
+        event_manager.start_sync("employees")
         
         employees = self.viewpoint.get_employees()
         logger.info(f"Retrieved {len(employees)} employees from Viewpoint.")
@@ -242,13 +242,13 @@ class EmployeeSyncer:
             # Safety check: stop if too many consecutive errors
             if consecutive_errors >= max_consecutive_errors:
                 error_msg = f"Stopping sync due to {consecutive_errors} consecutive errors"
-                self.error_manager.log_error(
-                    error_type="safety_stop",
-                    entity_type="sync",
+                event_manager.log_error(
+                    kind="safety_stop",
+                    entity="sync",
                     entity_id="system",
-                    error_message=error_msg,
+                    message=error_msg,
                     operation="safety_stop",
-                    error_details={
+                    details={
                         "consecutive_errors": consecutive_errors,
                         "max_consecutive_errors": max_consecutive_errors,
                         "processed_count": len(sync_results["processed_employees"])
@@ -265,7 +265,7 @@ class EmployeeSyncer:
             if not payload.get("home_site_id"):
                 reason = f"No matching site for PRDept {emp.get('PRDept')} or Job {emp.get('Job')}"
                 logger.warning(f"Skipping employee {full_name} (ID: {emp_id}): {reason}")
-                self.error_manager.log_skip("employee", emp_id, reason)
+                event_manager.log_skip("employee", emp_id, reason)
                 sync_results["skipped"] += 1
                 continue
 
@@ -273,13 +273,13 @@ class EmployeeSyncer:
             is_valid, validation_errors, cleaned_payload = self.validate_required_fields(payload, emp_id, full_name)
             
             if not is_valid:
-                self.error_manager.log_error(
-                    error_type="validation_error",
-                    entity_type="employee",
+                event_manager.log_error(
+                    kind="validation_error",
+                    entity="employee",
                     entity_id=emp_id,
-                    error_message=f"Validation errors: {validation_errors}",
+                    message=f"Validation errors: {validation_errors}",
                     operation="validation",
-                    error_details={
+                    details={
                         "validation_errors": validation_errors,
                         "original_payload": payload,
                         "cleaned_payload": cleaned_payload,
@@ -299,13 +299,13 @@ class EmployeeSyncer:
                     is_update_valid, update_validation_errors, cleaned_update_payload = self.validate_required_fields(update_payload, emp_id, full_name)
                     
                     if not is_update_valid:
-                        self.error_manager.log_error(
-                            error_type="validation_error",
-                            entity_type="employee",
+                        event_manager.log_error(
+                            kind="validation_error",
+                            entity="employee",
                             entity_id=emp_id,
-                            error_message=f"Update validation errors: {update_validation_errors}",
+                            message=f"Update validation errors: {update_validation_errors}",
                             operation="update_validation",
-                            error_details=updated_fields,
+                            details=updated_fields,
                             source="sync_update"
                         )
                         sync_results["errors"] += 1
@@ -335,7 +335,7 @@ class EmployeeSyncer:
                         # Use PATCH for partial updates (including required core fields)
                         self.api_client.patch(f"/api/users/{existing_user['id']}", patch_payload)
                         logger.info(f"Updated user {full_name} (ID: {emp_id}) with fields: {list(sanitized_update_fields.keys())}")
-                        self.error_manager.log_update("employee", emp_id, patch_payload, existing_user)
+                        event_manager.log_update("employee", emp_id, patch_payload, existing_user)
                         sync_results["updated"] += 1
                         sync_results["processed_employees"].append({"id": emp_id, "action": "updated", "fields": list(sanitized_update_fields.keys())})
                         consecutive_errors = 0  # Reset error counter on success
@@ -344,13 +344,13 @@ class EmployeeSyncer:
                         if e.response.status_code == 422:
                             error_response = e.response.json()
                             error_msg = f"Validation error (422): {error_response}"
-                            self.error_manager.log_error(
-                                error_type="validation_error",
-                                entity_type="employee",
+                            event_manager.log_error(
+                                kind="validation_error",
+                                entity="employee",
                                 entity_id=emp_id,
-                                error_message=error_msg,
+                                message=error_msg,
                                 operation="update",
-                                error_details={
+                                details={
                                     "status_code": 422,
                                     "failed_fields": list(sanitized_update_fields.keys()),
                                     "payload": sanitized_update_fields,
@@ -364,13 +364,13 @@ class EmployeeSyncer:
                             logger.error(f"Failed update fields for {full_name}: {updated_fields}")
                         else:
                             error_msg = f"HTTP error {e.response.status_code}: {str(e)}"
-                            self.error_manager.log_error(
-                                error_type="http_error",
-                                entity_type="employee",
+                            event_manager.log_error(
+                                kind="http_error",
+                                entity="employee",
                                 entity_id=emp_id,
-                                error_message=error_msg,
+                                message=error_msg,
                                 operation="update",
-                                error_details={
+                                details={
                                     "status_code": e.response.status_code,
                                     "payload": sanitized_update_fields,
                                     "employee_name": full_name
@@ -381,13 +381,13 @@ class EmployeeSyncer:
                     except Exception as e:
                         consecutive_errors += 1
                         error_msg = f"Unexpected error updating user: {str(e)}"
-                        self.error_manager.log_error(
-                            error_type="unexpected_error",
-                            entity_type="employee",
+                        event_manager.log_error(
+                            kind="unexpected_error",
+                            entity="employee",
                             entity_id=emp_id,
-                            error_message=error_msg,
+                            message=error_msg,
                             operation="update",
-                            error_details={
+                            details={
                                 "exception_type": type(e).__name__,
                                 "payload": sanitized_update_fields,
                                 "employee_name": full_name
@@ -401,7 +401,7 @@ class EmployeeSyncer:
                 try:
                     self.api_client.create_user(cleaned_payload)
                     logger.info(f"Created user {full_name} (ID: {emp_id})")
-                    self.error_manager.log_creation("employee", emp_id, cleaned_payload)
+                    event_manager.log_creation("employee", emp_id, cleaned_payload)
                     sync_results["created"] += 1
                     sync_results["processed_employees"].append({"id": emp_id, "action": "created"})
                     consecutive_errors = 0  # Reset error counter on success
@@ -410,13 +410,13 @@ class EmployeeSyncer:
                     if e.response.status_code == 422:
                         error_response = e.response.json()
                         error_msg = f"Validation error (422): {error_response}"
-                        self.error_manager.log_error(
-                            error_type="validation_error",
-                            entity_type="employee",
+                        event_manager.log_error(
+                            kind="validation_error",
+                            entity="employee",
                             entity_id=emp_id,
-                            error_message=error_msg,
+                            message=error_msg,
                             operation="create",
-                            error_details={
+                            details={
                                 "status_code": 422,
                                 "payload": cleaned_payload,
                                 "employee_name": full_name,
@@ -436,13 +436,13 @@ class EmployeeSyncer:
                         is_fallback_valid, fallback_validation_errors, cleaned_fallback_payload = self.validate_required_fields(fallback_payload, emp_id, full_name)
                         
                         if not is_fallback_valid:
-                            self.error_manager.log_error(
-                                error_type="validation_error",
-                                entity_type="employee",
+                            event_manager.log_error(
+                                kind="validation_error",
+                                entity="employee",
                                 entity_id=emp_id,
-                                error_message=f"Fallback validation errors: {fallback_validation_errors}",
+                                message=f"Fallback validation errors: {fallback_validation_errors}",
                                 operation="create_fallback_validation",
-                                error_details=fallback_payload,
+                                details=fallback_payload,
                                 source="sync_create_fallback"
                             )
                             sync_results["errors"] += 1
@@ -451,7 +451,7 @@ class EmployeeSyncer:
                         try:
                             self.api_client.create_user(cleaned_fallback_payload)
                             logger.info(f"Created user {full_name} (ID: {emp_id}) on fallback attempt without email/phone")
-                            self.error_manager.log_creation("employee", emp_id, cleaned_fallback_payload)
+                            event_manager.log_creation("employee", emp_id, cleaned_fallback_payload)
                             sync_results["created"] += 1
                             sync_results["processed_employees"].append({"id": emp_id, "action": "created_fallback"})
                             consecutive_errors = 0  # Reset on successful fallback
@@ -460,13 +460,13 @@ class EmployeeSyncer:
                             if fallback_e.response.status_code == 422:
                                 fallback_error_response = fallback_e.response.json()
                                 fallback_error_msg = f"Fallback validation error (422): {fallback_error_response}"
-                                self.error_manager.log_error(
-                                    error_type="fallback_validation_error",
-                                    entity_type="employee",
+                                event_manager.log_error(
+                                    kind="fallback_validation_error",
+                                    entity="employee",
                                     entity_id=emp_id,
-                                    error_message=fallback_error_msg,
+                                    message=fallback_error_msg,
                                     operation="create_fallback",
-                                    error_details={
+                                    details={
                                         "status_code": 422,
                                         "fallback_payload": cleaned_fallback_payload,
                                         "original_payload": cleaned_payload,
@@ -477,13 +477,13 @@ class EmployeeSyncer:
                                 sync_results["errors"] += 1
                             else:
                                 fallback_error_msg = f"Fallback HTTP error {fallback_e.response.status_code}: {str(fallback_e)}"
-                                self.error_manager.log_error(
-                                    error_type="fallback_http_error",
-                                    entity_type="employee",
+                                event_manager.log_error(
+                                    kind="fallback_http_error",
+                                    entity="employee",
                                     entity_id=emp_id,
-                                    error_message=fallback_error_msg,
+                                    message=fallback_error_msg,
                                     operation="create_fallback",
-                                    error_details={
+                                    details={
                                         "status_code": fallback_e.response.status_code,
                                         "fallback_payload": cleaned_fallback_payload,
                                         "original_payload": cleaned_payload,
@@ -495,31 +495,31 @@ class EmployeeSyncer:
                         except Exception as final_e:
                             consecutive_errors += 1
                             error_msg = f"Unexpected error in fallback: {str(final_e)}"
-                            self.error_manager.log_error(
-                                error_type="fallback_unexpected_error",
-                                entity_type="employee",
-                                entity_id=emp_id,
-                                error_message=error_msg,
-                                operation="create_fallback",
-                                error_details={
+                        event_manager.log_error(
+                            kind="fallback_unexpected_error",
+                            entity="employee",
+                            entity_id=emp_id,
+                            message=error_msg,
+                            operation="create_fallback",
+                            details={
                                     "exception_type": type(final_e).__name__,
                                     "fallback_payload": cleaned_fallback_payload,
                                     "original_payload": cleaned_payload,
                                     "employee_name": full_name
-                                },
-                                source="sync_create_fallback"
+                            },
+                            source="sync_create_fallback"
                             )
                             sync_results["errors"] += 1
                     else:
                         consecutive_errors += 1
                         error_msg = f"HTTP error {e.response.status_code}: {str(e)}"
-                        self.error_manager.log_error(
-                            error_type="http_error",
-                            entity_type="employee",
+                        event_manager.log_error(
+                            kind="http_error",
+                            entity="employee",
                             entity_id=emp_id,
-                            error_message=error_msg,
+                            message=error_msg,
                             operation="create",
-                            error_details={
+                            details={
                                 "status_code": e.response.status_code,
                                 "payload": cleaned_payload,
                                 "employee_name": full_name,
@@ -532,7 +532,7 @@ class EmployeeSyncer:
         self._update_cache_after_sync(sync_results)
 
         # End change tracking and get summary
-        session_summary = self.error_manager.end_sync()
+        session_summary = event_manager.end_sync()
 
         logger.info(f"Employee sync completed: {sync_results['created']} created, {sync_results['updated']} updated, {sync_results['skipped']} skipped, {sync_results['errors']} errors")
 

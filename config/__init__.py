@@ -42,7 +42,11 @@ class ConfigManager:
         self._load_dotenv_from_project_root()
 
         # Azure Key Vault
+        # Support either AZURE_KEY_VAULT_URL or AZURE_KEY_VAULT_NAME
         self.azure_key_vault_url: Optional[str] = os.getenv("AZURE_KEY_VAULT_URL")
+        azure_kv_name = os.getenv("AZURE_KEY_VAULT_NAME")
+        if not self.azure_key_vault_url and azure_kv_name:
+            self.azure_key_vault_url = f"https://{azure_kv_name}.vault.azure.net"
         self._azure_credential: Optional[object] = None
         self._azure_secret_client: Optional[object] = None
         self._secrets_cache: Dict[str, str] = {}
@@ -244,6 +248,75 @@ class ConfigManager:
                 "Connect Timeout=300;"
             )
         raise ValueError(f"Invalid SQL_AUTH_MODE: {self.SQL_AUTH_MODE}. Must be 'managed_identity' or 'sql_auth'")
+
+    # ---------- Validation and status ----------
+    def validate_required_secrets(self) -> bool:
+        """Validate presence of required configuration and secrets.
+
+        Rules:
+        - Always require SQL server and database identifiers
+        - SAFETYAMP token is required for API access
+        - If SQL auth mode, require SQL-USERNAME and VISTA-SQL-PASSWORD
+        """
+        missing: list[str] = []
+
+        def require(name: str, value: object) -> None:
+            if value in (None, "", False):
+                missing.append(name)
+
+        require("SQL-SERVER", self.SQL_SERVER)
+        require("SQL-DATABASE", self.SQL_DATABASE)
+        require("SAFETYAMP-TOKEN", self.SAFETYAMP_TOKEN)
+
+        if self.SQL_AUTH_MODE == "sql_auth":
+            require("SQL-USERNAME", self.get_secret("SQL-USERNAME"))
+            require("VISTA-SQL-PASSWORD", self.get_secret("VISTA-SQL-PASSWORD"))
+
+        # Email is optional but recommended for notifications
+        # Redis password optional; host/port have defaults
+
+        self._last_validation_missing = missing  # type: ignore[attr-defined]
+        return len(missing) == 0
+
+    def get_configuration_status(self) -> dict:
+        """Return a redacted, structured view of configuration status for logging/health."""
+        def mask(value: object) -> object:
+            if value is None or value is False:
+                return None
+            if isinstance(value, str):
+                if len(value) <= 4:
+                    return "****"
+                return value[:2] + "****" + value[-2:]
+            return "set"
+
+        validation_ok = self.validate_required_secrets()
+        missing = getattr(self, "_last_validation_missing", [])  # type: ignore[attr-defined]
+
+        return {
+            "validation": {
+                "is_valid": validation_ok,
+                "missing": missing,
+            },
+            "azure": self.get_azure_environment_config(),
+            "secrets": {
+                "SAFETYAMP_TOKEN": mask(self.SAFETYAMP_TOKEN),
+                "MS_GRAPH_CLIENT_ID": mask(self.MS_GRAPH_CLIENT_ID),
+                "MS_GRAPH_TENANT_ID": mask(self.MS_GRAPH_TENANT_ID),
+                "SAMSARA_API_KEY": mask(self.SAMSARA_API_KEY),
+                "SMTP_USERNAME": mask(self.SMTP_USERNAME),
+                "SMTP_PASSWORD": mask(self.SMTP_PASSWORD),
+            },
+            "env": {
+                "SQL_SERVER": self.SQL_SERVER,
+                "SQL_DATABASE": self.SQL_DATABASE,
+                "SQL_AUTH_MODE": self.SQL_AUTH_MODE,
+                "REDIS_HOST": self.REDIS_HOST,
+                "REDIS_PORT": self.REDIS_PORT,
+                "LOG_FORMAT": self.LOG_FORMAT,
+                "STRUCTURED_LOGGING_ENABLED": self.STRUCTURED_LOGGING_ENABLED,
+                "PRODUCTION": self.PRODUCTION,
+            },
+        }
 
 
 # Singleton config instance
