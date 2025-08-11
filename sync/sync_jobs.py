@@ -1,13 +1,13 @@
 from utils.logger import get_logger
 from services.safetyamp_api import SafetyAmpAPI
 from services.viewpoint_api import ViewpointAPI
+from sync.base import SyncOperation
 
 logger = get_logger("sync_jobs")
 
-class JobSyncer:
+class JobSyncer(SyncOperation):
     def __init__(self):
-        self.api_client = SafetyAmpAPI()
-        self.viewpoint = ViewpointAPI()
+        super().__init__(sync_type="jobs", entity_type="site", use_viewpoint=True)
         logger.info("Fetching existing sites from SafetyAmp...")
         sites_data = self.api_client.get_sites_cached(max_age_hours=1)
         self.existing_sites = sites_data.values()
@@ -44,10 +44,17 @@ class JobSyncer:
                 patch_data["ext_id"] = job["Job"]
             if patch_data:
                 patch_data["name"] = name
-                self.api_client.put(f"/api/sites/{existing_site['id']}", patch_data)
+                self.safe_call(
+                    self.api_client.put,
+                    f"/api/sites/{existing_site['id']}",
+                    patch_data,
+                    operation="update_site",
+                    entity_id=name,
+                    error_details={"site_id": existing_site['id']}
+                )
                 logger.info(f"Updated site: {name} with changes: {patch_data}")
-            # else:
-                # logger.info(f"No update needed for existing site: {name}")
+                self.log_update(str(existing_site["id"]), patch_data, original_data=existing_site)
+                self.increment("updated")
             return
 
         site_data = {
@@ -62,20 +69,40 @@ class JobSyncer:
             "cluster_id": cluster_id
         }
 
-        created = self.api_client.create_site(site_data)
+        created = self.safe_call(
+            self.api_client.create_site,
+            site_data,
+            operation="create_site",
+            entity_id=name,
+        )
         if isinstance(created, dict):
             logger.info(f"Created site: {name} under cluster {cluster_id}")
+            self.log_creation(str(created.get("id", name)), site_data)
+            self.increment("created")
         else:
             logger.warning(f"Failed to create site: {name}")
 
     def sync(self):
         logger.info("Starting job site sync...")
+        self.start_sync()
         for job in self.jobs:
             dept = job.get("Department")
             cluster_id = self.dept_cluster_map.get(dept)
             if not cluster_id:
                 logger.warning(f"Skipping job {job['Job']} — unknown department: {dept}")
+                self.log_skip(str(job.get('Job')), f"unknown department: {dept}")
+                self.increment("skipped")
                 continue
 
             self.ensure_site(job, cluster_id)
+        self.counts["processed"] = len(self.jobs)
+        session_summary = self.finish_sync()
         logger.info("Job site sync complete.")
+        return {
+            "processed": len(self.jobs),
+            "created": self.counts["created"],
+            "updated": self.counts["updated"],
+            "skipped": self.counts["skipped"],
+            "errors": self.counts["errors"],
+            "session_summary": session_summary,
+        }

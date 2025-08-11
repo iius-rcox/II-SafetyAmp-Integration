@@ -5,18 +5,17 @@ from utils.data_validator import validator
 from services.safetyamp_api import SafetyAmpAPI
 from services.viewpoint_api import ViewpointAPI
 from services.graph_api import MSGraphAPI
+from sync.base import SyncOperation
 
 import requests
 
 logger = get_logger("sync_employees")
 
-class EmployeeSyncer:
+class EmployeeSyncer(SyncOperation):
     def __init__(self):
-        self.api_client = SafetyAmpAPI()
-        self.viewpoint = ViewpointAPI()
+        super().__init__(sync_type="employees", entity_type="employee", use_viewpoint=True)
         self.msgraph = MSGraphAPI()
         self.cache_manager = CacheManager()
-        self.error_manager: ErrorManager = error_manager
         logger.info("Fetching initial data for sync...")
         self.cluster_map = self._build_cluster_map()
         self.role_map = self._build_role_map()
@@ -208,7 +207,7 @@ class EmployeeSyncer:
         logger.info("Starting employee sync...")
         
         # Start change tracking
-        self.error_manager.start_sync("employees")
+        self.start_sync()
         
         employees = self.viewpoint.get_employees()
         logger.info(f"Retrieved {len(employees)} employees from Viewpoint.")
@@ -520,7 +519,7 @@ class EmployeeSyncer:
         self._update_cache_after_sync(sync_results)
 
         # End change tracking and get summary
-        session_summary = self.error_manager.end_sync()
+        session_summary = self.finish_sync()
 
         logger.info(f"Employee sync completed: {sync_results['created']} created, {sync_results['updated']} updated, {sync_results['skipped']} skipped, {sync_results['errors']} errors")
 

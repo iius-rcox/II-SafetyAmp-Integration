@@ -1,16 +1,16 @@
 from utils.logger import get_logger
 from services.safetyamp_api import SafetyAmpAPI
 from services.viewpoint_api import ViewpointAPI
+from sync.base import SyncOperation
 
 CLUSTER_ROOT_ID = 0
 CLUSTER_ROOT_NAME = "I&I"
 
 logger = get_logger("sync_departments")
 
-class DepartmentSyncer:
+class DepartmentSyncer(SyncOperation):
     def __init__(self):
-        self.api_client = SafetyAmpAPI()
-        self.viewpoint = ViewpointAPI()
+        super().__init__(sync_type="departments", entity_type="cluster", use_viewpoint=True)
         logger.info("Fetching department data from Viewpoint...")
         self.source_data = self.viewpoint.get_departments()
         logger.info(f"Retrieved {len(self.source_data)} department records from Viewpoint.")
@@ -23,10 +23,17 @@ class DepartmentSyncer:
             if cluster.get('name') == name and cluster.get('external_code') in (None, external_code):
                 if (cluster.get('parent_cluster_id') or None) != parent_id:
                     patch_data = {"parent_cluster_id": parent_id}
-                    self.api_client.put(f"/api/site_clusters/{cluster['id']}", patch_data)
+                    self.safe_call(
+                        self.api_client.put,
+                        f"/api/site_clusters/{cluster['id']}",
+                        patch_data,
+                        operation="move_cluster",
+                        entity_id=str(cluster['id']),
+                        error_details={"name": name, "new_parent_id": parent_id}
+                    )
                     logger.info(f"Moved cluster: {name} to new parent_id: {parent_id}")
-                # else:
-                    # logger.info(f"Cluster already exists and is correctly assigned: {name}")
+                    self.log_update(str(cluster['id']), patch_data, original_data=cluster)
+                    self.increment("updated")
                 return cluster['id']
 
         cluster_data = {
@@ -35,19 +42,27 @@ class DepartmentSyncer:
             "external_code": external_code,
             "osha_establishment": 0
         }
-        created_cluster = self.api_client.create_cluster(cluster_data)
+        created_cluster = self.safe_call(
+            self.api_client.create_cluster,
+            cluster_data,
+            operation="create_cluster",
+            entity_id=name,
+        )
         if isinstance(created_cluster, dict):
             logger.info(f"Created cluster: {name} (parent_id: {parent_id})")
             self.existing_clusters[str(created_cluster["id"])] = created_cluster
+            self.log_creation(str(created_cluster["id"]), cluster_data)
+            self.increment("created")
+            return created_cluster.get('id')
         else:
             logger.warning(f"Failed to create cluster: {name}")
-        return created_cluster.get('id') if isinstance(created_cluster, dict) else None
+            return None
 
     def sync(self):
         logger.info("Starting department cluster sync...")
+        self.start_sync()
 
         # Ensure I&I root cluster exists
-        # logger.info(f"Ensuring root cluster '{CLUSTER_ROOT_NAME}' exists...")
         root_cluster_id = self.ensure_cluster(CLUSTER_ROOT_NAME, None, CLUSTER_ROOT_NAME)
 
         # Build map of region clusters
@@ -55,7 +70,6 @@ class DepartmentSyncer:
         for row in self.source_data:
             region = row.get('udRegion')
             if region and region not in region_cluster_ids:
-                # logger.info(f"Ensuring region cluster '{region}' under root cluster ID {root_cluster_id}...")
                 region_cluster_ids[region] = self.ensure_cluster(region, root_cluster_id, region)
 
         # Ensure department clusters under each region cluster
@@ -68,7 +82,16 @@ class DepartmentSyncer:
                 dept_name = f"{pr_dept} - {desc}"
                 external_code = str(pr_dept)
                 cluster_id = region_cluster_ids.get(region)
-                # logger.info(f"Ensuring department cluster '{dept_name}' under region '{region}'...")
                 self.ensure_cluster(dept_name, cluster_id, external_code)
 
+        self.counts["processed"] = len(self.source_data)
+        session_summary = self.finish_sync()
         logger.info("Department cluster sync complete.")
+        return {
+            "processed": len(self.source_data),
+            "created": self.counts["created"],
+            "updated": self.counts["updated"],
+            "skipped": self.counts["skipped"],
+            "errors": self.counts["errors"],
+            "session_summary": session_summary,
+        }

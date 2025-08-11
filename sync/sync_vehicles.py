@@ -12,15 +12,16 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from services.samsara_api import SamsaraAPI
 from services.safetyamp_api import SafetyAmpAPI
 from utils.logger import get_logger
-from utils.data_validator import validator
+from sync.base import SyncOperation
 from datetime import datetime
 import requests
 import re
 
 logger = get_logger("vehicle_sync")
 
-class VehicleSync:
+class VehicleSync(SyncOperation):
     def __init__(self):
+        super().__init__(sync_type="vehicles", entity_type="asset", use_viewpoint=False)
         self.samsara_api = SamsaraAPI()
         self.safetyamp_api = SafetyAmpAPI()
         
@@ -245,6 +246,7 @@ class VehicleSync:
     def sync_vehicles(self):
         """Sync vehicles from Samsara to SafetyAmp"""
         logger.info("Starting vehicle sync from Samsara to SafetyAmp")
+        self.start_sync()
         
         try:
             # Get vehicles from Samsara
@@ -253,7 +255,9 @@ class VehicleSync:
             
             if not vehicles:
                 logger.warning("No vehicles found in Samsara")
-                return {"synced": 0, "errors": 0, "skipped": 0}
+                self.counts["processed"] = 0
+                session_summary = self.finish_sync()
+                return {"synced": 0, "errors": 0, "skipped": 0, "session_summary": session_summary}
             
             logger.info(f"Found {len(vehicles)} vehicles in Samsara")
             
@@ -276,7 +280,7 @@ class VehicleSync:
                     
                     # Validate asset data before processing
                     vehicle_id = str(vehicle.get('id', 'unknown'))
-                    is_valid, validation_errors, cleaned_asset_data = validator.validate_vehicle_data(asset_data, vehicle_id)
+                    is_valid, validation_errors, cleaned_asset_data = self.validator.validate_vehicle_data(asset_data, vehicle_id)
                     
                     if not is_valid:
                         logger.error(f"Validation failed for vehicle {vehicle_id}: {validation_errors}")
@@ -287,6 +291,7 @@ class VehicleSync:
                     if not vehicle_serial:
                         logger.warning(f"Vehicle {vehicle.get('id')} has no serial number, skipping")
                         skipped_count += 1
+                        self.increment("skipped")
                         continue
                     
                     # Check if asset already exists
@@ -300,18 +305,23 @@ class VehicleSync:
                             if result:
                                 synced_count += 1
                                 logger.info(f"Updated asset {vehicle_serial}")
+                                self.log_update(str(existing_asset["id"]), cleaned_asset_data, original_data=existing_asset)
+                                self.increment("updated")
                             else:
                                 error_count += 1
+                                self.increment("errors")
                                 logger.error(f"Failed to update asset {vehicle_serial}")
                         else:
                             logger.debug(f"Asset {vehicle_serial} is up to date")
                             skipped_count += 1
+                            self.increment("skipped")
                     else:
                         # Asset doesn't exist - create new one
                         # Skip create if required fields (e.g., site_id) are missing
                         if not cleaned_asset_data.get("site_id"):
                             logger.error(f"Missing required site_id for asset {vehicle_serial}, skipping create")
                             skipped_count += 1
+                            self.increment("skipped")
                             continue
 
                         # Create new asset
@@ -319,12 +329,16 @@ class VehicleSync:
                         if result:
                             synced_count += 1
                             logger.info(f"Created asset {vehicle_serial}")
+                            self.log_creation(str(result.get("id", vehicle_serial)), cleaned_asset_data)
+                            self.increment("created")
                         else:
                             error_count += 1
+                            self.increment("errors")
                             logger.error(f"Failed to create asset {vehicle_serial}")
                 
                 except Exception as e:
                     error_count += 1
+                    self.increment("errors")
                     logger.error(f"Error processing vehicle {vehicle.get('id', 'unknown')}: {e}")
             
             # Log summary
@@ -333,15 +347,21 @@ class VehicleSync:
             logger.info(f"  Errors: {error_count}")
             logger.info(f"  Skipped: {skipped_count}")
             
+            self.counts["processed"] = len(vehicles)
+            session_summary = self.finish_sync()
+            
             return {
                 "synced": synced_count,
                 "errors": error_count,
-                "skipped": skipped_count
+                "skipped": skipped_count,
+                "session_summary": session_summary
             }
             
         except Exception as e:
             logger.error(f"Error during vehicle sync: {e}")
-            return {"synced": 0, "errors": 1, "skipped": 0}
+            self.counts["processed"] = 0
+            session_summary = self.finish_sync()
+            return {"synced": 0, "errors": 1, "skipped": 0, "session_summary": session_summary}
     
     def _needs_update(self, existing_asset, new_data):
         """Check if asset needs to be updated"""
@@ -398,11 +418,6 @@ def main():
         print(f"  SafetyAmp Assets: {summary.get('safetyamp_assets', 0)}")
         print(f"  Samsara Assets: {summary.get('samsara_assets', 0)}")
         print(f"  Pending Sync: {summary.get('pending_sync', 0)}")
-    
-    # Run sync
-    print("\nRunning vehicle sync...")
-    result = sync.sync_vehicles()
-    print(f"Sync result: {result}")
 
 if __name__ == "__main__":
     main() 
