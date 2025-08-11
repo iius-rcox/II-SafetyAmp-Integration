@@ -3,7 +3,7 @@ param(
   [string]$ResourceGroup = "rg_prod",
   [string]$AksName = "dev-aks",
   [string]$Namespace = "safety-amp",
-  [string]$Image = "safetyampacr.azurecr.io/safetyamp-integration",
+  [string]$Image = "${env:IMAGE_REGISTRY}/${env:IMAGE_NAME}",
   [string]$Tag = "",
   [string]$WorkbookSourceId = "", # "/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.OperationalInsights/workspaces/<law>"
   [string]$WorkspaceId = "",

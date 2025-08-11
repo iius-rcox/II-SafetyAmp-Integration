@@ -606,7 +606,7 @@ spec:
             name: fluentbit-config
       containers:
         - name: safety-amp-agent
-          image: safetyampacr.azurecr.io/safetyamp-integration:latest
+          image: ${IMAGE_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
           volumeMounts:
             - name: changes-volume
               mountPath: /app/output/changes

@@ -65,16 +65,16 @@ The current container image does not include the new validation code. We need to
 cd /path/to/II-SafetyAmp-Integration
 
 # Build new image with validation code
-docker build -t safetyampacr.azurecr.io/safetyamp-integration:validation-v1 .
+docker build -t ${IMAGE_REGISTRY}/${IMAGE_NAME}:validation-v1 .
 
 # Push to Azure Container Registry
-docker push safetyampacr.azurecr.io/safetyamp-integration:validation-v1
+docker push ${IMAGE_REGISTRY}/${IMAGE_NAME}:validation-v1
 ```
 
 #### **2. Update Deployment**
 ```powershell
 # Update deployment to use new image
-kubectl set image deployment/safety-amp-agent safety-amp-agent=safetyampacr.azurecr.io/safetyamp-integration:validation-v1 -n safety-amp
+kubectl set image deployment/safety-amp-agent safety-amp-agent=${IMAGE_REGISTRY}/${IMAGE_NAME}:validation-v1 -n safety-amp
 
 # Wait for rollout
 kubectl rollout status deployment/safety-amp-agent -n safety-amp
