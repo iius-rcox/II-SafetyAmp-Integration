@@ -7,7 +7,7 @@ contactPoints:
       - type: email
         uid: email-dev
         settings:
-          addresses: developer@example.com  # Replace with ALERT-EMAIL-TO
+          addresses: developer@example.com
 
 notificationPolicies:
   - orgId: 1
@@ -16,5 +16,3 @@ notificationPolicies:
       - receiver: cp-dev-email
         object_matchers:
           - [ severity, =, critical ]
-    # Fallback receiver (optional)
-    # receiver: cp-dev-email

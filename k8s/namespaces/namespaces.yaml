@@ -1,25 +1,9 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: n8n
-  labels:
-    app.kubernetes.io/name: n8n
-    app.kubernetes.io/component: automation
----
-apiVersion: v1
-kind: Namespace
-metadata:
   name: safety-amp
   labels:
     app.kubernetes.io/name: safety-amp
-    app.kubernetes.io/component: integration
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: samsara
-  labels:
-    app.kubernetes.io/name: samsara
     app.kubernetes.io/component: integration
 ---
 apiVersion: v1
