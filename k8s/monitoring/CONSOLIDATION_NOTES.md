@@ -1,0 +1,3 @@
+- Source docs retained under `deploy/dev/observability/` (design, routing, governance).
+- All manifests consolidated into `k8s/monitoring/monitoring-stack.yaml`.
+- Grafana dashboards now in `k8s/monitoring/grafana/` (single consolidated dashboard).
