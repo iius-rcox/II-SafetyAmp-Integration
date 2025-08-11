@@ -15,6 +15,7 @@ from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTEN
 from circuitbreaker import circuit
 import structlog
 from utils.metrics import metrics
+from utils.health import run_health_checks
 
 # Initialize structured logging
 structlog.configure(
@@ -80,128 +81,44 @@ health_status = {
 # Shutdown flag for graceful termination
 shutdown_requested = False
 
-@circuit(failure_threshold=3, recovery_timeout=30, expected_exception=Exception)
-def check_database_health():
-    """Check database connectivity with circuit breaker"""
-    try:
-        # This would be replaced with actual database health check
-        # For now, simulate a quick connection test
-        import time
-        time.sleep(0.1)  # Simulate DB check
-        return True
-    except Exception as e:
-        logger.error(f"Database health check failed: {e}")
-        raise
-
-@circuit(failure_threshold=5, recovery_timeout=60, expected_exception=Exception)
-def check_external_apis():
-    """Check external API connectivity with circuit breaker"""
-    try:
-        # This would include checks for SafetyAmp API, Viewpoint, etc.
-        # For now, simulate API health checks
-        import time
-        time.sleep(0.1)  # Simulate API check
-        return True
-    except Exception as e:
-        logger.error(f"External API health check failed: {e}")
-        raise
-
 @app.route('/health')
 def health():
-    """Enhanced liveness probe endpoint"""
+    """Unified comprehensive health endpoint"""
     with metrics.health_check_duration.time():
-        if health_status['healthy'] and not shutdown_requested:
-            return jsonify({
-                'status': 'healthy', 
-                'timestamp': time.time(),
-                'sync_in_progress': health_status['sync_in_progress']
-            }), 200
-        else:
-            return jsonify({
-                'status': 'unhealthy', 
-                'errors': health_status['errors'],
-                'shutdown_requested': shutdown_requested
-            }), 503
-
-@app.route('/ready')
-def ready():
-    """Enhanced readiness probe endpoint with graceful degradation"""
-    with metrics.health_check_duration.time():
-        overall_status = 'ready'
-        status_code = 200
-        details = {}
-        
-        # Check database health
+        overall = run_health_checks()
+        status = overall.get('status', 'unhealthy')
+        # If shutdown requested, force unhealthy for kubernetes to restart/drain
+        if shutdown_requested:
+            status = 'unhealthy'
+        code = 200 if status == 'healthy' else (200 if status == 'degraded' else 503)
+        # Update connection metrics best-effort (if available)
         try:
-            check_database_health()
-            health_status['database_status'] = 'healthy'
-            details['database'] = 'healthy'
-        except Exception as e:
-            health_status['database_status'] = 'degraded'
-            details['database'] = 'degraded'
-            overall_status = 'degraded'
-            logger.warning(f"Database health degraded: {e}")
-        
-        # Check external APIs
-        try:
-            check_external_apis()
-            health_status['external_apis_status'] = 'healthy'
-            details['external_apis'] = 'healthy'
-        except Exception as e:
-            health_status['external_apis_status'] = 'degraded'
-            details['external_apis'] = 'degraded'
-            if overall_status == 'ready':
-                overall_status = 'degraded'
-            logger.warning(f"External APIs health degraded: {e}")
-        
-        # Allow readiness during initial sync or if already ready
-        if health_status['ready'] or health_status['sync_in_progress'] or overall_status == 'degraded':
-            return jsonify({
-                'status': overall_status,
-                'timestamp': time.time(),
-                'details': details,
-                'last_sync': health_status['last_sync'],
-                'sync_in_progress': health_status['sync_in_progress']
-            }), status_code
-        else:
-            return jsonify({
-                'status': 'not ready',
-                'details': details
-            }), 503
+            metrics.database_connections_active.set(get_active_connection_count())
+        except Exception:
+            pass
+        payload = {
+            'status': status,
+            'timestamp': time.time(),
+            'checks': overall.get('checks', {}),
+            'last_sync': health_status['last_sync'],
+            'sync_in_progress': health_status['sync_in_progress'],
+            'errors': health_status['errors'][-5:] if health_status['errors'] else []
+        }
+        # Back-compat fields for dashboards
+        health_status['database_status'] = overall['checks'].get('database', {}).get('status', 'unknown')
+        health_status['external_apis_status'] = 'healthy' if all(
+            overall['checks'].get(name, {}).get('status') == 'healthy' for name in ('safetyamp', 'samsara')
+        ) else 'degraded'
+        return jsonify(payload), code
 
 @app.route('/metrics')
 def metrics_endpoint():
-    """Enhanced Prometheus metrics endpoint"""
-    # Update connection pool metrics with actual active connections
-    metrics.database_connections_active.set(get_active_connection_count())
-    
+    """Prometheus metrics endpoint"""
+    try:
+        metrics.database_connections_active.set(get_active_connection_count())
+    except Exception:
+        pass
     return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
-
-@app.route('/health/detailed')
-def detailed_health():
-    """Enhanced health check for production monitoring"""
-    from utils.cache_manager import CacheManager
-    from utils.circuit_breaker import SmartRateLimiter
-    
-    cache_manager = CacheManager()
-    safetyamp_rate_limiter = SmartRateLimiter("safetyamp")
-    samsara_rate_limiter = SmartRateLimiter("samsara")
-    
-    return jsonify({
-        'status': 'healthy' if health_status['healthy'] else 'unhealthy',
-        'timestamp': time.time(),
-        'last_sync': health_status['last_sync'],
-        'active_connections': get_active_connection_count(),
-        'database_status': health_status['database_status'],
-        'external_apis_status': health_status['external_apis_status'],
-        'cache_status': getattr(cache_manager, 'get_cache_info', lambda: {'status': 'unknown'})(),
-        'rate_limit_status': {
-            'safetyamp': safetyamp_rate_limiter.status(),
-            'samsara': samsara_rate_limiter.status()
-        },
-        'sync_in_progress': health_status['sync_in_progress'],
-        'errors': health_status['errors'][-5:] if health_status['errors'] else []  # Last 5 errors
-    })
 
 def run_sync_worker():
     """Enhanced background sync worker with connection pooling"""
