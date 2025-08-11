@@ -1,5 +1,4 @@
 from utils.logger import get_logger
-from utils.change_tracker import ChangeTracker
 from services.event_manager import event_manager
 from utils.data_validator import validator
 from services.safetyamp_api import SafetyAmpAPI
@@ -16,7 +15,7 @@ class EmployeeSyncer:
         self.api_client = SafetyAmpAPI()
         self.viewpoint = ViewpointAPI()
         self.msgraph = MSGraphAPI()
-        self.change_tracker = ChangeTracker()
+        # event_manager handles session lifecycle and change logging
         logger.info("Fetching initial data for sync...")
         self.cluster_map = self._build_cluster_map()
         self.role_map = self._build_role_map()

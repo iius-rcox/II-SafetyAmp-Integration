@@ -147,13 +147,16 @@ sys.path.append('/app')
 
 try:
     from utils.data_validator import validator
-    from utils.cache_manager import CacheManager
+    from services.data_manager import data_manager
+    from services.safetyamp_api import SafetyAmpAPI
     
-    # Initialize cache
-    cache = CacheManager()
-    
-    # Get employee data
-    employees = cache.get_employees()
+    api = SafetyAmpAPI()
+    employees_by_id = data_manager.get_cached_data_with_fallback(
+        "safetyamp_users_by_id",
+        lambda: api.get_all_paginated("/api/users", key_field="id"),
+        max_age_hours=1,
+    ) or {}
+    employees = list(employees_by_id.values())
     
     print('DATA_QUALITY_START')
     

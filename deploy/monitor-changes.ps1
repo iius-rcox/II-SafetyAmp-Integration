@@ -35,21 +35,21 @@ function Get-ChangeTrackerData {
     param([string]$PodName, [string]$Namespace = "safety-amp")
     
     try {
-        # Execute the change tracker script in the pod
+        # Execute the change/event manager script in the pod
         $result = kubectl exec $PodName -n $Namespace -- python -c "
 import sys
 sys.path.append('/app')
-from utils.change_tracker import ChangeTracker
+from services.event_manager import event_manager
 
-tracker = ChangeTracker()
 if '$Action' == 'summary':
-    report = tracker.get_summary_report($Hours)
+    # event_manager wraps ChangeTracker internally; reuse summary file outputs
+    report = event_manager.change_tracker.get_summary_report($Hours)
     print('CHANGE_TRACKER_DATA_START')
     import json
     print(json.dumps(report, indent=2))
     print('CHANGE_TRACKER_DATA_END')
 elif '$Action' == 'changes':
-    changes = tracker.get_recent_changes($Hours)
+    changes = event_manager.change_tracker.get_recent_changes($Hours)
     print('CHANGE_TRACKER_DATA_START')
     import json
     print(json.dumps(changes, indent=2))

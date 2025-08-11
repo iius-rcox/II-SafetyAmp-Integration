@@ -10,7 +10,6 @@ import threading
 import time
 import os
 from utils.logger import get_logger
-from utils.error_manager import error_manager
 from services.event_manager import event_manager
 from config import config
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST, REGISTRY, start_http_server

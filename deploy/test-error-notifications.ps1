@@ -52,9 +52,9 @@ function Test-ErrorNotification {
         $status_result = kubectl exec $PodName -n safety-amp -- python -c "
 import sys
 sys.path.append('/app')
-from utils.error_notifier import error_notifier
+from services.event_manager import event_manager
 
-status = error_notifier.get_notification_status()
+status = event_manager.error_notifier.get_notification_status()
 print('NOTIFICATION_STATUS_START')
 import json
 print(json.dumps(status, indent=2))
@@ -82,10 +82,10 @@ print('NOTIFICATION_STATUS_END')
             $force_result = kubectl exec $PodName -n safety-amp -- python -c "
 import sys
 sys.path.append('/app')
-from utils.error_notifier import error_notifier
+from services.event_manager import event_manager
 
 # Log a test error
-error_notifier.log_error(
+event_manager.log_error(
     error_type='test_error',
     entity_type='test',
     entity_id='test_123',
@@ -95,7 +95,7 @@ error_notifier.log_error(
 )
 
 # Send notification
-result = error_notifier.send_hourly_notification()
+result = event_manager.send_hourly_notification()
 print('FORCE_NOTIFICATION_RESULT_START')
 print(result)
 print('FORCE_NOTIFICATION_RESULT_END')
@@ -116,9 +116,9 @@ print('FORCE_NOTIFICATION_RESULT_END')
         $log_result = kubectl exec $PodName -n safety-amp -- python -c "
 import sys
 sys.path.append('/app')
-from utils.error_notifier import error_notifier
+from services.event_manager import event_manager
 
-recent_errors = error_notifier.get_errors_since(hours=24)
+recent_errors = event_manager.error_notifier.get_errors_since(hours=24)
 print('ERROR_LOG_START')
 import json
 print(json.dumps(recent_errors, indent=2))
@@ -155,9 +155,9 @@ function Get-NotificationStatus {
         $status_result = kubectl exec $PodName -n safety-amp -- python -c "
 import sys
 sys.path.append('/app')
-from utils.error_notifier import error_notifier
+from services.event_manager import event_manager
 
-status = error_notifier.get_notification_status()
+status = event_manager.error_notifier.get_notification_status()
 print('STATUS_START')
 import json
 print(json.dumps(status, indent=2))
@@ -186,10 +186,10 @@ function Remove-OldErrors {
         $cleanup_result = kubectl exec $PodName -n safety-amp -- python -c "
 import sys
 sys.path.append('/app')
-from utils.error_notifier import error_notifier
+from services.event_manager import event_manager
 
 # Clean up errors older than 7 days
-error_notifier.cleanup_old_errors(days=7)
+event_manager.error_notifier.cleanup_old_errors(days=7)
 print('CLEANUP_COMPLETE')
 "
         

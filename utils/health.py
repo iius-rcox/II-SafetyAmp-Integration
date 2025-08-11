@@ -6,7 +6,7 @@ from utils.logger import get_logger
 from services.viewpoint_api import ViewpointAPI
 from services.safetyamp_api import SafetyAmpAPI
 from services.samsara_api import SamsaraAPI
-from utils.cache_manager import CacheManager
+from services.data_manager import data_manager
 from config import config
 
 logger = get_logger("health")
@@ -54,8 +54,7 @@ def check_samsara() -> Dict[str, Any]:
 def check_cache() -> Dict[str, Any]:
     start = time.time()
     try:
-        cache = CacheManager()
-        info = cache.get_cache_info()
+        info = data_manager.get_cache_info()
         connected = bool(info.get("connected")) or info.get("type") == "redis"
         return {"status": "healthy" if connected else "degraded", "info": info, "latency_ms": (time.time() - start) * 1000}
     except Exception as e:

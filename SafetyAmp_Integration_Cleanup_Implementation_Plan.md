@@ -103,15 +103,16 @@ Architecture:
 - Domain methods: thin legacy convenience wrappers (`get_employees()` etc.).
 - Validation bridge: expose `validate_employee_data(...)` via injected validator.
 - Cache keys: `app:v{n}:domain:entity:{id}` with metadata `{schema_version, ttl, created_at, source}`.
-- Stampede control: distributed locks + jitter; `get-or-populate` primitive.
+- Stampede control: distributed locks + jitter; `get-or-populate` primitive. [Implemented: `get_cached_data_with_fallback_advanced()` with Redis lock/jitter]
 
 Minimal public API (façade):
 ```python
 class DataManager:
-    def get_cached_data(self, name: str, key: str): ...
-    def save_cache(self, name: str, data: Any, ttl_seconds: int | None = None, key: str | None = None, metadata: dict | None = None) -> bool: ...
-    def invalidate(self, key_or_pattern: str) -> int: ...
-    def get_cached_data_with_fallback(self, name: str, key: str, loader: Callable[[], Any], ttl_seconds: int, lock: bool = True, metadata: dict | None = None) -> Any: ...
+    def get_cached_data(self, name: str, key: str | None = None) -> Any | None
+    def save_cache(self, name: str, data: Any, ttl_seconds: int | None = None, key: str | None = None, metadata: dict | None = None) -> bool
+    def invalidate_cache(self, name: str, key: str | None = None) -> bool
+    def get_cached_data_with_fallback(self, name: str, fetch_func: Callable[[], Any], max_age_hours: int = 1, force_refresh: bool = False) -> Any | None
+    def get_cached_data_with_fallback_advanced(self, name: str, key: str, loader: Callable[[], Any], ttl_seconds: int, lock: bool = True, metadata: dict | None = None) -> Any
 
     # Legacy domain helpers (optional)
     def get_employees(self) -> list[dict]: ...
