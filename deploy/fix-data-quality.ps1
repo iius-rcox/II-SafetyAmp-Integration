@@ -106,10 +106,10 @@ sys.path.append('/app')
 try:
     from sync.sync_employees import EmployeeSync
     from services.safetyamp_api import SafetyAmpAPI
-    from utils.cache_manager import CacheManager
+    from utils.data_manager import data_manager
     
     # Initialize components
-    cache = CacheManager()
+    cache = data_manager
     api = SafetyAmpAPI()
     
     # Get employee data

@@ -199,10 +199,10 @@ def metrics():
 @app.route('/health/detailed')
 def detailed_health():
     """Enhanced health check for production monitoring"""
-    from utils.cache_manager import CacheManager
+    from utils.data_manager import data_manager
     from utils.circuit_breaker import SmartRateLimiter
     
-    cache_manager = CacheManager()
+    cache_manager = data_manager
     safetyamp_rate_limiter = SmartRateLimiter("safetyamp")
     samsara_rate_limiter = SmartRateLimiter("samsara")
     

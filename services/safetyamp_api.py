@@ -4,7 +4,7 @@ from ratelimit import limits, sleep_and_retry
 from config import settings
 from utils.logger import get_logger
 from utils.data_validator import validator
-from utils.cache_manager import CacheManager
+from utils.data_manager import data_manager
 
 logger = get_logger("safetyamp")
 
@@ -21,7 +21,8 @@ class SafetyAmpAPI:
             "Accept": "application/json",
             "Content-Type": "application/json"
         }
-        self.cache_manager = CacheManager()
+        # Use global data manager for caching
+        self.data_manager = data_manager
 
     def _preprocess_payload(self, endpoint: str, data: dict, method: str) -> dict:
         """Validate and clean payloads for write operations before sending to SafetyAmp.
@@ -206,11 +207,11 @@ class SafetyAmpAPI:
         def fetch_users():
             return self.get_all_paginated("/api/users", key_field="emp_id")
         
-        return self.cache_manager.get_cached_data_with_fallback(
-            "safetyamp_users", 
-            fetch_users, 
+        return self.data_manager.get_cached_data_with_fallback(
+            "safetyamp_users",
+            fetch_users,
             max_age_hours=max_age_hours,
-            force_refresh=force_refresh
+            force_refresh=force_refresh,
         )
     
     def get_users_by_id_cached(self, max_age_hours=1, force_refresh=False):
@@ -218,11 +219,11 @@ class SafetyAmpAPI:
         def fetch_users():
             return self.get_all_paginated("/api/users", key_field="id")
         
-        return self.cache_manager.get_cached_data_with_fallback(
-            "safetyamp_users_by_id", 
-            fetch_users, 
+        return self.data_manager.get_cached_data_with_fallback(
+            "safetyamp_users_by_id",
+            fetch_users,
             max_age_hours=max_age_hours,
-            force_refresh=force_refresh
+            force_refresh=force_refresh,
         )
     
     def get_sites_cached(self, max_age_hours=1, force_refresh=False):
@@ -230,11 +231,11 @@ class SafetyAmpAPI:
         def fetch_sites():
             return self.get_all_paginated("/api/sites", key_field="id")
         
-        return self.cache_manager.get_cached_data_with_fallback(
-            "safetyamp_sites", 
-            fetch_sites, 
+        return self.data_manager.get_cached_data_with_fallback(
+            "safetyamp_sites",
+            fetch_sites,
             max_age_hours=max_age_hours,
-            force_refresh=force_refresh
+            force_refresh=force_refresh,
         )
     
     def get_asset_types_cached(self, max_age_hours=1, force_refresh=False):
@@ -242,11 +243,11 @@ class SafetyAmpAPI:
         def fetch_asset_types():
             return self.get_all_paginated("/api/asset_types", key_field="id")
         
-        return self.cache_manager.get_cached_data_with_fallback(
-            "safetyamp_asset_types", 
-            fetch_asset_types, 
+        return self.data_manager.get_cached_data_with_fallback(
+            "safetyamp_asset_types",
+            fetch_asset_types,
             max_age_hours=max_age_hours,
-            force_refresh=force_refresh
+            force_refresh=force_refresh,
         )
     
     def get_titles_cached(self, max_age_hours=1, force_refresh=False):
@@ -254,11 +255,11 @@ class SafetyAmpAPI:
         def fetch_titles():
             return self.get_all_paginated("/api/user_titles", key_field="id")
         
-        return self.cache_manager.get_cached_data_with_fallback(
-            "safetyamp_titles", 
-            fetch_titles, 
+        return self.data_manager.get_cached_data_with_fallback(
+            "safetyamp_titles",
+            fetch_titles,
             max_age_hours=max_age_hours,
-            force_refresh=force_refresh
+            force_refresh=force_refresh,
         )
     
     def get_assets_cached(self, max_age_hours=1, force_refresh=False):
@@ -266,11 +267,11 @@ class SafetyAmpAPI:
         def fetch_assets():
             return self.get_all_paginated("/api/assets", key_field="id")
         
-        return self.cache_manager.get_cached_data_with_fallback(
-            "safetyamp_assets", 
-            fetch_assets, 
+        return self.data_manager.get_cached_data_with_fallback(
+            "safetyamp_assets",
+            fetch_assets,
             max_age_hours=max_age_hours,
-            force_refresh=force_refresh
+            force_refresh=force_refresh,
         )
     
     def get_roles_cached(self, max_age_hours=1, force_refresh=False):
@@ -278,11 +279,11 @@ class SafetyAmpAPI:
         def fetch_roles():
             return self.get_all_paginated("/api/roles", key_field="id")
         
-        return self.cache_manager.get_cached_data_with_fallback(
-            "safetyamp_roles", 
-            fetch_roles, 
+        return self.data_manager.get_cached_data_with_fallback(
+            "safetyamp_roles",
+            fetch_roles,
             max_age_hours=max_age_hours,
-            force_refresh=force_refresh
+            force_refresh=force_refresh,
         )
 
     def get_user(self, user_id: str):

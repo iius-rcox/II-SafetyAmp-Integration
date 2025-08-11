@@ -1,5 +1,5 @@
 from utils.logger import get_logger
-from utils.cache_manager import CacheManager
+from utils.data_manager import data_manager
 from utils.change_tracker import ChangeTracker
 from utils.error_notifier import error_notifier
 from utils.data_validator import validator
@@ -18,7 +18,8 @@ class EmployeeSyncer:
         self.api_client = SafetyAmpAPI()
         self.viewpoint = ViewpointAPI()
         self.msgraph = MSGraphAPI()
-        self.cache_manager = CacheManager()
+        # Use global data manager if needed for cache/telemetry
+        self.data_manager = data_manager
         self.change_tracker = ChangeTracker()
         logger.info("Fetching initial data for sync...")
         self.cluster_map = self._build_cluster_map()

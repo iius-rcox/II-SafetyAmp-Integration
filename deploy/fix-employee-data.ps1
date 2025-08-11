@@ -47,10 +47,10 @@ import sys
 sys.path.append('/app')
 
 try:
-    from utils.cache_manager import CacheManager
+    from utils.data_manager import data_manager
     
     # Initialize cache
-    cache = CacheManager()
+    cache = data_manager
     
     # Get employee data
     employees = cache.get_employees()
