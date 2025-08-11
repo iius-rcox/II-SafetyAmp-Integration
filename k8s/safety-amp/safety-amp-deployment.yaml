@@ -78,7 +78,7 @@ metadata:
     app: safety-amp
     component: agent
 spec:
-  replicas: 2  # Scale up for production
+  replicas: 1  # Single replica to prevent duplicate syncs
   selector:
     matchLabels:
       app: safety-amp
