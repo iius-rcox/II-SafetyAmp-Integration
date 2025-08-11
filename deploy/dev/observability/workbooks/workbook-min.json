@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "workbookDisplayName": { "type": "string", "defaultValue": "SafetyAmp Integration Dashboard" },
+    "workbookSourceId": { "type": "string" },
+    "workbookId": { "type": "string", "defaultValue": "[newGuid()]" }
+  },
+  "resources": [
+    {
+      "name": "[parameters('workbookId')]",
+      "type": "microsoft.insights/workbooks",
+      "apiVersion": "2022-04-01",
+      "location": "[resourceGroup().location]",
+      "kind": "shared",
+      "properties": {
+        "displayName": "[parameters('workbookDisplayName')]",
+        "serializedData": "{\"version\":\"Notebook/1.0\",\"items\":[{\"type\":1,\"content\":{\"json\":\"# SafetyAmp Integration Dashboard\\nThis workbook summarizes SafetyAmp sync health using Container Insights logs.\"}},{\"type\":9,\"content\":{\"version\":\"KqlParameterItem/1.0\",\"parameters\":[{\"id\":\"containerName\",\"name\":\"containerName\",\"type\":1,\"value\":\"safety-amp-agent\"},{\"id\":\"namespace\",\"name\":\"namespace\",\"type\":1,\"value\":\"safety-amp\"}]}},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"title\":\"Recent Sync Runs (24h)\",\"query\":\"let containerName = '{containerName}';\\nlet ns = '{namespace}';\\nunion isfuzzy=true ContainerLogV2, ContainerLog\\n| where TimeGenerated >= ago(24h)\\n| extend NamespaceValue = tostring(column_ifexists('KubernetesNamespace', column_ifexists('Namespace','')))\\n| extend ContainerValue = tostring(column_ifexists('ContainerName', column_ifexists('ContainerID','')))\\n| where isempty(ns) or NamespaceValue == ns\\n| where ContainerValue =~ containerName\\n| extend d = todynamic(LogMessage)\\n| where isnotnull(d)\\n| where tostring(d.operation) in ('sync_start','sync_complete','sync_failed')\\n| extend session_id = tostring(d.session_id), sync_type = tostring(d.sync_type)\\n| summarize StartTime = minif(TimeGenerated, tostring(d.operation)=='sync_start'),\\n          EndTime = max(TimeGenerated),\\n          Status = iff(countif(tostring(d.operation)=='sync_complete')>0, 'Success', iff(countif(tostring(d.operation)=='sync_failed')>0, 'Failed', 'Running'))\\n  by SessionId = session_id, SyncType = sync_type\\n| order by StartTime desc\"}},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"title\":\"Sync Success Rate by Type (24h)\",\"query\":\"let containerName = '{containerName}';\\nlet ns = '{namespace}';\\nunion isfuzzy=true ContainerLogV2, ContainerLog\\n| where TimeGenerated >= ago(24h)\\n| extend NamespaceValue = tostring(column_ifexists('KubernetesNamespace', column_ifexists('Namespace','')))\\n| extend ContainerValue = tostring(column_ifexists('ContainerName', column_ifexists('ContainerID','')))\\n| where isempty(ns) or NamespaceValue == ns\\n| where ContainerValue =~ containerName\\n| extend d = todynamic(LogMessage)\\n| where isnotnull(d)\\n| where tostring(d.operation) in ('sync_complete','sync_failed')\\n| summarize Success = countif(tostring(d.operation)=='sync_complete'), Total = count() by SyncType = tostring(d.sync_type)\\n| extend SuccessRate = toreal(Success) * 100.0 / toreal(Total)\\n| order by SuccessRate desc\\n| render columnchart\"}},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"title\":\"Errors by Type (24h)\",\"query\":\"let containerName = '{containerName}';\\nlet ns = '{namespace}';\\nunion isfuzzy=true ContainerLogV2, ContainerLog\\n| where TimeGenerated >= ago(24h)\\n| extend NamespaceValue = tostring(column_ifexists('KubernetesNamespace', column_ifexists('Namespace','')))\\n| extend ContainerValue = tostring(column_ifexists('ContainerName', column_ifexists('ContainerID','')))\\n| extend LogLevelValue = tostring(column_ifexists('LogLevel', column_ifexists('Level','')))\\n| where isempty(ns) or NamespaceValue == ns\\n| where ContainerValue =~ containerName\\n| extend d = todynamic(LogMessage)\\n| where isnotnull(d)\\n| extend error_type = tostring(d.error_type)\\n| where LogLevelValue == 'Error' or tostring(d.operation) == 'sync_failed' or isnotempty(error_type)\\n| summarize Count = count() by ErrorType = coalesce(error_type,'unknown')\\n| order by Count desc\\n| render barchart\"}},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"title\":\"Changes by Entity/Operation (24h)\",\"query\":\"let containerName = '{containerName}';\\nlet ns = '{namespace}';\\nunion isfuzzy=true ContainerLogV2, ContainerLog\\n| where TimeGenerated >= ago(24h)\\n| extend NamespaceValue = tostring(column_ifexists('KubernetesNamespace', column_ifexists('Namespace','')))\\n| extend ContainerValue = tostring(column_ifexists('ContainerName', column_ifexists('ContainerID','')))\\n| where isempty(ns) or NamespaceValue == ns\\n| where ContainerValue =~ containerName\\n| extend d = todynamic(LogMessage)\\n| where isnotnull(d)\\n| extend op = tostring(d.operation), et = tostring(d.entity_type)\\n| where op in ('created','updated','deleted','skipped')\\n| summarize Count = count() by EntityType = coalesce(et,'unknown'), Operation = op\\n| order by Count desc\\n| render barchart\"}},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"title\":\"Cache Status (last 24h)\",\"query\":\"let containerName = '{containerName}';\\nlet ns = '{namespace}';\\nunion isfuzzy=true ContainerLogV2, ContainerLog\\n| where TimeGenerated >= ago(24h)\\n| extend NamespaceValue = tostring(column_ifexists('KubernetesNamespace', column_ifexists('Namespace','')))\\n| extend ContainerValue = tostring(column_ifexists('ContainerName', column_ifexists('ContainerID','')))\\n| where isempty(ns) or NamespaceValue == ns\\n| where ContainerValue =~ containerName\\n| extend d = todynamic(LogMessage)\\n| where isnotnull(d)\\n| where tostring(d.operation) in ('cache_status','cache_update') or LogMessage contains 'cache_status' or LogMessage contains 'cache_update'\\n| extend cache_name = tostring(d.cache_name), metrics = todynamic(d.metrics)\\n| extend items = todouble(metrics.items_cached), ttl = todouble(metrics.cache_ttl_seconds)\\n| summarize LastUpdate = max(TimeGenerated), Items = max(items), TTL = max(ttl) by CacheName = cache_name\\n| extend AgeMinutes = round((now() - LastUpdate) / 1m, 0)\\n| order by AgeMinutes asc\"}}],\"parameters\":[{\"name\":\"containerName\",\"type\":1,\"isRequired\":true,\"value\":\"safety-amp-agent\"},{\"name\":\"namespace\",\"type\":1,\"isRequired\":true,\"value\":\"safety-amp\"}]}",
+        "version": "1.0",
+        "sourceId": "[parameters('workbookSourceId')]",
+        "category": "workbook"
+      }
+    }
+  ],
+  "outputs": {
+    "workbookResourceId": {
+      "type": "string",
+      "value": "[resourceId('microsoft.insights/workbooks', parameters('workbookId'))]"
+    }
+  }
+}
+
+
