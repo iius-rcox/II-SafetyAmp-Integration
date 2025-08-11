@@ -13,26 +13,14 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 from utils.logger import get_logger
 import redis
-from utils.metrics import get_or_create_gauge
+from utils.metrics import metrics
 
 logger = get_logger("cache_manager")
 
 # Prometheus gauges for cache telemetry (low-cardinality per cache name)
-_cache_last_updated_ts = get_or_create_gauge(
-    'safetyamp_cache_last_updated_timestamp_seconds',
-    'Epoch seconds of last cache update',
-    labelnames=['cache']
-)
-_cache_items_total = get_or_create_gauge(
-    'safetyamp_cache_items_total',
-    'Number of items stored for a given cache',
-    labelnames=['cache']
-)
-_cache_ttl_seconds = get_or_create_gauge(
-    'safetyamp_cache_ttl_seconds',
-    'Configured TTL seconds for a given cache (remaining TTL when saved)',
-    labelnames=['cache']
-)
+_cache_last_updated_ts = metrics.cache_last_updated_ts
+_cache_items_total = metrics.cache_items_total
+_cache_ttl_seconds = metrics.cache_ttl_seconds
 
 class CacheManager:
     """Enhanced cache manager with Redis support and direct update capabilities"""
