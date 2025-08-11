@@ -2,12 +2,13 @@ from utils.logger import get_logger
 from services.safetyamp_api import SafetyAmpAPI
 from services.viewpoint_api import ViewpointAPI
 from services.data_manager import data_manager
+from .base_sync import BaseSyncOperation
 
 logger = get_logger("sync_titles")
 
-class TitleSyncer:
+class TitleSyncer(BaseSyncOperation):
     def __init__(self):
-        self.api_client = SafetyAmpAPI()
+        super().__init__(sync_type="titles", logger_name="sync_titles")
         self.viewpoint = ViewpointAPI()
         logger.info("Initializing TitleSyncer and fetching existing titles from SafetyAmp...")
         self.title_map = self._build_title_map()
@@ -29,10 +30,8 @@ class TitleSyncer:
     def ensure_title(self, title_name):
         title_name = title_name.strip()
         if title_name in self.title_map:
-            # logger.info(f"Title already exists: '{title_name}'")
             return self.title_map[title_name]
 
-        # logger.info(f"Creating new title: '{title_name}'")
         new_title = {"name": title_name}
         created = self.api_client.create_title(new_title)
         if isinstance(created, dict) and "id" in created:
@@ -45,11 +44,15 @@ class TitleSyncer:
         return None
 
     def sync(self):
+        self.start_sync()
         logger.info("Starting title sync from Viewpoint...")
         titles = self.viewpoint.get_titles()
         logger.info(f"Retrieved {len(titles)} titles from Viewpoint.")
 
+        processed = 0
         for title in titles:
             title_name = title.get("udEmpTitle")
             if title_name:
                 self.ensure_title(title_name)
+                processed += 1
+        return {"processed": processed}

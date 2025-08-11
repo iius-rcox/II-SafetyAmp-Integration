@@ -1,15 +1,16 @@
 from utils.logger import get_logger
 from services.safetyamp_api import SafetyAmpAPI
 from services.viewpoint_api import ViewpointAPI
+from .base_sync import BaseSyncOperation
 
 CLUSTER_ROOT_ID = 0
 CLUSTER_ROOT_NAME = "I&I"
 
 logger = get_logger("sync_departments")
 
-class DepartmentSyncer:
+class DepartmentSyncer(BaseSyncOperation):
     def __init__(self):
-        self.api_client = SafetyAmpAPI()
+        super().__init__(sync_type="departments", logger_name="sync_departments")
         self.viewpoint = ViewpointAPI()
         logger.info("Fetching department data from Viewpoint...")
         self.source_data = self.viewpoint.get_departments()
@@ -25,8 +26,6 @@ class DepartmentSyncer:
                     patch_data = {"parent_cluster_id": parent_id}
                     self.api_client.put(f"/api/site_clusters/{cluster['id']}", patch_data)
                     logger.info(f"Moved cluster: {name} to new parent_id: {parent_id}")
-                # else:
-                    # logger.info(f"Cluster already exists and is correctly assigned: {name}")
                 return cluster['id']
 
         cluster_data = {
@@ -44,21 +43,17 @@ class DepartmentSyncer:
         return created_cluster.get('id') if isinstance(created_cluster, dict) else None
 
     def sync(self):
+        self.start_sync()
         logger.info("Starting department cluster sync...")
 
-        # Ensure I&I root cluster exists
-        # logger.info(f"Ensuring root cluster '{CLUSTER_ROOT_NAME}' exists...")
         root_cluster_id = self.ensure_cluster(CLUSTER_ROOT_NAME, None, CLUSTER_ROOT_NAME)
 
-        # Build map of region clusters
         region_cluster_ids = {}
         for row in self.source_data:
             region = row.get('udRegion')
             if region and region not in region_cluster_ids:
-                # logger.info(f"Ensuring region cluster '{region}' under root cluster ID {root_cluster_id}...")
                 region_cluster_ids[region] = self.ensure_cluster(region, root_cluster_id, region)
 
-        # Ensure department clusters under each region cluster
         for row in self.source_data:
             region = row.get('udRegion')
             pr_dept = row.get('PRDept')
@@ -68,7 +63,7 @@ class DepartmentSyncer:
                 dept_name = f"{pr_dept} - {desc}"
                 external_code = str(pr_dept)
                 cluster_id = region_cluster_ids.get(region)
-                # logger.info(f"Ensuring department cluster '{dept_name}' under region '{region}'...")
                 self.ensure_cluster(dept_name, cluster_id, external_code)
 
         logger.info("Department cluster sync complete.")
+        return {"processed": len(self.source_data)}

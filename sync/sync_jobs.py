@@ -2,12 +2,13 @@ from utils.logger import get_logger
 from services.safetyamp_api import SafetyAmpAPI
 from services.viewpoint_api import ViewpointAPI
 from services.data_manager import data_manager
+from .base_sync import BaseSyncOperation
 
 logger = get_logger("sync_jobs")
 
-class JobSyncer:
+class JobSyncer(BaseSyncOperation):
     def __init__(self):
-        self.api_client = SafetyAmpAPI()
+        super().__init__(sync_type="jobs", logger_name="sync_jobs")
         self.viewpoint = ViewpointAPI()
         logger.info("Fetching existing sites from SafetyAmp...")
         sites_data = data_manager.get_cached_data_with_fallback(
@@ -51,8 +52,6 @@ class JobSyncer:
                 patch_data["name"] = name
                 self.api_client.put(f"/api/sites/{existing_site['id']}", patch_data)
                 logger.info(f"Updated site: {name} with changes: {patch_data}")
-            # else:
-                # logger.info(f"No update needed for existing site: {name}")
             return
 
         site_data = {
@@ -74,7 +73,9 @@ class JobSyncer:
             logger.warning(f"Failed to create site: {name}")
 
     def sync(self):
+        self.start_sync()
         logger.info("Starting job site sync...")
+        processed = 0
         for job in self.jobs:
             dept = job.get("Department")
             cluster_id = self.dept_cluster_map.get(dept)
@@ -83,4 +84,6 @@ class JobSyncer:
                 continue
 
             self.ensure_site(job, cluster_id)
+            processed += 1
         logger.info("Job site sync complete.")
+        return {"processed": processed}
