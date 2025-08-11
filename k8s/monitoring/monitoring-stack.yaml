@@ -65,7 +65,7 @@ spec:
             name: fluentbit-config
       containers:
         - name: safety-amp-agent
-          image: safetyampacr.azurecr.io/safetyamp-integration:latest
+          image: safety-amp/app:latest
           imagePullPolicy: Always
           env:
             - name: LOG_FORMAT

@@ -108,7 +108,7 @@ spec:
               topologyKey: kubernetes.io/hostname
       containers:
       - name: safety-amp-agent
-        image: iiusacr.azurecr.io/safety-amp-agent:latest
+        image: safety-amp/app:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
@@ -339,7 +339,7 @@ spec:
           serviceAccountName: safety-amp-workload-identity-sa
           containers:
           - name: safety-amp-sync
-            image: iiusacr.azurecr.io/safety-amp-agent:latest
+            image: safety-amp/app:latest
             imagePullPolicy: Always
             command: ["python", "sync_batch.py"]
             env:
