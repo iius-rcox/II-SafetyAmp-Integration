@@ -145,6 +145,102 @@ class _ChangeTracker:
             pass
         return self.current_session
 
+    # ---- Reporting helpers for external scripts ----
+    def _session_files(self) -> List[Path]:
+        try:
+            return sorted(self.output_dir.glob("sync_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+        except Exception:
+            return []
+
+    def get_recent_changes(self, hours: int = 24) -> List[Dict[str, Any]]:
+        """Aggregate recent change events from persisted session files.
+
+        Returns a flat list of change dicts with added session metadata.
+        """
+        cutoff_ts = datetime.now(timezone.utc).timestamp() - hours * 3600
+        all_changes: List[Dict[str, Any]] = []
+        for session_path in self._session_files():
+            try:
+                session = json.loads(session_path.read_text(encoding="utf-8"))
+                summary = session.get("summary", {})
+                # Include session if it overlaps the cutoff window
+                end_time = summary.get("end_time") or summary.get("start_time")
+                if not end_time:
+                    continue
+                try:
+                    end_ts = datetime.fromisoformat(str(end_time)).timestamp()
+                except Exception:
+                    continue
+                if end_ts < cutoff_ts:
+                    continue
+                session_id = session.get("session_id")
+                sync_type = session.get("sync_type")
+                for op_key in ("created", "updated", "deleted", "skipped", "errors"):
+                    for change in session.get("changes", {}).get(op_key, []):
+                        # Normalize shape and attach session metadata
+                        change["session_id"] = session_id
+                        change["sync_type"] = sync_type
+                        # Standardize operation key
+                        change.setdefault("operation", op_key)
+                        all_changes.append(change)
+            except Exception:
+                continue
+        # Sort by timestamp descending
+        def _parse_ts(val: str) -> float:
+            try:
+                return datetime.fromisoformat(val).timestamp()
+            except Exception:
+                return 0.0
+        return sorted(all_changes, key=lambda c: _parse_ts(str(c.get("timestamp", ""))), reverse=True)
+
+    def get_summary_report(self, hours: int = 24) -> Dict[str, Any]:
+        """Return a compact summary for dashboards and scripts.
+
+        Structure:
+          {
+            total_changes, by_operation, by_entity_type, recent_sessions: [...]
+          }
+        """
+        changes = self.get_recent_changes(hours)
+        by_operation: Dict[str, int] = {}
+        by_entity_type: Dict[str, int] = {}
+        for ch in changes:
+            op = str(ch.get("operation", "unknown"))
+            ent = str(ch.get("entity_type", "unknown"))
+            by_operation[op] = by_operation.get(op, 0) + 1
+            by_entity_type[ent] = by_entity_type.get(ent, 0) + 1
+
+        # Build recent sessions summary (latest 5)
+        sessions: List[Dict[str, Any]] = []
+        for session_path in self._session_files()[:5]:
+            try:
+                session = json.loads(session_path.read_text(encoding="utf-8"))
+                summary = session.get("summary", {})
+                sessions.append(
+                    {
+                        "session_id": session.get("session_id"),
+                        "sync_type": session.get("sync_type"),
+                        "total_processed": summary.get("total_processed", 0),
+                        "total_created": summary.get("total_created", 0),
+                        "total_updated": summary.get("total_updated", 0),
+                        "total_deleted": summary.get("total_deleted", 0),
+                        "total_skipped": summary.get("total_skipped", 0),
+                        "total_errors": summary.get("total_errors", 0),
+                        "duration_seconds": summary.get("duration_seconds", 0),
+                        "start_time": summary.get("start_time"),
+                        "end_time": summary.get("end_time"),
+                    }
+                )
+            except Exception:
+                continue
+
+        return {
+            "total_changes": sum(by_operation.values()),
+            "by_operation": by_operation,
+            "by_entity_type": by_entity_type,
+            "recent_sessions": sessions,
+        }
+
 
 class _ErrorNotifier:
     """Internal notifier (migrated from utils.error_notifier)."""
