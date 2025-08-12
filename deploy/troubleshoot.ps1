@@ -51,6 +51,10 @@ param(
 $scriptRoot = $PSScriptRoot
 if (-not $scriptRoot) { $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path }
 
+Import-Module "$scriptRoot/modules/Output.psm1" -Force
+Import-Module "$scriptRoot/modules/Kube.psm1" -Force
+Import-Module "$scriptRoot/modules/Troubleshooting.psm1" -Force
+
 Write-Host "🛠️  SafetyAmp Troubleshooting (task: $Task)" -ForegroundColor Cyan
 
 switch ($Task) {

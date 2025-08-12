@@ -6,7 +6,17 @@
 - Last sync time within schedule; no sustained backlogs
 
 ## Monitoring
-```bash
+```powershell
+# Unified monitoring entrypoint
+./deploy/monitor.ps1 -Feature dashboard -Hours 24
+
+# Focused views
+./deploy/monitor.ps1 -Feature logs -Hours 6
+./deploy/monitor.ps1 -Feature validation -Hours 24
+./deploy/monitor.ps1 -Feature changes -Hours 24
+./deploy/monitor.ps1 -Feature sync -Hours 1
+
+# Raw kubectl when needed
 kubectl logs -f deployment/safety-amp-agent -n safety-amp
 kubectl top pods -n safety-amp
 kubectl port-forward -n safety-amp svc/safety-amp-service 9090:9090  # /metrics

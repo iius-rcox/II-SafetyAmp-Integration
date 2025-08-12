@@ -14,41 +14,19 @@ param(
     [switch]$Cleanup
 )
 
-# Colors for output
-$Colors = @{
-    Success = "Green"
-    Warning = "Yellow"
-    Error = "Red"
-    Info = "Cyan"
-    Header = "Magenta"
-}
+Import-Module "$PSScriptRoot/modules/Output.psm1" -Force
+Import-Module "$PSScriptRoot/modules/Kube.psm1" -Force
 
-function Write-ColorOutput {
-    param([string]$Message, [string]$Color = "White")
-    Write-Host $Message -ForegroundColor $Colors[$Color]
-}
-
-function Get-SafetyAmpPod {
-    try {
-        $pods = kubectl get pods -n safety-amp -l app=safety-amp --no-headers -o custom-columns=":metadata.name" 2>$null
-        if ($pods) {
-            return ($pods -split "`n" | Where-Object { $_ -match "safety-amp-agent" } | Select-Object -First 1).Trim()
-        }
-    }
-    catch {
-        Write-ColorOutput "Error getting SafetyAmp pod: $_" "Error"
-    }
-    return $null
-}
+# Use Get-SafetyAmpPod from Kube module directly
 
 function Test-ErrorNotification {
     param([string]$PodName)
     
-    Write-ColorOutput "`n🧪 Testing Error Notification System..." "Header"
+        Write-ColorOutput "`n🧪 Testing Error Notification System..." -Color Magenta
     
     try {
         # Test 1: Check notification status
-        Write-ColorOutput "`n📊 Checking notification status..." "Info"
+        Write-ColorOutput "`n📊 Checking notification status..." -Color Cyan
         $status_result = kubectl exec $PodName -n safety-amp -- python -c "
 import sys
 sys.path.append('/app')
@@ -63,22 +41,22 @@ print('NOTIFICATION_STATUS_END')
         
         if ($status_result -match 'NOTIFICATION_STATUS_START(.*?)NOTIFICATION_STATUS_END') {
             $status_data = $matches[1].Trim() | ConvertFrom-Json
-            Write-ColorOutput "✅ Notification Status:" "Success"
-            Write-ColorOutput "  Total Errors (Last Hour): $($status_data.total_errors_last_hour)" "Info"
-            Write-ColorOutput "  Should Send Notification: $($status_data.should_send_notification)" "Info"
-            Write-ColorOutput "  Last Notification: $($status_data.last_notification_sent)" "Info"
+            Write-ColorOutput "✅ Notification Status:" -Color Green
+            Write-ColorOutput "  Total Errors (Last Hour): $($status_data.total_errors_last_hour)" -Color Cyan
+            Write-ColorOutput "  Should Send Notification: $($status_data.should_send_notification)" -Color Cyan
+            Write-ColorOutput "  Last Notification: $($status_data.last_notification_sent)" -Color Cyan
             
             if ($status_data.error_breakdown) {
-                Write-ColorOutput "  Error Breakdown:" "Info"
+                Write-ColorOutput "  Error Breakdown:" -Color Cyan
                 foreach ($error_type in $status_data.error_breakdown.GetEnumerator()) {
-                    Write-ColorOutput "    $($error_type.Key): $($error_type.Value)" "Info"
+                    Write-ColorOutput "    $($error_type.Key): $($error_type.Value)" -Color Cyan
                 }
             }
         }
         
         # Test 2: Force send notification if requested
         if ($Force) {
-            Write-ColorOutput "`n📧 Forcing error notification..." "Info"
+            Write-ColorOutput "`n📧 Forcing error notification..." -Color Cyan
             $force_result = kubectl exec $PodName -n safety-amp -- python -c "
 import sys
 sys.path.append('/app')
@@ -104,15 +82,15 @@ print('FORCE_NOTIFICATION_RESULT_END')
             if ($force_result -match 'FORCE_NOTIFICATION_RESULT_START(.*?)FORCE_NOTIFICATION_RESULT_END') {
                 $force_data = $matches[1].Trim()
                 if ($force_data -eq "True") {
-                    Write-ColorOutput "✅ Test notification sent successfully!" "Success"
+                    Write-ColorOutput "✅ Test notification sent successfully!" -Color Green
                 } else {
-                    Write-ColorOutput "⚠️  Test notification not sent (no errors or already sent recently)" "Warning"
+                    Write-ColorOutput "⚠️  Test notification not sent (no errors or already sent recently)" -Color Yellow
                 }
             }
         }
         
         # Test 3: Check error log
-        Write-ColorOutput "`n📋 Checking error log..." "Info"
+        Write-ColorOutput "`n📋 Checking error log..." -Color Cyan
         $log_result = kubectl exec $PodName -n safety-amp -- python -c "
 import sys
 sys.path.append('/app')
@@ -127,22 +105,22 @@ print('ERROR_LOG_END')
         
         if ($log_result -match 'ERROR_LOG_START(.*?)ERROR_LOG_END') {
             $log_data = $matches[1].Trim() | ConvertFrom-Json
-            Write-ColorOutput "✅ Error Log (Last 24 hours):" "Success"
-            Write-ColorOutput "  Total Errors: $($log_data.Count)" "Info"
+            Write-ColorOutput "✅ Error Log (Last 24 hours):" -Color Green
+            Write-ColorOutput "  Total Errors: $($log_data.Count)" -Color Cyan
             
             if ($log_data.Count -gt 0) {
                 Write-ColorOutput "  Recent Errors:" "Info"
                 foreach ($errorItem in $log_data[0..2]) {  # Show first 3 errors
                     $timestamp = [datetime]::Parse($errorItem.timestamp).ToString("HH:mm:ss")
-                    Write-ColorOutput "    [$timestamp] $($errorItem.error_type) - $($errorItem.entity_type) $($errorItem.entity_id)" "Info"
-                    Write-ColorOutput "      Message: $($errorItem.error_message)" "Warning"
+                    Write-ColorOutput "    [$timestamp] $($errorItem.error_type) - $($errorItem.entity_type) $($errorItem.entity_id)" -Color Cyan
+                    Write-ColorOutput "      Message: $($errorItem.error_message)" -Color Yellow
                 }
             }
         }
         
     }
     catch {
-        Write-ColorOutput "❌ Error testing notification system: $_" "Error"
+        Write-ColorOutput "❌ Error testing notification system: $_" -Color Red
     }
 }
 

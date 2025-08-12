@@ -107,7 +107,16 @@ Metrics (Prometheus):
 - safetyamp_records_processed_total
 - Optional/Recommended: cache gauges, change/error counters, sync state gauges
 
-Key validation commands:
+Operational monitoring:
+```powershell
+./deploy/monitor.ps1 -Feature dashboard -Hours 24   # Overview dashboard
+./deploy/monitor.ps1 -Feature logs -Hours 6         # Recent/error logs
+./deploy/monitor.ps1 -Feature validation -Hours 24  # Data quality & 422s
+./deploy/monitor.ps1 -Feature changes -Hours 24     # Change tracker stats
+./deploy/monitor.ps1 -Feature sync -Hours 1         # Sync summary
+```
+
+Raw kubectl when needed:
 ```bash
 kubectl logs -f deployment/safety-amp-agent -n safety-amp
 kubectl top pods -n safety-amp
