@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../
+images:
+  - name: safety-amp/app
+    newTag: staging
+patchesStrategicMerge:
+  - patch-env.yaml
