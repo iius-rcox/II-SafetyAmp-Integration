@@ -3,6 +3,7 @@ kind: Namespace
 metadata:
   name: safety-amp
   labels:
+    name: safety-amp
     app.kubernetes.io/name: safety-amp
     app.kubernetes.io/component: integration
 ---
@@ -11,6 +12,7 @@ kind: Namespace
 metadata:
   name: ingress-nginx
   labels:
+    name: ingress-nginx
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/component: ingress-controller
 ---
@@ -21,3 +23,12 @@ metadata:
   labels:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/component: certificate-management
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    name: monitoring
+    app.kubernetes.io/name: monitoring
+    app.kubernetes.io/component: observability
