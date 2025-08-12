@@ -3,8 +3,7 @@ kind: Kustomization
 namespace: safety-amp
 resources:
   - namespaces/namespaces.yaml
-  - safety-amp/safety-amp.yaml
-  - monitoring/monitoring-stack.yaml
+  - safety-amp/safety-amp-complete.yaml
 images:
   - name: safety-amp/app
     newName: safety-amp/app

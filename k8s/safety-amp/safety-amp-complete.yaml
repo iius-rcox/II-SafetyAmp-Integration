@@ -34,6 +34,7 @@ metadata:
 data:
   LOG_LEVEL: "INFO"
   LOG_FORMAT: "json"
+  STRUCTURED_LOGGING_ENABLED: "true"
   ENVIRONMENT: "production"
   SYNC_INTERVAL: "900"
   BATCH_SIZE: "500"
@@ -57,6 +58,43 @@ data:
   CIRCUIT_BREAKER_RECOVERY_TIMEOUT: "30"
   MEMORY_PROFILER_ENABLED: "false"
   MEMORY_PROFILER_INTERVAL: "300"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluentbit-config
+  namespace: safety-amp
+  labels:
+    app: safety-amp
+    component: observability
+data:
+  fluent-bit.conf: |
+    [SERVICE]
+        Flush         1
+        Log_Level     info
+        Parsers_File  parsers.conf
+    [INPUT]
+        Name   tail
+        Path   /app/output/changes/*.json
+        Parser json
+        Tag    safetyamp.changes
+    [INPUT]
+        Name   tail
+        Path   /app/output/errors/error_log.json
+        Parser json
+        Tag    safetyamp.errors
+    [OUTPUT]
+        Name        azure
+        Match       safetyamp.*
+        Customer_ID ${WORKSPACE_ID}
+        Shared_Key  ${WORKSPACE_KEY}
+        Log_Type    SafetyAmpCustom
+  parsers.conf: |
+    [PARSER]
+      Name        json
+      Format      json
+      Time_Key    timestamp
+      Time_Format %Y-%m-%dT%H:%M:%S.%L%z
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -106,6 +144,14 @@ spec:
                   values:
                   - safety-amp
               topologyKey: kubernetes.io/hostname
+      volumes:
+        - name: changes-volume
+          emptyDir: {}
+        - name: errors-volume
+          emptyDir: {}
+        - name: fluentbit-config
+          configMap:
+            name: fluentbit-config
       containers:
       - name: safety-amp-agent
         image: safety-amp/app:latest
@@ -126,6 +172,11 @@ spec:
             configMapKeyRef:
               name: safety-amp-config
               key: LOG_FORMAT
+        - name: STRUCTURED_LOGGING_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: safety-amp-config
+              key: STRUCTURED_LOGGING_ENABLED
         - name: ENVIRONMENT
           valueFrom:
             configMapKeyRef:
@@ -287,6 +338,34 @@ spec:
           initialDelaySeconds: 15
           periodSeconds: 10
           timeoutSeconds: 5
+        volumeMounts:
+        - name: changes-volume
+          mountPath: /app/output/changes
+        - name: errors-volume
+          mountPath: /app/output/errors
+      - name: fluentbit-sidecar
+        image: fluent/fluent-bit:2.2.0
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: WORKSPACE_ID
+            valueFrom:
+              secretKeyRef:
+                name: log-analytics-secrets
+                key: workspace-id
+          - name: WORKSPACE_KEY
+            valueFrom:
+              secretKeyRef:
+                name: log-analytics-secrets
+                key: workspace-key
+        volumeMounts:
+          - name: changes-volume
+            mountPath: /app/output/changes
+            readOnly: true
+          - name: errors-volume
+            mountPath: /app/output/errors
+            readOnly: true
+          - name: fluentbit-config
+            mountPath: /fluent-bit/etc
 ---
 apiVersion: v1
 kind: Service
@@ -515,6 +594,111 @@ spec:
         matchLabels:
           name: monitoring
 ---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-metrics-scrape
+  namespace: safety-amp
+spec:
+  podSelector:
+    matchLabels:
+      app: safety-amp
+      component: agent
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 9090
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: safety-amp-servicemonitor
+  namespace: safety-amp
+  labels:
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app: safety-amp
+      component: agent
+  namespaceSelector:
+    matchNames:
+      - safety-amp
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: safetyamp-alerts
+  namespace: safety-amp
+  labels:
+    app: safety-amp
+    role: alert-rules
+spec:
+  groups:
+  - name: safetyamp.rules
+    rules:
+    - alert: SafetyAmpSyncFailure
+      expr: increase(safetyamp_sync_operations_total{status="error"}[5m]) > 0
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: "SafetyAmp sync operation failed"
+        description: "One or more sync operations failed in the last 5 minutes."
+    - alert: SafetyAmpCacheStale
+      expr: (time() - max by (cache) (safetyamp_cache_last_updated_timestamp_seconds)) > (max by (cache) (safetyamp_cache_ttl_seconds) * 1.25)
+      for: 15m
+      labels:
+        severity: warning
+        service: safety-amp
+        team: integrations
+      annotations:
+        summary: "SafetyAmp cache is stale"
+        description: "Cache {{ $labels.cache }} exceeded TTL by >25%."
+    - alert: SafetyAmpErrorSurge
+      expr: sum(increase(safetyamp_errors_total[15m])) > 20
+      for: 5m
+      labels:
+        severity: critical
+        service: safety-amp
+        team: integrations
+      annotations:
+        summary: "Error surge detected"
+        description: "More than 20 errors recorded in the last 15 minutes. Investigate recent changes and logs."
+    - alert: SafetyAmpMissingSync
+      expr: time() - max(safetyamp_last_sync_timestamp_seconds) > 5400
+      for: 10m
+      labels:
+        severity: warning
+        service: safety-amp
+        team: integrations
+      annotations:
+        summary: "Missing sync activity"
+        description: "No completed sync detected for >90 minutes. Verify worker health and /health endpoint."
+    - alert: SafetyAmpLongRunningSyncP95
+      expr: histogram_quantile(0.95, sum by (le, operation) (rate(safetyamp_sync_duration_seconds_bucket[15m]))) > 600
+      for: 10m
+      labels:
+        severity: warning
+        service: safety-amp
+        team: integrations
+      annotations:
+        summary: "Long-running syncs (P95)"
+        description: "P95 of sync duration exceeds 10 minutes for at least one operation. Check source/destination APIs."
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -622,3 +806,55 @@ spec:
       - name: redis-config
         configMap:
           name: redis-config
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: safety-amp
+  name: safety-amp-role
+rules:
+- apiGroups: [""]
+  resources: ["secrets", "configmaps"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: safety-amp-role-binding
+  namespace: safety-amp
+subjects:
+- kind: ServiceAccount
+  name: safety-amp-workload-identity-sa
+  namespace: safety-amp
+roleRef:
+  kind: Role
+  name: safety-amp-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: metrics-reader
+rules:
+- apiGroups: [""]
+  resources: ["nodes", "nodes/metrics", "services", "endpoints", "pods"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["extensions"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: metrics-reader-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: metrics-reader
+subjects:
+- kind: ServiceAccount
+  name: safety-amp-workload-identity-sa
+  namespace: safety-amp
