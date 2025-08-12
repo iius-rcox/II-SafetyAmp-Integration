@@ -1,13 +1,251 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
+from pathlib import Path
+import json
+import time
+from datetime import datetime, timezone
 from utils.logger import get_logger
-from utils.change_tracker import ChangeTracker
-from utils.error_notifier import ErrorNotifier
+from utils.metrics import metrics
 
 
 logger = get_logger("event_manager")
+
+
+class _ChangeTracker:
+    """Internal change tracker (migrated from utils.change_tracker)."""
+
+    def __init__(self, output_dir: str = "output/changes") -> None:
+        self.output_dir = Path(output_dir)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.current_session: Dict[str, Any] = {
+            "session_id": f"sync_{int(time.time())}",
+            "start_time": datetime.now(timezone.utc).isoformat(),
+            "sync_type": None,
+            "changes": {"created": [], "updated": [], "deleted": [], "skipped": [], "errors": []},
+            "summary": {
+                "total_processed": 0,
+                "total_created": 0,
+                "total_updated": 0,
+                "total_deleted": 0,
+                "total_skipped": 0,
+                "total_errors": 0,
+                "start_time": None,
+                "end_time": None,
+                "duration_seconds": 0,
+            },
+        }
+        self.current_session["summary"]["start_time"] = datetime.now(timezone.utc).isoformat()
+
+    def start_sync(self, sync_type: str) -> None:
+        self.current_session["sync_type"] = sync_type
+
+    def log_creation(self, entity_type: str, entity_id: str, data: Dict[str, Any]) -> None:
+        self.current_session["changes"]["created"].append(
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "operation": "created",
+                "entity_type": entity_type,
+                "entity_id": entity_id,
+                "data": data,
+                "status": "success",
+            }
+        )
+        self.current_session["summary"]["total_created"] += 1
+        self.current_session["summary"]["total_processed"] += 1
+        try:
+            metrics.changes_total.labels(entity_type=entity_type, operation="created", status="success").inc()  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+    def log_update(self, entity_type: str, entity_id: str, changes: Dict[str, Any], original_data: Optional[Dict[str, Any]]) -> None:
+        self.current_session["changes"]["updated"].append(
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "operation": "updated",
+                "entity_type": entity_type,
+                "entity_id": entity_id,
+                "changes": changes,
+                "original_data": original_data,
+                "status": "success",
+            }
+        )
+        self.current_session["summary"]["total_updated"] += 1
+        self.current_session["summary"]["total_processed"] += 1
+        try:
+            metrics.changes_total.labels(entity_type=entity_type, operation="updated", status="success").inc()  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+    def log_deletion(self, entity_type: str, entity_id: str, reason: str) -> None:
+        self.current_session["changes"]["deleted"].append(
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "operation": "deleted",
+                "entity_type": entity_type,
+                "entity_id": entity_id,
+                "reason": reason,
+                "status": "success",
+            }
+        )
+        self.current_session["summary"]["total_deleted"] += 1
+        self.current_session["summary"]["total_processed"] += 1
+        try:
+            metrics.changes_total.labels(entity_type=entity_type, operation="deleted", status="success").inc()  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+    def log_skip(self, entity_type: str, entity_id: str, reason: str) -> None:
+        self.current_session["changes"]["skipped"].append(
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "operation": "skipped",
+                "entity_type": entity_type,
+                "entity_id": entity_id,
+                "reason": reason,
+            }
+        )
+        self.current_session["summary"]["total_skipped"] += 1
+        self.current_session["summary"]["total_processed"] += 1
+        try:
+            metrics.changes_total.labels(entity_type=entity_type, operation="skipped", status="success").inc()  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+    def log_error(self, entity_type: str, entity_id: str, error: str, operation: str, data: Optional[Dict[str, Any]]) -> None:
+        self.current_session["changes"]["errors"].append(
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "operation": operation,
+                "entity_type": entity_type,
+                "entity_id": entity_id,
+                "error": error,
+                "data": data,
+                "status": "error",
+            }
+        )
+        self.current_session["summary"]["total_errors"] += 1
+        self.current_session["summary"]["total_processed"] += 1
+        try:
+            metrics.changes_total.labels(entity_type=entity_type, operation=operation or "unknown", status="error").inc()  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+    def end_sync(self) -> Dict[str, Any]:
+        end_time = datetime.now(timezone.utc)
+        start_time = datetime.fromisoformat(self.current_session["summary"]["start_time"])  # type: ignore[arg-type]
+        duration = (end_time - start_time).total_seconds()
+        self.current_session["summary"]["end_time"] = end_time.isoformat()
+        self.current_session["summary"]["duration_seconds"] = duration
+        session_file = self.output_dir / f"{self.current_session['session_id']}.json"
+        try:
+            session_file.write_text(json.dumps(self.current_session, indent=2, default=str), encoding="utf-8")
+        except Exception:
+            pass
+        return self.current_session
+
+
+class _ErrorNotifier:
+    """Internal notifier (migrated from utils.error_notifier)."""
+
+    def __init__(self, data_dir: str = "output/errors") -> None:
+        self.data_dir = Path(data_dir)
+        self.data_dir.mkdir(parents=True, exist_ok=True)
+        self.errors_file = self.data_dir / "error_log.json"
+        self.last_notification_file = self.data_dir / "last_notification.json"
+        if self.errors_file.exists():
+            try:
+                self.errors: List[Dict[str, Any]] = json.loads(self.errors_file.read_text(encoding="utf-8"))
+            except Exception:
+                self.errors = []
+        else:
+            self.errors = []
+
+    def _save(self) -> None:
+        try:
+            self.errors_file.write_text(json.dumps(self.errors, indent=2, default=str), encoding="utf-8")
+        except Exception:
+            pass
+
+    def log_error(self, error_type: str, entity_type: str, entity_id: str, error_message: str, error_details: Optional[Dict[str, Any]] = None, source: str = "sync") -> None:
+        self.errors.append(
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "error_type": error_type,
+                "entity_type": entity_type,
+                "entity_id": entity_id,
+                "error_message": error_message,
+                "error_details": error_details or {},
+                "source": source,
+            }
+        )
+        self._save()
+        try:
+            metrics.errors_total.labels(error_type=error_type, entity_type=entity_type, source=source).inc()  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+    def get_errors_since(self, hours: int = 1) -> List[Dict[str, Any]]:
+        cutoff = datetime.now(timezone.utc).timestamp() - hours * 3600
+        out: List[Dict[str, Any]] = []
+        for e in self.errors:
+            try:
+                ts = datetime.fromisoformat(e.get("timestamp", ""))
+                if ts.timestamp() >= cutoff:
+                    out.append(e)
+            except Exception:
+                continue
+        return out
+
+    def _should_send(self) -> bool:
+        if not self.last_notification_file.exists():
+            return True
+        try:
+            last = json.loads(self.last_notification_file.read_text(encoding="utf-8"))
+            last_ts = datetime.fromisoformat(last.get("timestamp", ""))
+            return (datetime.now(timezone.utc) - last_ts).total_seconds() >= 3600
+        except Exception:
+            return True
+
+    def _mark_sent(self) -> None:
+        try:
+            self.last_notification_file.write_text(
+                json.dumps({"timestamp": datetime.now(timezone.utc).isoformat()}, indent=2),
+                encoding="utf-8",
+            )
+        except Exception:
+            pass
+
+    def send_hourly_notification(self) -> bool:
+        if not self._should_send():
+            return False
+        if len(self.get_errors_since(1)) == 0:
+            return False
+        # No-op email body here; integrate with utils.emailer if desired
+        self._mark_sent()
+        return True
+
+    def cleanup_old_errors(self, days: int = 7) -> None:
+        cutoff = datetime.now(timezone.utc).timestamp() - days * 86400
+        filtered: List[Dict[str, Any]] = []
+        for e in self.errors:
+            try:
+                ts = datetime.fromisoformat(e.get("timestamp", ""))
+                if ts.timestamp() >= cutoff:
+                    filtered.append(e)
+            except Exception:
+                continue
+        self.errors = filtered
+        self._save()
+
+    def get_notification_status(self) -> Dict[str, Any]:
+        recent = self.get_errors_since(1)
+        return {
+            "total_errors_last_hour": len(recent),
+            "should_send_notification": self._should_send(),
+            "last_notification_sent": json.loads(self.last_notification_file.read_text()) if self.last_notification_file.exists() else None,
+        }
 
 
 class EventManager:
@@ -17,9 +255,9 @@ class EventManager:
     for emitting creation/update/deletion events, errors, and session lifecycle.
     """
 
-    def __init__(self, change_tracker: Optional[ChangeTracker] = None, error_notifier: Optional[ErrorNotifier] = None) -> None:
-        self.change_tracker = change_tracker or ChangeTracker()
-        self.error_notifier = error_notifier or ErrorNotifier()
+    def __init__(self, change_tracker: Optional[_ChangeTracker] = None, error_notifier: Optional[_ErrorNotifier] = None) -> None:
+        self.change_tracker = change_tracker or _ChangeTracker()
+        self.error_notifier = error_notifier or _ErrorNotifier()
         self._current_session_id: Optional[str] = None
 
     # ----- Session lifecycle -----

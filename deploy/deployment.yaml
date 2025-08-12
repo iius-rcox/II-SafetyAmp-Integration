@@ -1,0 +1,166 @@
+# SafetyAmp Agent Deployment and optional Metrics Service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: safety-amp-agent
+  namespace: safety-amp
+  labels:
+    app: safety-amp
+    component: agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: safety-amp
+      component: agent
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: "25%"
+      maxSurge: "25%"
+  template:
+    metadata:
+      labels:
+        app: safety-amp
+        component: agent
+        azure.workload.identity/use: "true"
+      annotations:
+        # Prometheus scrape (back-compat)
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+
+        # Azure Monitor managed Prometheus scrape
+        azure.monitor.metrics.scrape: "true"
+        azure.monitor.metrics.port: "9090"
+        azure.monitor.metrics.path: "/metrics"
+    spec:
+      serviceAccountName: safety-amp-workload-identity-sa
+      imagePullSecrets:
+        - name: acr-secret
+      containers:
+        - name: safety-amp-agent
+          image: iiusacr.azurecr.io/safety-amp-agent:latest
+          imagePullPolicy: Always
+          ports:
+            - name: health
+              containerPort: 8080
+            - name: metrics
+              containerPort: 9090
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 200m
+              memory: 512Mi
+          env:
+            # Core runtime (config map values expected to exist)
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: safety-amp-config
+                  key: LOG_LEVEL
+            - name: LOG_FORMAT
+              valueFrom:
+                configMapKeyRef:
+                  name: safety-amp-config
+                  key: LOG_FORMAT
+            - name: ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: safety-amp-config
+                  key: ENVIRONMENT
+            - name: SYNC_INTERVAL
+              valueFrom:
+                configMapKeyRef:
+                  name: safety-amp-config
+                  key: SYNC_INTERVAL
+            - name: CACHE_TTL_HOURS
+              valueFrom:
+                configMapKeyRef:
+                  name: safety-amp-config
+                  key: CACHE_TTL_HOURS
+            - name: CACHE_REFRESH_INTERVAL_HOURS
+              valueFrom:
+                configMapKeyRef:
+                  name: safety-amp-config
+                  key: CACHE_REFRESH_INTERVAL_HOURS
+            - name: DB_POOL_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: safety-amp-config
+                  key: DB_POOL_SIZE
+            - name: DB_MAX_OVERFLOW
+              valueFrom:
+                configMapKeyRef:
+                  name: safety-amp-config
+                  key: DB_MAX_OVERFLOW
+            - name: DB_POOL_TIMEOUT
+              valueFrom:
+                configMapKeyRef:
+                  name: safety-amp-config
+                  key: DB_POOL_TIMEOUT
+            - name: DB_POOL_RECYCLE
+              valueFrom:
+                configMapKeyRef:
+                  name: safety-amp-config
+                  key: DB_POOL_RECYCLE
+            - name: METRICS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: safety-amp-config
+                  key: METRICS_PORT
+            - name: HEALTH_CHECK_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: safety-amp-config
+                  key: HEALTH_CHECK_PORT
+            - name: HEALTH_CHECK_TIMEOUT
+              valueFrom:
+                configMapKeyRef:
+                  name: safety-amp-config
+                  key: HEALTH_CHECK_TIMEOUT
+            - name: SQL_AUTH_MODE
+              valueFrom:
+                configMapKeyRef:
+                  name: safety-amp-config
+                  key: SQL_AUTH_MODE
+            # Secrets
+            - name: AZURE_KEY_VAULT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: safety-amp-secrets
+                  key: AZURE_KEY_VAULT_URL
+            - name: REDIS_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: safety-amp-secrets
+                  key: REDIS_HOST
+            - name: REDIS_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: safety-amp-secrets
+                  key: REDIS_PORT
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: safety-amp-secrets
+                  key: REDIS_PASSWORD
+
+
