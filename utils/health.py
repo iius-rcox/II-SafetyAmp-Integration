@@ -71,9 +71,9 @@ def run_health_checks() -> Dict[str, Any]:
     }
 
     # Determine overall status
-    if checks["database"]["status"] != "healthy":
-        overall = "unhealthy"
-    elif any(checks[name]["status"] != "healthy" for name in ("safetyamp", "samsara", "cache")):
+    # Do NOT mark overall unhealthy solely due to database issues to avoid liveness failures.
+    # Treat database failures as degraded so the pod stays up, and operators can inspect logs/metrics.
+    if any(checks[name]["status"] != "healthy" for name in ("database", "safetyamp", "samsara", "cache")):
         overall = "degraded"
     else:
         overall = "healthy"
