@@ -260,7 +260,7 @@ except Exception as e:
     return $true
 }
 
-function Monitor-ValidationImprovements {
+function Watch-ValidationImprovements {
     Write-Host "`n📊 Monitoring Validation Improvements..." -ForegroundColor Green
     
     # Run validation monitoring via dashboard
@@ -285,7 +285,7 @@ function Monitor-ValidationImprovements {
     }
 }
 
-function Rollback-Deployment {
+function Restore-Deployment {
     Write-Host "`n🔄 Rolling back deployment..." -ForegroundColor Yellow
     
     # Find the most recent backup file
@@ -352,11 +352,11 @@ switch ($Action.ToLower()) {
     }
     "monitor" {
         Write-Host "`n📊 Monitoring validation improvements..." -ForegroundColor Green
-        Monitor-ValidationImprovements
+        Watch-ValidationImprovements
     }
     "rollback" {
         Write-Host "`n🔄 Rolling back deployment..." -ForegroundColor Yellow
-        if (Rollback-Deployment) {
+        if (Restore-Deployment) {
             Write-Host "`n✅ Rollback completed successfully!" -ForegroundColor Green
         } else {
             Write-Host "`n❌ Rollback failed!" -ForegroundColor Red
