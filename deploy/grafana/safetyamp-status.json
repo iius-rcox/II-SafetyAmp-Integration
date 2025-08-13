@@ -970,6 +970,14 @@
         "refresh": 1,
         "type": "datasource"
       }
+      ,
+      {
+        "name": "azlogs",
+        "type": "datasource",
+        "label": "Azure Logs",
+        "query": "grafana-azure-monitor-datasource",
+        "refresh": 1
+      }
     ]
   },
   "time": {

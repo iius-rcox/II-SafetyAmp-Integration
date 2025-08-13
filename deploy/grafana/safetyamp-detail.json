@@ -88,21 +88,46 @@
       "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
     },
     {
-      "type": "text",
-      "title": "Recent Records (Logs)",
-      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 20 },
-      "options": {
-        "mode": "markdown",
-        "content": "### Recent Records\nUse Explore with the Azure Monitor Logs datasource to see individual events behind these metrics.\n\nErrors detail:\n```kusto\nSafetyAmpCustom\n| where $__timeFilter(TimeGenerated)\n| where level in ('ERROR','error') or message has_any ('Validation','Exception','Failed')\n| project TimeGenerated, entity_type, operation, status, entity_id, message\n| order by TimeGenerated desc\n```\n\nChanges/operations detail:\n```kusto\nSafetyAmpCustom\n| where $__timeFilter(TimeGenerated)\n| where (operation == '${var-operation}' or '${var-operation}' == 'all')\n| where (status == '${var-status}' or '${var-status}' == 'all')\n| project TimeGenerated, entity_type, operation, status, entity_id, message\n| order by TimeGenerated desc\n```"
-      }
+      "type": "table",
+      "title": "Recent Errors (Azure Monitor Logs)",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 20 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "$azlogs" },
+          "azureLogAnalytics": {
+            "resultFormat": "table",
+            "query": "union isfuzzy=true ContainerLogV2, ContainerLog\n| where $__timeFilter(TimeGenerated)\n| extend KubeNS = tostring(coalesce(Namespace, KubernetesNamespace, k8sNamespace, NameSpace))\n| extend KubePod = tostring(coalesce(PodName, KubernetesPod, Pod, k8sPod))\n| extend Message = tostring(coalesce(LogMessage, LogEntry, log, Message))\n| extend Level = tolower(tostring(coalesce(Level, level)))\n| where KubeNS == 'safety-amp'\n| where Level == 'error' or Message has_any ('ERROR','Exception','Failed','Validation')\n| project TimeGenerated, KubeNS, KubePod, ContainerName, Level, Message\n| order by TimeGenerated desc\n| take 500"
+          }
+        }
+      ],
+      "options": { "showHeader": true },
+      "fieldConfig": { "defaults": {}, "overrides": [] }
+    },
+    {
+      "type": "table",
+      "title": "Recent Changes / Operations (Azure Monitor Logs)",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 30 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "$azlogs" },
+          "azureLogAnalytics": {
+            "resultFormat": "table",
+            "query": "let op = iff('$operation' == '.*' or '$operation' == 'all', '', '$operation');\nlet st = iff('$status' == '.*' or '$status' == 'all', '', '$status');\nunion isfuzzy=true ContainerLogV2, ContainerLog\n| where $__timeFilter(TimeGenerated)\n| extend KubeNS = tostring(coalesce(Namespace, KubernetesNamespace, k8sNamespace, NameSpace))\n| extend KubePod = tostring(coalesce(PodName, KubernetesPod, Pod, k8sPod))\n| extend Message = tostring(coalesce(LogMessage, LogEntry, log, Message))\n| where KubeNS == 'safety-amp'\n| where isempty(op) or Message has op\n| where isempty(st) or Message has st\n| project TimeGenerated, KubeNS, KubePod, ContainerName, Message\n| order by TimeGenerated desc\n| take 500"
+          }
+        }
+      ],
+      "options": { "showHeader": true },
+      "fieldConfig": { "defaults": {}, "overrides": [] }
     },
     {
       "type": "text",
       "title": "Metrics Drilldown",
-      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 27 },
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 40 },
       "options": {
         "mode": "markdown",
-        "content": "### How to drill down (native Grafana)\n- Click a series and use the data link to this view; time range and labels are preserved.\n- Use Explore to pivot from metrics to logs: keep time range, choose Azure Monitor Logs, run the KQL above.\n- Use variables to scope by operation, status, entity type, and sync type.\n- Share deep links; filters and time are encoded in the URL."
+        "content": "### How to drill down (native Grafana)\n- Click a series and use the data link to this view; time range and labels are preserved.\n- Use Explore to pivot from metrics to logs: keep time range, choose Azure Monitor Logs, inspect the queries from the tables above.\n- Use variables to scope by operation, status, entity type, and sync type.\n- Share deep links; filters and time are encoded in the URL."
       }
     }
   ],
@@ -112,6 +137,7 @@
   "templating": {
     "list": [
       { "name": "datasource", "type": "datasource", "label": "Datasource", "query": "prometheus", "refresh": 1 },
+      { "name": "azlogs", "type": "datasource", "label": "Azure Logs", "query": "grafana-azure-monitor-datasource", "refresh": 1 },
       { "name": "operation", "type": "custom", "query": "employees,departments,jobs,titles,vehicles|all", "current": { "text": "all", "value": ".*" } },
       { "name": "status", "type": "custom", "query": "success,error|all", "current": { "text": "all", "value": ".*" } },
       { "name": "entity_type", "type": "custom", "query": "employee,vehicle,department,job,title|all", "current": { "text": "all", "value": ".*" } },
