@@ -494,19 +494,19 @@ class EmployeeSyncer:
                         except Exception as final_e:
                             consecutive_errors += 1
                             error_msg = f"Unexpected error in fallback: {str(final_e)}"
-                        event_manager.log_error(
-                            kind="fallback_unexpected_error",
-                            entity="employee",
-                            entity_id=emp_id,
-                            message=error_msg,
-                            operation="create_fallback",
-                            details={
-                                    "exception_type": type(final_e).__name__,
-                                    "fallback_payload": cleaned_fallback_payload,
-                                    "original_payload": cleaned_payload,
-                                    "employee_name": full_name
-                            },
-                            source="sync_create_fallback"
+                            event_manager.log_error(
+                                kind="fallback_unexpected_error",
+                                entity="employee",
+                                entity_id=emp_id,
+                                message=error_msg,
+                                operation="create_fallback",
+                                details={
+                                        "exception_type": type(final_e).__name__,
+                                        "fallback_payload": cleaned_fallback_payload,
+                                        "original_payload": cleaned_payload,
+                                        "employee_name": full_name
+                                },
+                                source="sync_create_fallback"
                             )
                             sync_results["errors"] += 1
                     else:
