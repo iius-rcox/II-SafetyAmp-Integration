@@ -313,20 +313,25 @@ class VehicleSync:
                         if self._needs_update(existing_asset, cleaned_asset_data):
                             # Update existing asset
                             result = self.safetyamp_api.update_asset(existing_asset["id"], cleaned_asset_data)
-                        if result:
+                            if result:
                                 synced_count += 1
                                 logger.info(f"Updated asset {vehicle_serial}")
-                            try:
-                                event_manager.log_update("asset", str(existing_asset["id"]), cleaned_asset_data, existing_asset)
-                            except Exception:
-                                pass
+                                try:
+                                    event_manager.log_update("asset", str(existing_asset["id"]), cleaned_asset_data, existing_asset)
+                                except Exception:
+                                    pass
                             else:
                                 error_count += 1
                                 logger.error(f"Failed to update asset {vehicle_serial}")
-                            try:
-                                event_manager.log_error("update_failed", "asset", str(existing_asset.get("id", vehicle_serial)), f"Failed to update asset {vehicle_serial}")
-                            except Exception:
-                                pass
+                                try:
+                                    event_manager.log_error(
+                                        "update_failed",
+                                        "asset",
+                                        str(existing_asset.get("id", vehicle_serial)),
+                                        f"Failed to update asset {vehicle_serial}"
+                                    )
+                                except Exception:
+                                    pass
                         else:
                             logger.debug(f"Asset {vehicle_serial} is up to date")
                             skipped_count += 1
