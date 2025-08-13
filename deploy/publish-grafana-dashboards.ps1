@@ -10,7 +10,7 @@ param(
   [string]$ContactPointName = 'cp-dev-email',
   [string]$ApiTokenEnvVar = 'GRAFANA_API_TOKEN',
   [string]$KeyVaultName,
-  [string]$KeyVaultSecretName = 'GrafanaApiToken'
+  [string]$KeyVaultSecretName = 'GRAFANA-API-TOKEN'
 )
 
 Set-StrictMode -Version Latest
@@ -48,7 +48,7 @@ function Resolve-GrafanaApiToken {
     [string]$Existing,
     [string]$EnvVarName = 'GRAFANA_API_TOKEN',
     [string]$KeyVaultName,
-    [string]$SecretName = 'GrafanaApiToken'
+    [string]$SecretName = 'GRAFANA-API-TOKEN'
   )
 
   if ($Existing) { return $Existing }
@@ -90,9 +90,9 @@ function Resolve-GrafanaApiToken {
 function Get-DefaultDashboardFiles {
   $root = Resolve-RepoRoot
   $paths = @(
-    (Join-Path $root 'k8s/monitoring/grafana/safetyamp-observability.json'),
     (Join-Path $root 'k8s/monitoring/grafana/safetyamp-status.json'),
-    (Join-Path $PSScriptRoot 'grafana/safetyamp-status.json')
+    (Join-Path $PSScriptRoot 'grafana/safetyamp-status.json'),
+    (Join-Path $PSScriptRoot 'grafana/safetyamp-detail.json')
   )
   return $paths | Where-Object { Test-Path $_ }
 }

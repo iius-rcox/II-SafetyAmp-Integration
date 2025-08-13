@@ -1,5 +1,6 @@
 ARG PY_VERSION=3.11
-ARG BASE_IMAGE=python:${PY_VERSION}-slim
+# Pin to Debian 11 (bullseye) variant to ensure Microsoft ODBC packages are available
+ARG BASE_IMAGE=python:${PY_VERSION}-slim-bullseye
 ARG SQL_DEBIAN_VERSION=11
 
 FROM ${BASE_IMAGE} AS builder

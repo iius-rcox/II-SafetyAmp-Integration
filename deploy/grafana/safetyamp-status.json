@@ -24,7 +24,9 @@
     {
       "fieldConfig": {
         "defaults": {
-          "mappings": [],
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "False" }, "1": { "text": "True" } } }
+          ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -71,12 +73,26 @@
             "type": "prometheus",
             "uid": "$datasource"
           },
-          "expr": "max_over_time(safetyamp_sync_in_progress[$__interval])",
+          "expr": "max(safetyamp_sync_in_progress)",
           "refId": "A"
         }
       ],
       "title": "Sync In Progress",
-      "type": "stat"
+      "type": "stat",
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {"calcs":["lastNotNull"],"fields":"","values":false},
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true,
+        "links": [
+          {"title": "View details", "url": "d/safetyamp-detail/safetyamp-detail?from=${__from}&to=${__to}", "targetBlank": true}
+        ]
+      }
     },
     {
       "fieldConfig": {
@@ -141,12 +157,26 @@
             "type": "prometheus",
             "uid": "$datasource"
           },
-          "expr": "(time() - max_over_time(safetyamp_last_sync_timestamp_seconds[$__range])) / 60",
+          "expr": "(time() - max(safetyamp_last_sync_timestamp_seconds)) / 60",
           "refId": "A"
         }
       ],
       "title": "Minutes Since Last Sync",
-      "type": "stat"
+      "type": "stat",
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {"calcs":["lastNotNull"],"fields":"","values":false},
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true,
+        "links": [
+          {"title": "View details", "url": "d/safetyamp-detail/safetyamp-detail?from=${__from}&to=${__to}", "targetBlank": true}
+        ]
+      }
     },
     {
       "fieldConfig": {
@@ -255,12 +285,26 @@
             "type": "prometheus",
             "uid": "$datasource"
           },
-          "expr": "sum(increase(safetyamp_records_processed_total[1h]))",
+          "expr": "sum(increase(safetyamp_records_processed_total[$__range]))",
           "refId": "A"
         }
       ],
       "title": "Records Processed (last 1h)",
-      "type": "stat"
+      "type": "stat",
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {"calcs":["lastNotNull"],"fields":"","values":false},
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true,
+        "links": [
+          {"title": "View details", "url": "d/safetyamp-detail/safetyamp-detail?from=${__from}&to=${__to}&var-sync_type=.*", "targetBlank": true}
+        ]
+      }
     },
     {
       "fieldConfig": {
@@ -370,13 +414,24 @@
             "type": "prometheus",
             "uid": "$datasource"
           },
-          "expr": "sum by (operation, status) (rate(safetyamp_sync_operations_total[$__rate_interval]))",
+          "expr": "sum by (operation, status) (increase(safetyamp_sync_operations_total[$__range]))",
           "legendFormat": "{{operation}} {{status}}",
           "refId": "A"
         }
       ],
       "title": "Sync Operations by Status (rate)",
-      "type": "timeseries"
+      "type": "timeseries",
+      "options": {
+        "legend": {"calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true},
+        "tooltip": {"hideZeros": false, "mode": "single", "sort": "none"},
+        "links": [
+          {
+            "title": "View details",
+            "url": "d/safetyamp-detail/safetyamp-detail?from=${__from}&to=${__to}&var-operation=${__series.labels.operation}&var-status=${__series.labels.status}",
+            "targetBlank": true
+          }
+        ]
+      }
     },
     {
       "fieldConfig": {
