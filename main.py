@@ -111,6 +111,34 @@ def health():
         ) else 'degraded'
         return jsonify(payload), code
 
+@app.route('/ready')
+def ready():
+    """Readiness endpoint for Kubernetes.
+
+    Returns 200 only when the application is ready to serve traffic, which
+    requires a healthy database connection. Returns 503 otherwise.
+    """
+    overall = run_health_checks()
+    db_status = overall.get('checks', {}).get('database', {}).get('status', 'unhealthy')
+    # Ready only if database is healthy
+    code = 200 if (not shutdown_requested and db_status == 'healthy') else 503
+    payload = {
+        'status': 'ready' if code == 200 else 'not_ready',
+        'checks': overall.get('checks', {}),
+        'timestamp': time.time(),
+    }
+    return jsonify(payload), code
+
+@app.route('/live')
+def live():
+    """Liveness endpoint for Kubernetes.
+
+    Should return 200 as long as the process is alive and not shutting down,
+    regardless of downstream dependency health.
+    """
+    code = 200 if not shutdown_requested else 503
+    return jsonify({'status': 'alive' if code == 200 else 'shutting_down', 'timestamp': time.time()}), code
+
 @app.route('/metrics')
 def metrics_endpoint():
     """Prometheus metrics endpoint"""
@@ -229,7 +257,7 @@ def run_sync_worker():
             
             # Log to error notifier for email notifications
             try:
-                error_notifier.log_error(
+                error_manager.log_error(
                     error_type="sync_worker_error",
                     entity_type="system",
                     entity_id="sync_worker",

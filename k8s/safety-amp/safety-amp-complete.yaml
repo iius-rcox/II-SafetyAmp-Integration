@@ -162,6 +162,8 @@ spec:
         - containerPort: 9090
           name: metrics
         env:
+        - name: AZURE_CLIENT_ID
+          value: "a2bcb3ce-a89b-43af-804c-e8029e0bafb4"
         - name: LOG_LEVEL
           valueFrom:
             configMapKeyRef:
@@ -326,18 +328,19 @@ spec:
             cpu: "200m"
         livenessProbe:
           httpGet:
-            path: /health
+            path: /live
             port: 8080
-          initialDelaySeconds: 30
-          periodSeconds: 30
-          timeoutSeconds: 10
+          initialDelaySeconds: 10
+          periodSeconds: 20
+          timeoutSeconds: 5
         readinessProbe:
           httpGet:
             path: /ready
             port: 8080
-          initialDelaySeconds: 15
+          initialDelaySeconds: 5
           periodSeconds: 10
           timeoutSeconds: 5
+          failureThreshold: 6
         volumeMounts:
         - name: changes-volume
           mountPath: /app/output/changes

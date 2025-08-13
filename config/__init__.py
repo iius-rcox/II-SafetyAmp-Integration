@@ -73,12 +73,13 @@ class ConfigManager:
         # Prefer managed identity if available; fallback to default chain
         try:
             try:
-                self._azure_credential = ManagedIdentityCredential()
-                logger.info("Using ManagedIdentityCredential for Azure authentication")
-            except Exception as exc:
-                logger.debug(f"Managed identity not available: {exc}")
+                # Prefer DefaultAzureCredential to support AKS Workload Identity, then fallback
                 self._azure_credential = DefaultAzureCredential()
                 logger.info("Using DefaultAzureCredential for Azure authentication")
+            except Exception as exc:
+                logger.debug(f"DefaultAzureCredential not available: {exc}")
+                self._azure_credential = ManagedIdentityCredential()
+                logger.info("Using ManagedIdentityCredential for Azure authentication")
 
             self._azure_secret_client = SecretClient(
                 vault_url=self.azure_key_vault_url,
@@ -224,9 +225,9 @@ class ConfigManager:
                 "Authentication=ActiveDirectoryMSI;"
                 "Encrypt=yes;"
                 "TrustServerCertificate=yes;"
-                "Connection Timeout=300;"
-                "Command Timeout=300;"
-                "Connect Timeout=300;"
+                "Connection Timeout=15;"
+                "Command Timeout=60;"
+                "Connect Timeout=15;"
             )
         if self.SQL_AUTH_MODE == "sql_auth":
             sql_username = self.get_secret("SQL-USERNAME")
@@ -239,9 +240,9 @@ class ConfigManager:
                 f"PWD={sql_password};"
                 "Encrypt=yes;"
                 "TrustServerCertificate=yes;"
-                "Connection Timeout=300;"
-                "Command Timeout=300;"
-                "Connect Timeout=300;"
+                "Connection Timeout=15;"
+                "Command Timeout=60;"
+                "Connect Timeout=15;"
             )
         raise ValueError(f"Invalid SQL_AUTH_MODE: {self.SQL_AUTH_MODE}. Must be 'managed_identity' or 'sql_auth'")
 
