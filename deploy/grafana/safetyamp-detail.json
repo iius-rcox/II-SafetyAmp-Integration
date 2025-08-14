@@ -96,6 +96,7 @@
           "refId": "A",
           "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "$azlogs" },
           "azureLogAnalytics": {
+            "workspace": "$workspace",
             "resultFormat": "table",
             "query": "union isfuzzy=true ContainerLogV2, ContainerLog\n| where $__timeFilter(TimeGenerated)\n| extend KubeNS = tostring(coalesce(Namespace, KubernetesNamespace, k8sNamespace, NameSpace))\n| extend KubePod = tostring(coalesce(PodName, KubernetesPod, Pod, k8sPod))\n| extend Message = tostring(coalesce(LogMessage, LogEntry, log, Message))\n| extend Level = tolower(tostring(coalesce(Level, level)))\n| where KubeNS == 'safety-amp'\n| where Level == 'error' or Message has_any ('ERROR','Exception','Failed','Validation')\n| project TimeGenerated, KubeNS, KubePod, ContainerName, Level, Message\n| order by TimeGenerated desc\n| take 500"
           }
@@ -113,6 +114,7 @@
           "refId": "A",
           "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "$azlogs" },
           "azureLogAnalytics": {
+            "workspace": "$workspace",
             "resultFormat": "table",
             "query": "let op = iff('$operation' == '.*' or '$operation' == 'all', '', '$operation');\nlet st = iff('$status' == '.*' or '$status' == 'all', '', '$status');\nunion isfuzzy=true ContainerLogV2, ContainerLog\n| where $__timeFilter(TimeGenerated)\n| extend KubeNS = tostring(coalesce(Namespace, KubernetesNamespace, k8sNamespace, NameSpace))\n| extend KubePod = tostring(coalesce(PodName, KubernetesPod, Pod, k8sPod))\n| extend Message = tostring(coalesce(LogMessage, LogEntry, log, Message))\n| where KubeNS == 'safety-amp'\n| where isempty(op) or Message has op\n| where isempty(st) or Message has st\n| project TimeGenerated, KubeNS, KubePod, ContainerName, Message\n| order by TimeGenerated desc\n| take 500"
           }

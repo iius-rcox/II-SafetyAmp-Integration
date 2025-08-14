@@ -39,7 +39,7 @@ if ($includeAll -or $Sections -contains 'services') {
 
 if ($includeAll -or $Sections -contains 'logs') {
     Write-SectionHeader "Recent Logs Summary"
-    $latestPod = Get-SafetyAmpPod -Namespace 'safety-amp' -Selector 'app=safety-amp-agent'
+    $latestPod = Get-SafetyAmpPod -Namespace 'safety-amp' -Selector 'app=safety-amp,component=agent'
     if ($latestPod) {
         $sinceTime = (Get-Date).AddHours(-$Hours).ToString('yyyy-MM-ddTHH:mm:ssZ')
         $recentLogs = kubectl logs -n safety-amp $latestPod --since-time=$sinceTime 2>$null | Select-Object -Last 10
@@ -49,7 +49,7 @@ if ($includeAll -or $Sections -contains 'logs') {
 
 if ($includeAll -or $Sections -contains 'errors') {
     Write-SectionHeader "Error Summary"
-    if (-not $latestPod) { $latestPod = Get-SafetyAmpPod -Namespace 'safety-amp' -Selector 'app=safety-amp-agent' }
+    if (-not $latestPod) { $latestPod = Get-SafetyAmpPod -Namespace 'safety-amp' -Selector 'app=safety-amp,component=agent' }
     if ($latestPod) {
         $sinceTime = (Get-Date).AddHours(-$Hours).ToString('yyyy-MM-ddTHH:mm:ssZ')
         $errorLogs = kubectl logs -n safety-amp $latestPod --since-time=$sinceTime 2>$null | Select-String -Pattern "ERROR|Exception|Error|Failed|Failed to|Connection failed" | Select-Object -Last 5
@@ -72,7 +72,7 @@ if ($includeAll -or $Sections -contains 'resources') {
 if ($includeAll -or $Sections -contains 'health') {
     Write-SectionHeader "Health Check"
     try {
-        if (-not $latestPod) { $latestPod = Get-SafetyAmpPod -Namespace 'safety-amp' -Selector 'app=safety-amp-agent' }
+        if (-not $latestPod) { $latestPod = Get-SafetyAmpPod -Namespace 'safety-amp' -Selector 'app=safety-amp,component=agent' }
         $healthResponse = kubectl exec -n safety-amp $latestPod -- curl -s http://localhost:8080/health 2>$null
         if ($healthResponse) {
             Write-Host "Health endpoint response:" -ForegroundColor Green
@@ -84,18 +84,16 @@ if ($includeAll -or $Sections -contains 'health') {
 if ($includeAll -or $Sections -contains 'connectivity') {
     Write-SectionHeader "Connectivity Test"
     try {
-        if (-not $latestPod) { $latestPod = Get-SafetyAmpPod -Namespace 'safety-amp' -Selector 'app=safety-amp-agent' }
-        $exit = 0
-        kubectl exec -n safety-amp $latestPod -- python test-connections.py 2>$null
-        $exit = $LASTEXITCODE
-        if ($exit -eq 0) { Write-Status "Unified health endpoint indicates healthy or degraded" $true } else { Write-Status "Unified health endpoint indicates unhealthy" $false }
+        if (-not $latestPod) { $latestPod = Get-SafetyAmpPod -Namespace 'safety-amp' -Selector 'app=safety-amp,component=agent' }
+        $respCode = kubectl exec -n safety-amp $latestPod -- sh -c "curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/health" 2>$null
+        if ($respCode -eq 200) { Write-Status "Unified health endpoint indicates healthy or degraded" $true } else { Write-Status "Unified health endpoint indicates unhealthy" $false }
     } catch { Write-Status "Cannot run connectivity test" $false }
 }
 
 if ($includeAll -or $Sections -contains 'cache') {
     Write-SectionHeader "Cache Status"
     try {
-        if (-not $latestPod) { $latestPod = Get-SafetyAmpPod -Namespace 'safety-amp' -Selector 'app=safety-amp-agent' }
+        if (-not $latestPod) { $latestPod = Get-SafetyAmpPod -Namespace 'safety-amp' -Selector 'app=safety-amp,component=agent' }
         $cacheInfo = kubectl exec -n safety-amp $latestPod -- ls -la /app/cache 2>$null
         if ($cacheInfo) { Write-Host "Cache directory contents:" -ForegroundColor Green; Write-Host $cacheInfo } else { Write-Status "Cache directory not accessible" $false }
     } catch { Write-Status "Cannot check cache status" $false }
@@ -110,18 +108,22 @@ if ($includeAll -or $Sections -contains 'config') {
 # 11. Validation Summary (lightweight)
 if ($includeAll -or $Sections -contains 'validation') {
     Write-SectionHeader "Validation Summary"
-    $latestPod = if ($latestPod) { $latestPod } else { Get-SafetyAmpPod -Namespace 'safety-amp' -Selector 'app=safety-amp-agent' }
+    $latestPod = if ($latestPod) { $latestPod } else { Get-SafetyAmpPod -Namespace 'safety-amp' -Selector 'app=safety-amp,component=agent' }
     if ($latestPod) {
         $sinceTime = (Get-Date).AddHours(-$Hours).ToString('yyyy-MM-ddTHH:mm:ssZ')
         $logs = kubectl logs -n safety-amp $latestPod --since-time=$sinceTime 2>$null
         if ($logs) {
             $stats = @{
-                'Generated Default Names' = ($logs | Select-String -Pattern "Generated default.*name").Count
-                'Generated Emails' = ($logs | Select-String -Pattern "Generated email").Count
-                'Missing Required Fields' = ($logs | Select-String -Pattern "Missing required field").Count
-                'Validation Errors' = ($logs | Select-String -Pattern "Validation errors|Validation failed").Count
+                'Generated Default Names' = (@($logs | Select-String -Pattern "Generated default.*name")).Count
+                'Generated Emails' = (@($logs | Select-String -Pattern "Generated email")).Count
+                'Missing Required Fields' = (@($logs | Select-String -Pattern "Missing required field")).Count
+                'Validation Errors' = (@($logs | Select-String -Pattern "Validation errors|Validation failed")).Count
             }
-            $stats.GetEnumerator() | ForEach-Object { Write-Host ("  {0}: {1}" -f $_.Key, $_.Value) -ForegroundColor (if ($_.Value -gt 0) { 'Yellow' } else { 'Green' }) }
+            $stats.GetEnumerator() | ForEach-Object {
+                $color = 'Green'
+                if ($_.Value -gt 0) { $color = 'Yellow' }
+                Write-Host ("  {0}: {1}" -f $_.Key, $_.Value) -ForegroundColor $color
+            }
         } else { Write-Status "No logs available for validation analysis" $false }
     } else { Write-Status "No SafetyAmp pods found" $false }
 }
@@ -129,35 +131,46 @@ if ($includeAll -or $Sections -contains 'validation') {
 # 12. Changes Summary
 if ($includeAll -or $Sections -contains 'changes') {
     Write-SectionHeader "Change Tracker Summary"
-    $latestPod = if ($latestPod) { $latestPod } else { Get-SafetyAmpPod -Namespace 'safety-amp' -Selector 'app=safety-amp-agent' }
+    $latestPod = if ($latestPod) { $latestPod } else { Get-SafetyAmpPod -Namespace 'safety-amp' -Selector 'app=safety-amp,component=agent' }
     if ($latestPod) {
-        $py = @"
-import sys, json
+        try {
+            $py = @"
+import json, sys
 sys.path.append('/app')
 from services.event_manager import event_manager
-report = event_manager.change_tracker.get_summary_report($Hours)
-print('START')
-print(json.dumps(report))
-print('END')
+print(json.dumps(event_manager.change_tracker.get_summary_report($Hours)))
 "@
-        $result = kubectl exec $latestPod -n safety-amp -- python -c "$py" 2>$null
-        if ($result -match 'START(.*?)END') {
-            $data = ($matches[1].Trim() | ConvertFrom-Json)
-            if ($data) {
+            $out = kubectl exec -n safety-amp $latestPod -- python -c "$py" 2>$null
+            if ($out) {
+                $data = $out | ConvertFrom-Json
                 Write-Host ("  Total Changes: {0}" -f $data.total_changes) -ForegroundColor Cyan
                 if ($data.by_operation) {
                     Write-Host "  By Operation:" -ForegroundColor Cyan
                     foreach ($op in $data.by_operation.GetEnumerator()) { Write-Host ("    {0}: {1}" -f $op.Key, $op.Value) }
                 }
-            } else { Write-Status "No change tracker data" $false }
-        } else { Write-Status "Unable to retrieve change tracker data" $false }
+            } else {
+                # Fallback: read latest session file directly
+                $latestFile = kubectl exec -n safety-amp $latestPod -- sh -lc "ls -1t /app/output/changes/sync_*.json 2>/dev/null | head -n 1" 2>$null
+                if ($latestFile) {
+                    $jsonText = kubectl exec -n safety-amp $latestPod -- sh -lc "cat $latestFile" 2>$null
+                    if ($jsonText) {
+                        $obj = $jsonText | ConvertFrom-Json
+                        $summary = $obj.summary
+                        if ($summary) {
+                            Write-Host ("  Total Processed: {0}" -f $summary.total_processed) -ForegroundColor Cyan
+                            Write-Host ("  Created: {0}  Updated: {1}  Deleted: {2}  Skipped: {3}  Errors: {4}" -f $summary.total_created, $summary.total_updated, $summary.total_deleted, $summary.total_skipped, $summary.total_errors)
+                        } else { Write-Status "No summary in latest session file" $false }
+                    } else { Write-Status "Unable to read latest session file" $false }
+                } else { Write-Status "No change tracker session files found" $false }
+            }
+        } catch { Write-Status "Unable to retrieve change tracker data" $false }
     } else { Write-Status "No SafetyAmp pods found" $false }
 }
 
 # 13. Sync Summary (logs analysis)
 if ($includeAll -or $Sections -contains 'sync-summary') {
     Write-SectionHeader "Sync Summary"
-    $latestPod = if ($latestPod) { $latestPod } else { Get-SafetyAmpPod -Namespace 'safety-amp' -Selector 'app=safety-amp-agent' }
+    $latestPod = if ($latestPod) { $latestPod } else { Get-SafetyAmpPod -Namespace 'safety-amp' -Selector 'app=safety-amp,component=agent' }
     if ($latestPod) {
         $logs = kubectl logs $latestPod -n safety-amp --tail=200 2>$null
         if ($logs) {

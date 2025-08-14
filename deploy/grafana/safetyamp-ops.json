@@ -1,0 +1,138 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "id": null,
+  "links": [],
+  "refresh": "30s",
+  "schemaVersion": 41,
+  "tags": ["safetyamp", "ops"],
+  "templating": {
+    "list": [
+      { "name": "datasource", "type": "datasource", "label": "Prometheus", "query": "prometheus", "refresh": 1 },
+      { "name": "azlogs", "type": "datasource", "label": "Azure Logs", "query": "grafana-azure-monitor-datasource", "refresh": 1 },
+      { "name": "workspace", "type": "text", "label": "Log Analytics Workspace ID (optional)", "query": "" },
+      { "name": "namespace", "type": "custom", "label": "Namespace", "query": "safety-amp", "current": { "text": "safety-amp", "value": "safety-amp" } },
+      { "name": "operation", "type": "custom", "query": "employees,departments,jobs,titles,vehicles|all", "current": { "text": "all", "value": ".*" } },
+      { "name": "status", "type": "custom", "query": "success,error|all", "current": { "text": "all", "value": ".*" } }
+    ]
+  },
+  "time": { "from": "now-2d", "to": "now" },
+  "timezone": "browser",
+  "title": "SafetyAmp Ops",
+  "uid": "safetyamp-ops",
+  "version": 1,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Pods Running",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "$datasource" }, "expr": "count(kube_pod_status_ready{namespace=\"$namespace\",condition=\"true\",pod=~\"safety-amp-agent.*\"})" }
+      ],
+      "options": { "colorMode": "value", "graphMode": "none" }
+    },
+    {
+      "type": "stat",
+      "title": "Pod Restarts (range)",
+      "gridPos": { "h": 4, "w": 6, "x": 4, "y": 0 },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "$datasource" }, "expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=\"$namespace\",pod=~\"safety-amp-agent.*\"}[$__range]))" }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Sync In Progress",
+      "gridPos": { "h": 4, "w": 4, "x": 10, "y": 0 },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "$datasource" }, "expr": "max(safetyamp_sync_in_progress)" }
+      ],
+      "fieldConfig": { "defaults": { "mappings": [ { "type": "value", "options": { "0": { "text": "False" }, "1": { "text": "True" } } } ] } }
+    },
+    {
+      "type": "stat",
+      "title": "Minutes Since Last Sync",
+      "gridPos": { "h": 4, "w": 6, "x": 14, "y": 0 },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "$datasource" }, "expr": "(time() - max(safetyamp_last_sync_timestamp_seconds)) / 60" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "min" } }
+    },
+
+    { "type": "row", "title": "Pod Resources", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 4 } },
+    {
+      "type": "timeseries",
+      "title": "CPU (cores)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "$datasource" }, "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"$namespace\",pod=~\"safety-amp-agent.*\"}[5m]))", "legendFormat": "{{pod}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "cores" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Memory (bytes)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "$datasource" }, "expr": "avg by (pod) (container_memory_working_set_bytes{namespace=\"$namespace\",pod=~\"safety-amp-agent.*\"})", "legendFormat": "{{pod}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes" } }
+    },
+
+    { "type": "row", "title": "Sync & Errors (metrics)", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 } },
+    {
+      "type": "timeseries",
+      "title": "Records Processed (increase)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "$datasource" }, "expr": "sum by (sync_type) (increase(safetyamp_records_processed_total[$__range]))", "legendFormat": "{{sync_type}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Errors by Type/Entity (increase)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "$datasource" }, "expr": "sum by (error_type, entity_type, source) (increase(safetyamp_errors_total[$__range]))", "legendFormat": "{{error_type}} {{entity_type}} {{source}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" } }
+    },
+
+    { "type": "row", "title": "Logs (Azure Monitor)", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 } },
+    {
+      "type": "table",
+      "title": "Recent Errors (Azure Monitor Logs)",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 23 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "$azlogs" },
+          "azureLogAnalytics": {
+            "resultFormat": "table",
+            "query": "union isfuzzy=true ContainerLogV2, ContainerLog\n| where $__timeFilter(TimeGenerated)\n| extend KubeNS = tostring(coalesce(Namespace, KubernetesNamespace, k8sNamespace, NameSpace))\n| extend KubePod = tostring(coalesce(PodName, KubernetesPod, Pod, k8sPod))\n| extend Message = tostring(coalesce(LogMessage, LogEntry, log, Message))\n| extend Level = tolower(tostring(coalesce(Level, level)))\n| where KubeNS == '$namespace' and KubePod has 'safety-amp-agent'\n| where Level == 'error' or Message has_any ('ERROR','Exception','Failed','Validation')\n| project TimeGenerated, KubeNS, KubePod, ContainerName, Level, Message\n| order by TimeGenerated desc\n| take 500"
+          }
+        }
+      ],
+      "options": { "showHeader": true }
+    },
+    {
+      "type": "table",
+      "title": "Recent Changes / Operations (Azure Monitor Logs)",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 33 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "$azlogs" },
+          "azureLogAnalytics": {
+            "resultFormat": "table",
+            "query": "let op = iff('$operation' == '.*' or '$operation' == 'all', '', '$operation');\nlet st = iff('$status' == '.*' or '$status' == 'all', '', '$status');\nunion isfuzzy=true ContainerLogV2, ContainerLog\n| where $__timeFilter(TimeGenerated)\n| extend KubeNS = tostring(coalesce(Namespace, KubernetesNamespace, k8sNamespace, NameSpace))\n| extend KubePod = tostring(coalesce(PodName, KubernetesPod, Pod, k8sPod))\n| extend Message = tostring(coalesce(LogMessage, LogEntry, log, Message))\n| where KubeNS == '$namespace' and KubePod has 'safety-amp-agent'\n| where isempty(op) or Message has op\n| where isempty(st) or Message has st\n| project TimeGenerated, KubeNS, KubePod, ContainerName, Message\n| order by TimeGenerated desc\n| take 500"
+          }
+        }
+      ],
+      "options": { "showHeader": true }
+    }
+  ]
+}
+
+

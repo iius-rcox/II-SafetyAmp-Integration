@@ -11,11 +11,15 @@ function Get-SafetyAmpPod {
     [CmdletBinding()]
     param(
         [string]$Namespace = 'safety-amp',
-        [string]$Selector = 'app=safety-amp-agent'
+        [string]$Selector = 'app=safety-amp,component=agent'
     )
     try {
-        $pod = kubectl get pods -n $Namespace -l $Selector -o jsonpath='{.items[0].metadata.name}' 2>$null
-        if ($pod) { return $pod }
+        # Prefer a Running pod
+        $running = kubectl get pods -n $Namespace -l $Selector --field-selector=status.phase=Running -o jsonpath='{.items[0].metadata.name}' 2>$null
+        if ($running) { return $running }
+        # Fallback to any pod matching the selector
+        $any = kubectl get pods -n $Namespace -l $Selector -o jsonpath='{.items[0].metadata.name}' 2>$null
+        if ($any) { return $any }
     } catch { }
     return $null
 }

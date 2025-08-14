@@ -92,7 +92,8 @@ function Get-DefaultDashboardFiles {
   $paths = @(
     (Join-Path $root 'k8s/monitoring/grafana/safetyamp-status.json'),
     (Join-Path $PSScriptRoot 'grafana/safetyamp-status.json'),
-    (Join-Path $PSScriptRoot 'grafana/safetyamp-detail.json')
+    (Join-Path $PSScriptRoot 'grafana/safetyamp-detail.json'),
+    (Join-Path $PSScriptRoot 'grafana/safetyamp-ops.json')
   )
   return $paths | Where-Object { Test-Path $_ }
 }
@@ -110,6 +111,14 @@ function Publish-GrafanaDashboard {
   $raw = Get-Content -Raw -Path $FilePath | ConvertFrom-Json
   # Ensure Grafana treats as new/overwrite
   if ($raw.PSObject.Properties.Name -contains 'id') { $raw.id = $null }
+  # If workspace variable exists but is empty, remove it so datasource default is used
+  try {
+    if ($raw.templating.list) {
+      foreach ($v in $raw.templating.list) {
+        if ($v.name -eq 'workspace' -and (-not $v.query -or $v.query -eq '')) { $v | Add-Member -NotePropertyName 'query' -NotePropertyValue '' -Force }
+      }
+    }
+  } catch {}
 
   $payload = @{ dashboard = $raw; overwrite = $true }
   if ($FolderId) { $payload.folderId = $FolderId }
