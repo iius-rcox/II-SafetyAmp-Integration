@@ -38,7 +38,9 @@ class DataValidator:
         # Field validation patterns
         self.validation_patterns = {
             "email": r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-            "phone": r'^\d{10,11}$',
+            # E.164 format: optional '+' followed by country code and subscriber number (max 15 digits)
+            # We will emit numbers as strict E.164 (with '+').
+            "phone": r'^\+?[1-9]\d{1,14}$',
             "zip_code": r'^\d{5}(-\d{4})?$',
             "date": r'^\d{4}-\d{2}-\d{2}$'
         }
@@ -75,7 +77,7 @@ class DataValidator:
                 validation_errors.append(f"Invalid email format: {email}")
                 cleaned_payload.pop("email", None)
         
-        # Validate phone numbers if present
+        # Validate phone numbers if present (emit E.164; default to +1 for 10-digit US numbers)
         for phone_field in ["mobile_phone", "work_phone"]:
             phone = cleaned_payload.get(phone_field)
             if phone:
@@ -85,6 +87,14 @@ class DataValidator:
                 else:
                     logger.warning(f"Invalid phone format for {phone_field}: {phone} - removing field")
                     cleaned_payload.pop(phone_field, None)
+
+        # Normalize gender to 1 (male), 0 (female), or None. Remove if invalid
+        if "gender" in cleaned_payload:
+            normalized_gender = self.normalize_gender(cleaned_payload.get("gender"))
+            if normalized_gender in (0, 1):
+                cleaned_payload["gender"] = normalized_gender
+            else:
+                cleaned_payload.pop("gender", None)
         
         # Ensure all string fields are properly trimmed
         string_fields = ["first_name", "last_name", "email", "middle_name", "street", "city", "state"]
@@ -207,15 +217,45 @@ class DataValidator:
         return bool(re.match(self.validation_patterns["email"], email))
 
     def _clean_phone(self, phone: str) -> Optional[str]:
-        """Clean and validate phone number"""
+        """Clean and normalize phone to E.164. Defaults to +1 for 10-digit US numbers.
+
+        Rules:
+        - If input already includes a '+', normalize to '+' + digits and validate E.164
+        - If 10 digits, assume US and return '+1' + digits
+        - If 11 digits starting with '1', return '+1' + last 10 (or '+<digits>' where digits start with 1)
+        - If 11-15 digits and no leading zero, assume missing '+' and prefix '+'
+        - Otherwise, return None
+        """
         if not phone:
             return None
-        # Remove all non-digit characters
-        cleaned = re.sub(r'\D', '', str(phone))
-        return cleaned if len(cleaned) >= 10 else None
+        raw = str(phone).strip()
+        digits = re.sub(r'\D', '', raw)
+
+        e164_pattern = r'^\+[1-9]\d{1,14}$'
+
+        # Already has '+' → rebuild as '+' + digits and validate
+        if raw.startswith('+'):
+            candidate = f"+{digits}"
+            return candidate if re.match(e164_pattern, candidate) else None
+
+        # 10 digits → default to US +1
+        if len(digits) == 10:
+            return f"+1{digits}"
+
+        # 11 digits starting with country code 1 → add '+'
+        if len(digits) == 11 and digits.startswith('1'):
+            candidate = f"+{digits}"
+            return candidate if re.match(e164_pattern, candidate) else None
+
+        # 11–15 digits without leading zero → treat as full international number missing '+'
+        if 11 <= len(digits) <= 15 and digits[0] != '0':
+            candidate = f"+{digits}"
+            return candidate if re.match(e164_pattern, candidate) else None
+
+        return None
 
     def _validate_phone(self, phone: str) -> bool:
-        """Validate phone number format"""
+        """Validate phone number format (E.164)."""
         if not phone:
             return False
         return bool(re.match(self.validation_patterns["phone"], phone))
@@ -243,15 +283,16 @@ class DataValidator:
         """Public helper to clean and validate phone numbers"""
         return self._clean_phone(phone)
 
-    def normalize_gender(self, gender_raw: Any) -> Optional[str]:
-        """Normalize various gender representations to 'M'/'F' or None"""
-        if not gender_raw:
+    def normalize_gender(self, gender_raw: Any) -> Optional[int]:
+        """Normalize gender to 1 (male), 0 (female), or None."""
+        if gender_raw is None:
             return None
         gender = str(gender_raw).strip().lower()
-        if gender in ['m', 'male', '1']:
-            return 'M'
-        elif gender in ['f', 'female', '2']:
-            return 'F'
+        # Accept common variants
+        if gender in {"m", "male", "1", "true", "t"}:
+            return 1
+        if gender in {"f", "female", "0", "2", "false", "f"}:
+            return 0
         return None
 
     def format_date(self, val: Any) -> Optional[str]:

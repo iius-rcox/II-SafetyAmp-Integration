@@ -1,0 +1,285 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "25"
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{"deployment.kubernetes.io/revision":"21"},"creationTimestamp":"2025-08-07T14:15:16Z","generation":26,"labels":{"app":"safety-amp","component":"agent"},"name":"safety-amp-agent","namespace":"safety-amp","resourceVersion":"10423335","uid":"d0fea87e-c1db-4630-90b7-f3a8d32d28ce"},"spec":{"progressDeadlineSeconds":600,"replicas":1,"revisionHistoryLimit":10,"selector":{"matchLabels":{"app":"safety-amp","component":"agent"}},"strategy":{"rollingUpdate":{"maxSurge":"25%","maxUnavailable":"25%"},"type":"RollingUpdate"},"template":{"metadata":{"annotations":{"azure.monitor.metrics.path":"/metrics","azure.monitor.metrics.port":"9090","azure.monitor.metrics.scrape":"true","kubectl.kubernetes.io/restartedAt":"2025-08-12T14:09:54-05:00","prometheus.io/path":"/metrics","prometheus.io/port":"9090","prometheus.io/scrape":"true"},"creationTimestamp":null,"labels":{"app":"safety-amp","azure.workload.identity/use":"true","component":"agent"}},"spec":{"affinity":{"nodeAffinity":{"requiredDuringSchedulingIgnoredDuringExecution":{"nodeSelectorTerms":[{"matchExpressions":[{"key":"kubernetes.azure.com/mode","operator":"In","values":["user"]}]}]}},"podAntiAffinity":{"preferredDuringSchedulingIgnoredDuringExecution":[{"podAffinityTerm":{"labelSelector":{"matchExpressions":[{"key":"app","operator":"In","values":["safety-amp"]}]},"topologyKey":"kubernetes.io/hostname"},"weight":100}]}},"containers":[{"command":["python","main.py"],"env":[{"name":"LOG_LEVEL","valueFrom":{"configMapKeyRef":{"key":"LOG_LEVEL","name":"safety-amp-config"}}},{"name":"LOG_FORMAT","valueFrom":{"configMapKeyRef":{"key":"LOG_FORMAT","name":"safety-amp-config"}}},{"name":"ENVIRONMENT","valueFrom":{"configMapKeyRef":{"key":"ENVIRONMENT","name":"safety-amp-config"}}},{"name":"SYNC_INTERVAL","valueFrom":{"configMapKeyRef":{"key":"SYNC_INTERVAL","name":"safety-amp-config"}}},{"name":"CACHE_TTL_HOURS","valueFrom":{"configMapKeyRef":{"key":"CACHE_TTL_HOURS","name":"safety-amp-config"}}},{"name":"CACHE_REFRESH_INTERVAL_HOURS","valueFrom":{"configMapKeyRef":{"key":"CACHE_REFRESH_INTERVAL_HOURS","name":"safety-amp-config"}}},{"name":"BATCH_SIZE","valueFrom":{"configMapKeyRef":{"key":"BATCH_SIZE","name":"safety-amp-config"}}},{"name":"API_RATE_LIMIT_CALLS","valueFrom":{"configMapKeyRef":{"key":"API_RATE_LIMIT_CALLS","name":"safety-amp-config"}}},{"name":"API_RATE_LIMIT_PERIOD","valueFrom":{"configMapKeyRef":{"key":"API_RATE_LIMIT_PERIOD","name":"safety-amp-config"}}},{"name":"MAX_RETRY_ATTEMPTS","valueFrom":{"configMapKeyRef":{"key":"MAX_RETRY_ATTEMPTS","name":"safety-amp-config"}}},{"name":"RETRY_DELAY_SECONDS","valueFrom":{"configMapKeyRef":{"key":"RETRY_DELAY_SECONDS","name":"safety-amp-config"}}},{"name":"HEALTH_CHECK_PORT","valueFrom":{"configMapKeyRef":{"key":"HEALTH_CHECK_PORT","name":"safety-amp-config"}}},{"name":"HEALTH_CHECK_TIMEOUT","valueFrom":{"configMapKeyRef":{"key":"HEALTH_CHECK_TIMEOUT","name":"safety-amp-config"}}},{"name":"METRICS_PORT","valueFrom":{"configMapKeyRef":{"key":"METRICS_PORT","name":"safety-amp-config"}}},{"name":"DB_POOL_SIZE","valueFrom":{"configMapKeyRef":{"key":"DB_POOL_SIZE","name":"safety-amp-config"}}},{"name":"DB_MAX_OVERFLOW","valueFrom":{"configMapKeyRef":{"key":"DB_MAX_OVERFLOW","name":"safety-amp-config"}}},{"name":"DB_POOL_TIMEOUT","valueFrom":{"configMapKeyRef":{"key":"DB_POOL_TIMEOUT","name":"safety-amp-config"}}},{"name":"DB_POOL_RECYCLE","valueFrom":{"configMapKeyRef":{"key":"DB_POOL_RECYCLE","name":"safety-amp-config"}}},{"name":"SAFETY_AMP_BASE_URL","valueFrom":{"configMapKeyRef":{"key":"SAFETY_AMP_BASE_URL","name":"safety-amp-config"}}},{"name":"SAFETY_AMP_TIMEOUT","valueFrom":{"configMapKeyRef":{"key":"SAFETY_AMP_TIMEOUT","name":"safety-amp-config"}}},{"name":"CIRCUIT_BREAKER_FAILURE_THRESHOLD","valueFrom":{"configMapKeyRef":{"key":"CIRCUIT_BREAKER_FAILURE_THRESHOLD","name":"safety-amp-config"}}},{"name":"CIRCUIT_BREAKER_RECOVERY_TIMEOUT","valueFrom":{"configMapKeyRef":{"key":"CIRCUIT_BREAKER_RECOVERY_TIMEOUT","name":"safety-amp-config"}}},{"name":"MEMORY_PROFILER_ENABLED","valueFrom":{"configMapKeyRef":{"key":"MEMORY_PROFILER_ENABLED","name":"safety-amp-config"}}},{"name":"MEMORY_PROFILER_INTERVAL","valueFrom":{"configMapKeyRef":{"key":"MEMORY_PROFILER_INTERVAL","name":"safety-amp-config"}}},{"name":"SQL_AUTH_MODE","valueFrom":{"configMapKeyRef":{"key":"SQL_AUTH_MODE","name":"safety-amp-config"}}},{"name":"AZURE_KEY_VAULT_URL","valueFrom":{"secretKeyRef":{"key":"AZURE_KEY_VAULT_URL","name":"safety-amp-secrets"}}},{"name":"REDIS_HOST","valueFrom":{"secretKeyRef":{"key":"REDIS_HOST","name":"safety-amp-secrets"}}},{"name":"REDIS_PORT","valueFrom":{"secretKeyRef":{"key":"REDIS_PORT","name":"safety-amp-secrets"}}},{"name":"REDIS_PASSWORD","valueFrom":{"secretKeyRef":{"key":"REDIS_PASSWORD","name":"safety-amp-secrets"}}},{"name":"REDIS_DB","valueFrom":{"secretKeyRef":{"key":"REDIS_DB","name":"safety-amp-secrets"}}}],"image":"iiusacr.azurecr.io/safety-amp-agent:latest","imagePullPolicy":"Always","livenessProbe":{"failureThreshold":3,"httpGet":{"path":"/health","port":8080,"scheme":"HTTP"},"initialDelaySeconds":30,"periodSeconds":30,"successThreshold":1,"timeoutSeconds":10},"name":"safety-amp-agent","ports":[{"containerPort":8080,"name":"health","protocol":"TCP"},{"containerPort":9090,"name":"metrics","protocol":"TCP"}],"readinessProbe":{"failureThreshold":3,"httpGet":{"path":"/health","port":8080,"scheme":"HTTP"},"initialDelaySeconds":15,"periodSeconds":10,"successThreshold":1,"timeoutSeconds":5},"resources":{"limits":{"cpu":"200m","memory":"512Mi"},"requests":{"cpu":"100m","memory":"256Mi"}},"terminationMessagePath":"/dev/termination-log","terminationMessagePolicy":"File"}],"dnsPolicy":"ClusterFirst","imagePullSecrets":[{"name":"acr-secret"}],"restartPolicy":"Always","schedulerName":"default-scheduler","securityContext":{},"serviceAccount":"safety-amp-workload-identity-sa","serviceAccountName":"safety-amp-workload-identity-sa","terminationGracePeriodSeconds":30}}},"status":{"conditions":[{"lastTransitionTime":"2025-08-13T14:40:58Z","lastUpdateTime":"2025-08-13T14:40:58Z","message":"Deployment does not have minimum availability.","reason":"MinimumReplicasUnavailable","status":"False","type":"Available"},{"lastTransitionTime":"2025-08-13T18:55:51Z","lastUpdateTime":"2025-08-13T18:59:15Z","message":"ReplicaSet \"safety-amp-agent-6c5cdbc9c4\" is progressing.","reason":"ReplicaSetUpdated","status":"True","type":"Progressing"}],"observedGeneration":26,"replicas":2,"unavailableReplicas":2,"updatedReplicas":1}}
+  creationTimestamp: "2025-08-07T14:15:16Z"
+  generation: 32
+  labels:
+    app: safety-amp
+    component: agent
+  name: safety-amp-agent
+  namespace: safety-amp
+  resourceVersion: "10476461"
+  uid: d0fea87e-c1db-4630-90b7-f3a8d32d28ce
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: safety-amp
+      component: agent
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        azure.monitor.metrics.path: /metrics
+        azure.monitor.metrics.port: "9090"
+        azure.monitor.metrics.scrape: "true"
+        kubectl.kubernetes.io/restartedAt: "2025-08-13T14:02:24-05:00"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9090"
+        prometheus.io/scrape: "true"
+      labels:
+        app: safety-amp
+        azure.workload.identity/use: "true"
+        component: agent
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.azure.com/mode
+                operator: In
+                values:
+                - user
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - safety-amp
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+      containers:
+      - command:
+        - python
+        - main.py
+        env:
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              key: LOG_LEVEL
+              name: safety-amp-config
+        - name: LOG_FORMAT
+          valueFrom:
+            configMapKeyRef:
+              key: LOG_FORMAT
+              name: safety-amp-config
+        - name: ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              key: ENVIRONMENT
+              name: safety-amp-config
+        - name: SYNC_INTERVAL
+          valueFrom:
+            configMapKeyRef:
+              key: SYNC_INTERVAL
+              name: safety-amp-config
+        - name: CACHE_TTL_HOURS
+          valueFrom:
+            configMapKeyRef:
+              key: CACHE_TTL_HOURS
+              name: safety-amp-config
+        - name: CACHE_REFRESH_INTERVAL_HOURS
+          valueFrom:
+            configMapKeyRef:
+              key: CACHE_REFRESH_INTERVAL_HOURS
+              name: safety-amp-config
+        - name: BATCH_SIZE
+          valueFrom:
+            configMapKeyRef:
+              key: BATCH_SIZE
+              name: safety-amp-config
+        - name: API_RATE_LIMIT_CALLS
+          valueFrom:
+            configMapKeyRef:
+              key: API_RATE_LIMIT_CALLS
+              name: safety-amp-config
+        - name: API_RATE_LIMIT_PERIOD
+          valueFrom:
+            configMapKeyRef:
+              key: API_RATE_LIMIT_PERIOD
+              name: safety-amp-config
+        - name: MAX_RETRY_ATTEMPTS
+          valueFrom:
+            configMapKeyRef:
+              key: MAX_RETRY_ATTEMPTS
+              name: safety-amp-config
+        - name: RETRY_DELAY_SECONDS
+          valueFrom:
+            configMapKeyRef:
+              key: RETRY_DELAY_SECONDS
+              name: safety-amp-config
+        - name: HEALTH_CHECK_PORT
+          valueFrom:
+            configMapKeyRef:
+              key: HEALTH_CHECK_PORT
+              name: safety-amp-config
+        - name: HEALTH_CHECK_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              key: HEALTH_CHECK_TIMEOUT
+              name: safety-amp-config
+        - name: METRICS_PORT
+          valueFrom:
+            configMapKeyRef:
+              key: METRICS_PORT
+              name: safety-amp-config
+        - name: DB_POOL_SIZE
+          valueFrom:
+            configMapKeyRef:
+              key: DB_POOL_SIZE
+              name: safety-amp-config
+        - name: DB_MAX_OVERFLOW
+          valueFrom:
+            configMapKeyRef:
+              key: DB_MAX_OVERFLOW
+              name: safety-amp-config
+        - name: DB_POOL_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              key: DB_POOL_TIMEOUT
+              name: safety-amp-config
+        - name: DB_POOL_RECYCLE
+          valueFrom:
+            configMapKeyRef:
+              key: DB_POOL_RECYCLE
+              name: safety-amp-config
+        - name: SAFETY_AMP_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              key: SAFETY_AMP_BASE_URL
+              name: safety-amp-config
+        - name: SAFETY_AMP_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              key: SAFETY_AMP_TIMEOUT
+              name: safety-amp-config
+        - name: CIRCUIT_BREAKER_FAILURE_THRESHOLD
+          valueFrom:
+            configMapKeyRef:
+              key: CIRCUIT_BREAKER_FAILURE_THRESHOLD
+              name: safety-amp-config
+        - name: CIRCUIT_BREAKER_RECOVERY_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              key: CIRCUIT_BREAKER_RECOVERY_TIMEOUT
+              name: safety-amp-config
+        - name: MEMORY_PROFILER_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              key: MEMORY_PROFILER_ENABLED
+              name: safety-amp-config
+        - name: MEMORY_PROFILER_INTERVAL
+          valueFrom:
+            configMapKeyRef:
+              key: MEMORY_PROFILER_INTERVAL
+              name: safety-amp-config
+        - name: SQL_AUTH_MODE
+          valueFrom:
+            configMapKeyRef:
+              key: SQL_AUTH_MODE
+              name: safety-amp-config
+        - name: AZURE_KEY_VAULT_URL
+          valueFrom:
+            secretKeyRef:
+              key: AZURE_KEY_VAULT_URL
+              name: safety-amp-secrets
+        - name: REDIS_HOST
+          valueFrom:
+            secretKeyRef:
+              key: REDIS_HOST
+              name: safety-amp-secrets
+        - name: REDIS_PORT
+          valueFrom:
+            secretKeyRef:
+              key: REDIS_PORT
+              name: safety-amp-secrets
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: REDIS_PASSWORD
+              name: safety-amp-secrets
+        - name: REDIS_DB
+          valueFrom:
+            secretKeyRef:
+              key: REDIS_DB
+              name: safety-amp-secrets
+        image: iiusacr.azurecr.io/safety-amp-agent:v20250813-1930
+        imagePullPolicy: Always
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 10
+        name: safety-amp-agent
+        ports:
+        - containerPort: 8080
+          name: health
+          protocol: TCP
+        - containerPort: 9090
+          name: metrics
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        resources:
+          limits:
+            cpu: 200m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      imagePullSecrets:
+      - name: acr-secret
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: safety-amp-workload-identity-sa
+      serviceAccountName: safety-amp-workload-identity-sa
+      terminationGracePeriodSeconds: 30
+status:
+  conditions:
+  - lastTransitionTime: "2025-08-13T19:02:13Z"
+    lastUpdateTime: "2025-08-13T19:02:13Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
+    type: Available
+  - lastTransitionTime: "2025-08-13T20:51:48Z"
+    lastUpdateTime: "2025-08-13T20:51:48Z"
+    message: ReplicaSet "safety-amp-agent-f74f96bfc" has timed out progressing.
+    reason: ProgressDeadlineExceeded
+    status: "False"
+    type: Progressing
+  observedGeneration: 32
+  replicas: 1
+  unavailableReplicas: 1
+  updatedReplicas: 1

@@ -14,7 +14,7 @@ from typing import Dict, List, Any, Optional
 from collections import defaultdict
 from utils.logger import get_logger
 from utils.emailer import send_error_email
-from utils.metrics import get_or_create_counter
+from utils.metrics import metrics
 
 logger = get_logger("error_notifier")
 
