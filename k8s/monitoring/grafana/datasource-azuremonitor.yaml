@@ -1,0 +1,19 @@
+apiVersion: 1
+datasources:
+  - name: Azure Monitor
+    type: grafana-azure-monitor-datasource
+    uid: azure-monitor
+    access: proxy
+    editable: true
+    jsonData:
+      cloudName: azuremonitor
+      subscriptionId: ${AZURE_SUBSCRIPTION_ID}
+      tenantId: ${AZURE_TENANT_ID}
+      logAnalyticsDefaultWorkspace: ${AZURE_LOG_ANALYTICS_WORKSPACE_ID}
+      azureLogAnalyticsSameAs: true
+      # Set to true if Grafana runs with Managed Identity
+      managedIdentityEnabled: ${AZURE_MSI_ENABLED}
+    secureJsonData:
+      clientId: ${AZURE_CLIENT_ID}
+      clientSecret: ${AZURE_CLIENT_SECRET}
+

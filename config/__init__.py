@@ -225,9 +225,11 @@ class ConfigManager:
                 "Authentication=ActiveDirectoryMSI;"
                 "Encrypt=yes;"
                 "TrustServerCertificate=yes;"
-                "Connection Timeout=15;"
+                "MultiSubnetFailover=Yes;"
+                "Login Timeout=30;"
+                "Connection Timeout=30;"
+                "Connect Timeout=30;"
                 "Command Timeout=60;"
-                "Connect Timeout=15;"
             )
         if self.SQL_AUTH_MODE == "sql_auth":
             sql_username = self.get_secret("SQL-USERNAME")
@@ -240,9 +242,11 @@ class ConfigManager:
                 f"PWD={sql_password};"
                 "Encrypt=yes;"
                 "TrustServerCertificate=yes;"
-                "Connection Timeout=15;"
+                "MultiSubnetFailover=Yes;"
+                "Login Timeout=30;"
+                "Connection Timeout=30;"
+                "Connect Timeout=30;"
                 "Command Timeout=60;"
-                "Connect Timeout=15;"
             )
         raise ValueError(f"Invalid SQL_AUTH_MODE: {self.SQL_AUTH_MODE}. Must be 'managed_identity' or 'sql_auth'")
 

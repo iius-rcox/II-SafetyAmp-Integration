@@ -1,0 +1,135 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: safety-amp
+  labels:
+    grafana_datasource: "1"
+data:
+  datasource-azuremonitor.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Azure Monitor
+        type: grafana-azure-monitor-datasource
+        uid: azure-monitor
+        access: proxy
+        editable: true
+        jsonData:
+          cloudName: azuremonitor
+          subscriptionId: ${AZURE_SUBSCRIPTION_ID}
+          tenantId: ${AZURE_TENANT_ID}
+          logAnalyticsDefaultWorkspace: ${AZURE_LOG_ANALYTICS_WORKSPACE_ID}
+          azureLogAnalyticsSameAs: true
+          managedIdentityEnabled: ${AZURE_MSI_ENABLED}
+        secureJsonData:
+          clientId: ${AZURE_CLIENT_ID}
+          clientSecret: ${AZURE_CLIENT_SECRET}
+  dashboard-provisioning.yaml: |
+    apiVersion: 1
+    providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards
+          foldersFromFilesStructure: true
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: safety-amp
+  labels:
+    app: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:10.4.3
+          env:
+            - name: GF_AUTH_ANONYMOUS_ENABLED
+              value: "true"
+            - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+              value: Viewer
+            - name: AZURE_SUBSCRIPTION_ID
+              valueFrom:
+                secretKeyRef:
+                  name: azure-monitor-credentials
+                  key: subscriptionId
+            - name: AZURE_TENANT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: azure-monitor-credentials
+                  key: tenantId
+            - name: AZURE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: azure-monitor-credentials
+                  key: clientId
+            - name: AZURE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: azure-monitor-credentials
+                  key: clientSecret
+            - name: AZURE_LOG_ANALYTICS_WORKSPACE_ID
+              valueFrom:
+                secretKeyRef:
+                  name: azure-monitor-credentials
+                  key: workspaceId
+            - name: AZURE_MSI_ENABLED
+              value: "false"
+          ports:
+            - containerPort: 3000
+          volumeMounts:
+            - name: grafana-datasources
+              mountPath: /etc/grafana/provisioning/datasources
+            - name: grafana-datasources
+              mountPath: /etc/grafana/provisioning/dashboards
+              subPath: dashboard-provisioning.yaml
+            - name: grafana-dashboards
+              mountPath: /var/lib/grafana/dashboards
+      volumes:
+        - name: grafana-datasources
+          configMap:
+            name: grafana-datasources
+        - name: grafana-dashboards
+          configMap:
+            name: grafana-dashboards
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: safety-amp
+spec:
+  type: ClusterIP
+  selector:
+    app: grafana
+  ports:
+    - port: 80
+      targetPort: 3000
+      name: http
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: safety-amp
+data:
+  safetyamp-observability.json: |
+    {{- /* embed file at apply-time if templated; otherwise replace via kustomize */ -}}
