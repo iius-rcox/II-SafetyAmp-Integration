@@ -290,8 +290,9 @@ if __name__ == "__main__":
     # Validate configuration before starting services (feature flaggable)
     enable_unified_config = (os.getenv('ENABLE_UNIFIED_CONFIG', '1') or '1').lower() in ('1', 'true', 'yes')
     if enable_unified_config and not config.validate_required_secrets():
-        logger.critical("Configuration validation failed", extra={"missing": config.get_configuration_status()["validation"]["missing"]})
-        sys.exit(1)
+        logger.critical("Configuration validation failed - running in degraded mode", extra={"missing": config.get_configuration_status()["validation"]["missing"]})
+        # Don't exit - continue running in degraded mode so the pod stays up
+        # This allows operators to investigate the issue while the pod remains available
 
     status = config.get_configuration_status() if enable_unified_config else {"validation": {"is_valid": True}, "azure": {}}
     logger.info(

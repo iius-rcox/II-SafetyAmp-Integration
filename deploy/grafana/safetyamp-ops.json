@@ -10,7 +10,30 @@
   "templating": {
     "list": [
       { "name": "datasource", "type": "datasource", "label": "Prometheus", "query": "prometheus", "refresh": 1 },
-      { "name": "azlogs", "type": "datasource", "label": "Azure Logs", "query": "grafana-azure-monitor-datasource", "refresh": 1 },
+      {
+        "current": {
+          "selected": true,
+          "text": "Azure Monitor Logs",
+          "value": "Azure Monitor Logs"
+        },
+        "datasource": {
+          "type": "grafana-azure-monitor-datasource",
+          "uid": "eev0ievtfeqdce"
+        },
+        "definition": "Azure Monitor Logs",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Azure Logs",
+        "multi": false,
+        "name": "azlogs",
+        "options": [],
+        "query": "Azure Monitor Logs",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "datasource"
+      },
       { "name": "workspace", "type": "text", "label": "Log Analytics Workspace ID (optional)", "query": "" },
       { "name": "namespace", "type": "custom", "label": "Namespace", "query": "safety-amp", "current": { "text": "safety-amp", "value": "safety-amp" } },
       { "name": "operation", "type": "custom", "query": "employees,departments,jobs,titles,vehicles|all", "current": { "text": "all", "value": ".*" } },
@@ -107,10 +130,10 @@
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "$azlogs" },
+          "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "eev0ievtfeqdce" },
           "azureLogAnalytics": {
             "resultFormat": "table",
-            "query": "union isfuzzy=true ContainerLogV2, ContainerLog\n| where $__timeFilter(TimeGenerated)\n| extend KubeNS = tostring(coalesce(Namespace, KubernetesNamespace, k8sNamespace, NameSpace))\n| extend KubePod = tostring(coalesce(PodName, KubernetesPod, Pod, k8sPod))\n| extend Message = tostring(coalesce(LogMessage, LogEntry, log, Message))\n| extend Level = tolower(tostring(coalesce(Level, level)))\n| where KubeNS == '$namespace' and KubePod has 'safety-amp-agent'\n| where Level == 'error' or Message has_any ('ERROR','Exception','Failed','Validation')\n| project TimeGenerated, KubeNS, KubePod, ContainerName, Level, Message\n| order by TimeGenerated desc\n| take 500"
+            "query": "union isfuzzy=true ContainerLogV2, ContainerLog\n| where $__timeFilter(TimeGenerated)\n| where PodNamespace == '$namespace' and PodName has 'safety-amp-agent'\n| where LogLevel == 'error' or LogMessage has_any ('ERROR','Exception','Failed','Validation')\n| project TimeGenerated, PodNamespace, PodName, ContainerName, LogLevel, LogMessage\n| order by TimeGenerated desc\n| take 500"
           }
         }
       ],
@@ -123,10 +146,10 @@
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "$azlogs" },
+          "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "eev0ievtfeqdce" },
           "azureLogAnalytics": {
             "resultFormat": "table",
-            "query": "let op = iff('$operation' == '.*' or '$operation' == 'all', '', '$operation');\nlet st = iff('$status' == '.*' or '$status' == 'all', '', '$status');\nunion isfuzzy=true ContainerLogV2, ContainerLog\n| where $__timeFilter(TimeGenerated)\n| extend KubeNS = tostring(coalesce(Namespace, KubernetesNamespace, k8sNamespace, NameSpace))\n| extend KubePod = tostring(coalesce(PodName, KubernetesPod, Pod, k8sPod))\n| extend Message = tostring(coalesce(LogMessage, LogEntry, log, Message))\n| where KubeNS == '$namespace' and KubePod has 'safety-amp-agent'\n| where isempty(op) or Message has op\n| where isempty(st) or Message has st\n| project TimeGenerated, KubeNS, KubePod, ContainerName, Message\n| order by TimeGenerated desc\n| take 500"
+            "query": "let op = iff('$operation' == '.*' or '$operation' == 'all', '', '$operation');\nlet st = iff('$status' == '.*' or '$status' == 'all', '', '$status');\nunion isfuzzy=true ContainerLogV2, ContainerLog\n| where $__timeFilter(TimeGenerated)\n| where PodNamespace == '$namespace' and PodName has 'safety-amp-agent'\n| where isempty(op) or LogMessage has op\n| where isempty(st) or LogMessage has st\n| project TimeGenerated, PodNamespace, PodName, ContainerName, LogMessage\n| order by TimeGenerated desc\n| take 500"
           }
         }
       ],

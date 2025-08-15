@@ -16,6 +16,30 @@
         "query": "prometheus",
         "current": {},
         "hide": 0
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "Azure Monitor Logs",
+          "value": "Azure Monitor Logs"
+        },
+        "datasource": {
+          "type": "grafana-azure-monitor-datasource",
+          "uid": "eev0ievtfeqdce"
+        },
+        "definition": "Azure Monitor Logs",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Azure Logs",
+        "multi": false,
+        "name": "azlogs",
+        "options": [],
+        "query": "Azure Monitor Logs",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "datasource"
       }
     ]
   },
@@ -27,14 +51,17 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "$datasource" },
-          "expr": "max_over_time(safetyamp_sync_in_progress[$__interval])"
+          "expr": "max(safetyamp_sync_in_progress)"
         }
       ],
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
         "orientation": "auto",
         "colorMode": "value",
-        "graphMode": "none"
+        "graphMode": "none",
+        "links": [
+          {"title": "View details", "url": "d/safetyamp-detail/safetyamp-detail?from=${__from}&to=${__to}", "targetBlank": true}
+        ]
       }
     },
     {
@@ -44,7 +71,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "$datasource" },
-          "expr": "(time() - max_over_time(safetyamp_last_sync_timestamp_seconds[$__range])) / 60"
+          "expr": "(time() - max(safetyamp_last_sync_timestamp_seconds)) / 60"
         }
       ],
       "options": {
@@ -80,7 +107,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "$datasource" },
-          "expr": "sum(increase(safetyamp_records_processed_total[1h]))"
+          "expr": "sum(increase(safetyamp_records_processed_total[$__range]))"
         }
       ],
       "options": {
@@ -171,7 +198,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "$datasource" },
-          "expr": "sum by (entity_type, operation, status) (increase(safetyamp_changes_total[$__rate_interval]))",
+          "expr": "sum by (entity_type, operation, status) (increase(safetyamp_changes_total[$__range]))",
           "legendFormat": "{{operation}} {{status}} {{entity_type}}"
         }
       ],
@@ -185,7 +212,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "$datasource" },
-          "expr": "sum by (error_type, entity_type, source) (increase(safetyamp_errors_total[$__rate_interval]))",
+          "expr": "sum by (error_type, entity_type, source) (increase(safetyamp_errors_total[$__range]))",
           "legendFormat": "{{error_type}} {{entity_type}} {{source}}"
         }
       ],
@@ -198,7 +225,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "$datasource" },
-          "expr": "sum by (sync_type) (increase(safetyamp_records_processed_total[$__rate_interval]))",
+          "expr": "sum by (sync_type) (increase(safetyamp_records_processed_total[$__range]))",
           "legendFormat": "{{sync_type}}"
         }
       ],

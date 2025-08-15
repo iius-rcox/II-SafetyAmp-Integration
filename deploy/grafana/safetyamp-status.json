@@ -972,11 +972,28 @@
       }
       ,
       {
-        "name": "azlogs",
-        "type": "datasource",
+        "current": {
+          "selected": true,
+          "text": "Azure Monitor Logs",
+          "value": "Azure Monitor Logs"
+        },
+        "datasource": {
+          "type": "grafana-azure-monitor-datasource",
+          "uid": "eev0ievtfeqdce"
+        },
+        "definition": "Azure Monitor Logs",
+        "hide": 0,
+        "includeAll": false,
         "label": "Azure Logs",
-        "query": "grafana-azure-monitor-datasource",
-        "refresh": 1
+        "multi": false,
+        "name": "azlogs",
+        "options": [],
+        "query": "Azure Monitor Logs",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "datasource"
       }
     ]
   },
