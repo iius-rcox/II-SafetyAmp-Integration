@@ -47,13 +47,16 @@ import sys
 sys.path.append('/app')
 
 try:
-    from utils.cache_manager import CacheManager
-    
-    # Initialize cache
-    cache = CacheManager()
-    
-    # Get employee data
-    employees = cache.get_employees()
+    from services.data_manager import data_manager
+    from services.safetyamp_api import SafetyAmpAPI
+    api = SafetyAmpAPI()
+    # Get employee data via data_manager (users by id)
+    employees_by_id = data_manager.get_cached_data_with_fallback(
+        "safetyamp_users_by_id",
+        lambda: api.get_all_paginated("/api/users", key_field="id"),
+        max_age_hours=1,
+    ) or {}
+    employees = list(employees_by_id.values())
     
     print('EMPLOYEE_DATA_START')
     import json

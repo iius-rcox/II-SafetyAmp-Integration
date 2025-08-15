@@ -39,7 +39,7 @@ opentelemetry-sdk>=1.25  # optional
 ### Phase 0: Pre-flight and Bootstrap
 - **Create feature branch**: `git checkout -b feat/unified-managers`.
 - **Add dependencies** to `requirements.txt` and install in your environment.
-- **Set base env** in `.env` (dev):
+- **Set base env** in `.env` (dev) or copy `.env.example`:
   - `ENV=dev`
   - `REDIS_HOST=localhost`
   - `REDIS_PORT=6379`
@@ -55,9 +55,9 @@ Verification: `pip install -r requirements.txt` should succeed.
 ### Phase 1: Standardize Configuration (ConfigManager)
 
 Files to create/modify:
-- Create/Replace: `config/__init__.py` (unified `ConfigManager` and exported singleton `config` and alias `settings`).
-- Modify: `main.py` (startup config validation/logging).
-- Modify: service modules that read configuration to import from `config`.
+- Create/Replace: `config/__init__.py` (unified `ConfigManager` and exported singleton `config` and alias `settings`). [Implemented]
+- Modify: `main.py` (startup config validation/logging). [Implemented]
+- Modify: service modules that read configuration to import from `config`. [Implemented: `services/data_manager.py`, `services/viewpoint_api.py`, `services/safetyamp_api.py`, `services/samsara_api.py`, `services/graph_api.py`, `utils/health.py`, `utils/emailer.py`]
 
 Design:
 - Precedence: env → Azure Key Vault → .env → defaults.
@@ -69,6 +69,7 @@ Implementation checklist:
   - Typed properties (e.g., `SAFETYAMP_TOKEN: str`, `REDIS_HOST: str`, ...).
   - Methods: `validate_required_secrets()`, `get_configuration_status()`, `get_secret(name, refresh=False)`, `build_sql_connection_string()` if applicable.
   - Azure KV support using `DefaultAzureCredential` with `SecretClient`; fall back to env/.env.
+  - Support `AZURE_KEY_VAULT_NAME` to derive URL (`https://{name}.vault.azure.net`) in addition to `AZURE_KEY_VAULT_URL`.
 - Export a singleton: `config = ConfigManager()`; keep `settings = config` for compatibility.
 
 Main startup validation (in `main.py`):
@@ -86,6 +87,7 @@ logger.info(f"Configuration loaded: {status['validation']['is_valid']}")
 Testing steps:
 - Run a small script to print `config.get_configuration_status()`.
 - Toggle missing envs and assert validation fails with actionable messages.
+- Verify `main.py` respects `ENABLE_UNIFIED_CONFIG` feature flag.
 
 ---
 
@@ -101,15 +103,16 @@ Architecture:
 - Domain methods: thin legacy convenience wrappers (`get_employees()` etc.).
 - Validation bridge: expose `validate_employee_data(...)` via injected validator.
 - Cache keys: `app:v{n}:domain:entity:{id}` with metadata `{schema_version, ttl, created_at, source}`.
-- Stampede control: distributed locks + jitter; `get-or-populate` primitive.
+- Stampede control: distributed locks + jitter; `get-or-populate` primitive. [Implemented: `get_cached_data_with_fallback_advanced()` with Redis lock/jitter]
 
 Minimal public API (façade):
 ```python
 class DataManager:
-    def get_cached_data(self, name: str, key: str): ...
-    def save_cache(self, name: str, data: Any, ttl_seconds: int | None = None, key: str | None = None, metadata: dict | None = None) -> bool: ...
-    def invalidate(self, key_or_pattern: str) -> int: ...
-    def get_cached_data_with_fallback(self, name: str, key: str, loader: Callable[[], Any], ttl_seconds: int, lock: bool = True, metadata: dict | None = None) -> Any: ...
+    def get_cached_data(self, name: str, key: str | None = None) -> Any | None
+    def save_cache(self, name: str, data: Any, ttl_seconds: int | None = None, key: str | None = None, metadata: dict | None = None) -> bool
+    def invalidate_cache(self, name: str, key: str | None = None) -> bool
+    def get_cached_data_with_fallback(self, name: str, fetch_func: Callable[[], Any], max_age_hours: int = 1, force_refresh: bool = False) -> Any | None
+    def get_cached_data_with_fallback_advanced(self, name: str, key: str, loader: Callable[[], Any], ttl_seconds: int, lock: bool = True, metadata: dict | None = None) -> Any
 
     # Legacy domain helpers (optional)
     def get_employees(self) -> list[dict]: ...
@@ -141,10 +144,10 @@ Testing steps:
 ### Phase 3: Unify Events (EventManager)
 
 Files to create/modify:
-- Create: `services/event_manager.py` (unified event model and sinks).
+- Create: `services/event_manager.py` (unified event model and sinks). [Implemented]
 - Remove later: `utils/error_manager.py`, `utils/change_tracker.py`, `utils/error_notifier.py`.
-- Modify: `sync/sync_employees.py`, `sync/sync_departments.py`, `sync/sync_jobs.py`, `sync/sync_titles.py`, `sync/sync_vehicles.py`, `main.py` to use `event_manager`.
-- Modify: `deploy/monitor-changes.ps1`, `deploy/monitor-validation.ps1`, `deploy/test-error-notifications.ps1` if they import old modules.
+- Modify: `sync/sync_employees.py`, `sync/sync_departments.py`, `sync/sync_jobs.py`, `sync/sync_titles.py`, `sync/sync_vehicles.py`, `main.py` to use `event_manager`. [Implemented]
+- Modify: `deploy/monitor-changes.ps1`, `deploy/monitor-validation.ps1`, `deploy/test-error-notifications.ps1` if they import old modules. [Implemented]
 
 Design:
 - Event schema: `{event_id, timestamp, severity, category, entity_type, entity_id, session_id, attributes, error}`.
@@ -174,10 +177,18 @@ Migration mapping (old → new):
 | `from utils.change_tracker import ChangeTracker` | `ChangeTracker().log_creation(...)` | same as above | `event_manager.log_creation(...)` |
 | `from utils.error_notifier import error_notifier` | `error_notifier.send_hourly_notification()` | same as above | `event_manager.send_hourly_notification()` |
 
+Applied so far:
+- `main.py`: switched hourly notifications and error logging to `event_manager`.
+- `sync/sync_employees.py`: migrated session lifecycle and all event/error calls to `event_manager`.
+- `sync/sync_jobs.py`: session start/end; creation/update/skip/error events for sites.
+- `sync/sync_titles.py`: session start/end; creation/skip/error events for titles.
+- `sync/sync_vehicles.py`: session start/end; creation/update/error events for assets.
+
 Testing steps:
 - Start a session, emit creation and error events, end session; assert summary counts.
 - Induce notifier failure (e.g., bad SMTP) to confirm non-fatal behavior and backoff.
 - Verify structured logs and (optional) OpenTelemetry spans are emitted.
+- Validate `deploy/*` scripts now interact via `event_manager` and `data_manager` only.
 
 ---
 
@@ -262,6 +273,8 @@ Sanity checks:
 - Grep for forbidden imports:
 ```bash
 grep -R "utils/cache_manager\|utils/error_manager\|utils/change_tracker\|utils/error_notifier" -n || true
+
+Note: For modules still needing direct `ChangeTracker` instances, keep imports temporarily; migrate to `event_manager` where possible.
 ```
 
 ---
@@ -327,9 +340,9 @@ Deprecation timeline:
 ---
 
 ## Acceptance Criteria (Definition of Done)
-- ConfigManager: unified, validated at startup; all modules import from `config`.
+- ConfigManager: unified, validated at startup; all modules import from `config`. [Implemented: module exists; startup validation wired in `main.py`]
 - DataManager: caching + validation unified; no direct cache manager usages; API caching routed via `get_cached_data_with_fallback()`.
-- EventManager: unified logging/change tracking/notifications; sessions produce summaries.
+- EventManager: unified logging/change tracking/notifications; sessions produce summaries. [Implemented: `services/event_manager.py`; `main.py` + `sync/sync_employees.py` migrated]
 - All targeted files updated; redundant modules deleted.
 - Unit/integration tests green; CI import check passes; no legacy imports remain.
 - Observability: metrics and structured logs for cache and events present.
@@ -428,3 +441,15 @@ summary = event_manager.end_sync(sid)
 - Define TTLs per domain; avoid stale critical data.
 - Surface degraded modes explicitly via logs/metrics; do not fail silently.
 - Mask secrets and PII everywhere; validate redaction in tests.
+
+References (best practices):
+- Config in env, not code (.env only for dev): 12-Factor App — Config (https://12factor.net/config)
+- Azure auth and Key Vault usage with DefaultAzureCredential: Microsoft Docs (https://learn.microsoft.com/azure/developer/python/sdk/authentication-overview)
+- Key Vault URI format: Microsoft Docs (https://learn.microsoft.com/azure/key-vault/general/about-keys-secrets-certificates#key-vault-uris)
+- Do not log secrets; redact: OWASP Logging Cheat Sheet (https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html)
+- Fail-fast/health monitoring: Health Endpoint Monitoring pattern (https://learn.microsoft.com/azure/architecture/patterns/health-endpoint-monitoring)
+- Structured logging guidance: 12-Factor — Logs (https://12factor.net/logs)
+- Prometheus instrumentation: Best Practices (https://prometheus.io/docs/practices/instrumentation/)
+- Graceful shutdown for k8s: Pod termination (https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-termination)
+- Monitoring principles: Google SRE — Monitoring Distributed Systems (https://sre.google/sre-book/monitoring-distributed-systems/)
+- Avoid thundering herd with jitter/backoff: AWS Builders’ Library (https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/)

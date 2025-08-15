@@ -1,15 +1,15 @@
 import requests
 from msal import ConfidentialClientApplication
-from config import settings
+from config import config
 from utils.logger import get_logger
 
 logger = get_logger("msgraph_api")
 
 class MSGraphAPI:
     def __init__(self):
-        self.client_id = settings.MS_GRAPH_CLIENT_ID
-        self.client_secret = settings.MS_GRAPH_CLIENT_SECRET
-        self.tenant_id = settings.MS_GRAPH_TENANT_ID
+        self.client_id = config.MS_GRAPH_CLIENT_ID
+        self.client_secret = config.MS_GRAPH_CLIENT_SECRET
+        self.tenant_id = config.MS_GRAPH_TENANT_ID
         self.scope = ["https://graph.microsoft.com/.default"]
 
         self.app = ConfidentialClientApplication(
@@ -36,7 +36,7 @@ class MSGraphAPI:
         users = {}
 
         while endpoint:
-            response = requests.get(endpoint, headers=headers, timeout=settings.HTTP_REQUEST_TIMEOUT)
+            response = requests.get(endpoint, headers=headers, timeout=config.HTTP_REQUEST_TIMEOUT)
             if response.status_code == 200:
                 data = response.json()
                 for user in data.get('value', []):

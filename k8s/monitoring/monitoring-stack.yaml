@@ -1,135 +1,169 @@
----
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: grafana-datasources
+  name: fluentbit-config
   namespace: safety-amp
   labels:
-    grafana_datasource: "1"
+    app: safety-amp
+    component: observability
 data:
-  datasource-azuremonitor.yaml: |
-    apiVersion: 1
-    datasources:
-      - name: Azure Monitor
-        type: grafana-azure-monitor-datasource
-        uid: azure-monitor
-        access: proxy
-        editable: true
-        jsonData:
-          cloudName: azuremonitor
-          subscriptionId: ${AZURE_SUBSCRIPTION_ID}
-          tenantId: ${AZURE_TENANT_ID}
-          logAnalyticsDefaultWorkspace: ${AZURE_LOG_ANALYTICS_WORKSPACE_ID}
-          azureLogAnalyticsSameAs: true
-          managedIdentityEnabled: ${AZURE_MSI_ENABLED}
-        secureJsonData:
-          clientId: ${AZURE_CLIENT_ID}
-          clientSecret: ${AZURE_CLIENT_SECRET}
-  dashboard-provisioning.yaml: |
-    apiVersion: 1
-    providers:
-      - name: 'default'
-        orgId: 1
-        folder: ''
-        type: file
-        disableDeletion: false
-        editable: true
-        options:
-          path: /var/lib/grafana/dashboards
-          foldersFromFilesStructure: true
-
+  fluent-bit.conf: |
+    [SERVICE]
+        Flush         1
+        Log_Level     info
+        Parsers_File  parsers.conf
+    [INPUT]
+        Name   tail
+        Path   /app/output/changes/*.json
+        Parser json
+        Tag    safetyamp.changes
+    [INPUT]
+        Name   tail
+        Path   /app/output/errors/error_log.json
+        Parser json
+        Tag    safetyamp.errors
+    [OUTPUT]
+        Name        azure
+        Match       safetyamp.*
+        Customer_ID ${WORKSPACE_ID}
+        Shared_Key  ${WORKSPACE_KEY}
+        Log_Type    SafetyAmpCustom
+  parsers.conf: |
+    [PARSER]
+      Name        json
+      Format      json
+      Time_Key    timestamp
+      Time_Format %Y-%m-%dT%H:%M:%S.%L%z
 ---
-apiVersion: apps/v1
-kind: Deployment
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
 metadata:
-  name: grafana
+  name: allow-metrics-scrape
+  namespace: safety-amp
+spec:
+  podSelector:
+    matchLabels:
+      app: safety-amp
+      component: agent
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 9090
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: safety-amp-servicemonitor
   namespace: safety-amp
   labels:
-    app: grafana
+    release: kube-prometheus-stack
 spec:
-  replicas: 1
   selector:
     matchLabels:
-      app: grafana
-  template:
-    metadata:
-      labels:
-        app: grafana
-    spec:
-      containers:
-        - name: grafana
-          image: grafana/grafana:10.4.3
-          env:
-            - name: GF_AUTH_ANONYMOUS_ENABLED
-              value: "true"
-            - name: GF_AUTH_ANONYMOUS_ORG_ROLE
-              value: Viewer
-            - name: AZURE_SUBSCRIPTION_ID
-              valueFrom:
-                secretKeyRef:
-                  name: azure-monitor-credentials
-                  key: subscriptionId
-            - name: AZURE_TENANT_ID
-              valueFrom:
-                secretKeyRef:
-                  name: azure-monitor-credentials
-                  key: tenantId
-            - name: AZURE_CLIENT_ID
-              valueFrom:
-                secretKeyRef:
-                  name: azure-monitor-credentials
-                  key: clientId
-            - name: AZURE_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: azure-monitor-credentials
-                  key: clientSecret
-            - name: AZURE_LOG_ANALYTICS_WORKSPACE_ID
-              valueFrom:
-                secretKeyRef:
-                  name: azure-monitor-credentials
-                  key: workspaceId
-            - name: AZURE_MSI_ENABLED
-              value: "false"
-          ports:
-            - containerPort: 3000
-          volumeMounts:
-            - name: grafana-datasources
-              mountPath: /etc/grafana/provisioning/datasources
-            - name: grafana-datasources
-              mountPath: /etc/grafana/provisioning/dashboards
-              subPath: dashboard-provisioning.yaml
-            - name: grafana-dashboards
-              mountPath: /var/lib/grafana/dashboards
-      volumes:
-        - name: grafana-datasources
-          configMap:
-            name: grafana-datasources
-        - name: grafana-dashboards
-          configMap:
-            name: grafana-dashboards
-
+      app: safety-amp
+      component: agent
+  namespaceSelector:
+    matchNames:
+      - safety-amp
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
 ---
-apiVersion: v1
-kind: Service
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
 metadata:
-  name: grafana
+  name: safetyamp-alerts
   namespace: safety-amp
+  labels:
+    app: safety-amp
+    role: alert-rules
 spec:
-  type: ClusterIP
-  selector:
-    app: grafana
-  ports:
-    - port: 80
-      targetPort: 3000
-      name: http
-
+  groups:
+  - name: safetyamp.rules
+    rules:
+    - alert: SafetyAmpSyncFailure
+      expr: increase(safetyamp_sync_operations_total{status="error"}[5m]) > 0
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: "SafetyAmp sync operation failed"
+        description: "One or more sync operations failed in the last 5 minutes."
+    - alert: SafetyAmpCacheStale
+      expr: (time() - max by (cache) (safetyamp_cache_last_updated_timestamp_seconds)) > (max by (cache) (safetyamp_cache_ttl_seconds) * 1.25)
+      for: 15m
+      labels:
+        severity: warning
+        service: safety-amp
+        team: integrations
+      annotations:
+        summary: "SafetyAmp cache is stale"
+        description: "Cache {{ $labels.cache }} exceeded TTL by >25%."
+        runbook_url: "file://k8s/monitoring/RUNBOOK.md#high-log-ingestion-cost"
+    - alert: SafetyAmpErrorSurge
+      expr: sum(increase(safetyamp_errors_total[15m])) > 20
+      for: 5m
+      labels:
+        severity: critical
+        service: safety-amp
+        team: integrations
+      annotations:
+        summary: "Error surge detected"
+        description: "More than 20 errors recorded in the last 15 minutes. Investigate recent changes and logs."
+        runbook_url: "file://k8s/monitoring/RUNBOOK.md#alert-noise"
+    - alert: SafetyAmpMissingSync
+      expr: time() - max(safetyamp_last_sync_timestamp_seconds) > 5400
+      for: 10m
+      labels:
+        severity: warning
+        service: safety-amp
+        team: integrations
+      annotations:
+        summary: "Missing sync activity"
+        description: "No completed sync detected for >90 minutes. Verify worker health and /health endpoint."
+        runbook_url: "file://k8s/monitoring/RUNBOOK.md#dashboards-blank-metrics"
+    - alert: SafetyAmpLongRunningSyncP95
+      expr: histogram_quantile(0.95, sum by (le, operation) (rate(safetyamp_sync_duration_seconds_bucket[15m]))) > 600
+      for: 10m
+      labels:
+        severity: warning
+        service: safety-amp
+        team: integrations
+      annotations:
+        summary: "Long-running syncs (P95)"
+        description: "P95 of sync duration exceeds 10 minutes for at least one operation. Check source/destination APIs."
+        runbook_url: "file://k8s/monitoring/RUNBOOK.md#dashboards-blank-logs"
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: grafana-dashboards
-  namespace: safety-amp
+  name: container-azm-ms-agentconfig
+  namespace: kube-system
+  labels:
+    component: container-insights
 data:
-  safetyamp-observability.json: |
-    {{- /* embed file at apply-time if templated; otherwise replace via kustomize */ -}}
+  schema-version: |
+    v1
+  config-version: |
+    ver1
+  log-data-collection-settings: |-
+    [log_collection_settings]
+       [log_collection_settings.stdout]
+          enabled = true
+          exclude_namespaces = ["kube-system"]
+       [log_collection_settings.stderr]
+          enabled = true
+          exclude_namespaces = ["kube-system"]
+       [log_collection_settings.enrich_container_logs]
+          enabled = true

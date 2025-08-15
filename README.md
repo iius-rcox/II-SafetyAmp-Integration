@@ -20,3 +20,10 @@ docs/              # Centralized documentation (new)
 ## Notes
 - Never commit secrets. Use Kubernetes Secrets, Azure Key Vault, or similar.
 - Update image references to your container registry before deploying.
+
+## Local Development
+
+1. Use Python 3.9+.
+2. Install dependencies: `pip install -r requirements.txt`.
+3. Copy `.env.example` to `.env` and customize for your environment (do not commit real secrets).
+4. Optionally configure Azure Key Vault via `AZURE_KEY_VAULT_NAME` or `AZURE_KEY_VAULT_URL`.

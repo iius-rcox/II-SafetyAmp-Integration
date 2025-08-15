@@ -6,7 +6,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.pool import QueuePool
 from sqlalchemy.engine import Engine
 from urllib.parse import quote_plus
-from config import settings
+from config import config
 from utils.logger import get_logger
 from .data_manager import data_manager
 
@@ -15,7 +15,7 @@ logger = get_logger("viewpoint")
 class ViewpointAPI:
     def __init__(self):
         # Build SQLAlchemy connection URL from ODBC connection string
-        self.conn_str = settings.VIEWPOINT_CONN_STRING
+        self.conn_str = config.VIEWPOINT_CONN_STRING
         
         # Convert ODBC connection string to SQLAlchemy URL
         # Format: mssql+pyodbc:///?odbc_connect=<encoded_connection_string>
@@ -26,16 +26,16 @@ class ViewpointAPI:
         self.engine = create_engine(
             sqlalchemy_url,
             poolclass=QueuePool,
-            pool_size=settings.DB_POOL_SIZE,
-            max_overflow=settings.DB_MAX_OVERFLOW,
-            pool_timeout=settings.DB_POOL_TIMEOUT,
-            pool_recycle=settings.DB_POOL_RECYCLE,
+            pool_size=config.DB_POOL_SIZE,
+            max_overflow=config.DB_MAX_OVERFLOW,
+            pool_timeout=config.DB_POOL_TIMEOUT,
+            pool_recycle=config.DB_POOL_RECYCLE,
             echo=False,  # Set to True for SQL debugging
             pool_pre_ping=True,  # Verify connections before use
             pool_reset_on_return='commit'  # Reset connections on return
         )
         
-        logger.info(f"Initialized Viewpoint API with connection pool (size={settings.DB_POOL_SIZE}, max_overflow={settings.DB_MAX_OVERFLOW})")
+        logger.info(f"Initialized Viewpoint API with connection pool (size={config.DB_POOL_SIZE}, max_overflow={config.DB_MAX_OVERFLOW})")
 
     @contextmanager
     def _get_connection(self):

@@ -1,7 +1,7 @@
 import requests
 import time
 from ratelimit import limits, sleep_and_retry
-from config import settings
+from config import config
 from utils.logger import get_logger
 
 logger = get_logger("samsara")
@@ -12,9 +12,9 @@ class SamsaraAPI:
     MAX_RETRY_WAIT = 60
 
     def __init__(self):
-        self.base_url = settings.SAMSARA_DOMAIN.rstrip("/")
+        self.base_url = config.SAMSARA_DOMAIN.rstrip("/")
         self.headers = {
-            "Authorization": f"Bearer {settings.SAMSARA_API_KEY}",
+            "Authorization": f"Bearer {config.SAMSARA_API_KEY}",
             "Accept": "application/json"
         }
 

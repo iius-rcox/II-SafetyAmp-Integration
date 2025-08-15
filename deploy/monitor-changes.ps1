@@ -1,13 +1,4 @@
 #!/usr/bin/env pwsh
-<#
-.SYNOPSIS
-    Monitor SafetyAmp Integration Changes
-    
-.DESCRIPTION
-    This script provides various ways to monitor and track changes made during sync operations.
-    It can show recent changes, generate reports, and provide real-time monitoring.
-#>
-
 param(
     [string]$Action = "summary",
     [int]$Hours = 24,
@@ -17,39 +8,28 @@ param(
     [switch]$Export
 )
 
-# Colors for output
-$Colors = @{
-    Success = "Green"
-    Warning = "Yellow"
-    Error = "Red"
-    Info = "Cyan"
-    Header = "Magenta"
-}
-
-function Write-ColorOutput {
-    param([string]$Message, [string]$Color = "White")
-    Write-Host $Message -ForegroundColor $Colors[$Color]
-}
+Write-Host "⚠️  'monitor-changes.ps1' is deprecated. Use 'monitor.ps1 -Feature changes' instead." -ForegroundColor Yellow
+& "$PSScriptRoot/monitor.ps1" -Feature changes -Hours $Hours -Action $Action -EntityType $EntityType -Operation $Operation -RealTime:$RealTime -Export:$Export
 
 function Get-ChangeTrackerData {
     param([string]$PodName, [string]$Namespace = "safety-amp")
     
     try {
-        # Execute the change tracker script in the pod
+        # Execute the change/event manager script in the pod
         $result = kubectl exec $PodName -n $Namespace -- python -c "
 import sys
 sys.path.append('/app')
-from utils.change_tracker import ChangeTracker
+from services.event_manager import event_manager
 
-tracker = ChangeTracker()
 if '$Action' == 'summary':
-    report = tracker.get_summary_report($Hours)
+    # event_manager wraps ChangeTracker internally; reuse summary file outputs
+    report = event_manager.change_tracker.get_summary_report($Hours)
     print('CHANGE_TRACKER_DATA_START')
     import json
     print(json.dumps(report, indent=2))
     print('CHANGE_TRACKER_DATA_END')
 elif '$Action' == 'changes':
-    changes = tracker.get_recent_changes($Hours)
+    changes = event_manager.change_tracker.get_recent_changes($Hours)
     print('CHANGE_TRACKER_DATA_START')
     import json
     print(json.dumps(changes, indent=2))
@@ -62,7 +42,7 @@ elif '$Action' == 'changes':
         }
     }
     catch {
-        Write-ColorOutput "Error getting change tracker data: $_" "Error"
+            Write-ColorOutput "Error getting change tracker data: $_" -Color Red
     }
     return $null
 }
@@ -70,37 +50,37 @@ elif '$Action' == 'changes':
 function Show-SummaryReport {
     param($Data)
     
-    Write-ColorOutput "`n=== SafetyAmp Integration Change Summary (Last $Hours hours) ===" "Header"
+    Write-ColorOutput "`n=== SafetyAmp Integration Change Summary (Last $Hours hours) ===" -Color Magenta
     
     if ($Data.total_changes -eq 0) {
-        Write-ColorOutput "No changes recorded in the last $Hours hours." "Warning"
+        Write-ColorOutput "No changes recorded in the last $Hours hours." -Color Yellow
         return
     }
     
-    Write-ColorOutput "`n📊 Overall Statistics:" "Info"
-    Write-ColorOutput "  Total Changes: $($Data.total_changes)" "Info"
+    Write-ColorOutput "`n📊 Overall Statistics:" -Color Cyan
+    Write-ColorOutput "  Total Changes: $($Data.total_changes)" -Color Cyan
     
-    Write-ColorOutput "`n🔄 Operations Breakdown:" "Info"
+    Write-ColorOutput "`n🔄 Operations Breakdown:" -Color Cyan
     foreach ($op in $Data.by_operation.GetEnumerator()) {
-        $color = if ($op.Key -eq "created") { "Success" } elseif ($op.Key -eq "updated") { "Info" } elseif ($op.Key -eq "errors") { "Error" } else { "Warning" }
-        Write-ColorOutput "  $($op.Key.ToUpper()): $($op.Value)" $color
+        $color = if ($op.Key -eq "created") { 'Green' } elseif ($op.Key -eq "updated") { 'Cyan' } elseif ($op.Key -eq "errors") { 'Red' } else { 'Yellow' }
+        Write-ColorOutput "  $($op.Key.ToUpper()): $($op.Value)" -Color $color
     }
     
-    Write-ColorOutput "`n🏷️  Entity Types:" "Info"
+    Write-ColorOutput "`n🏷️  Entity Types:" -Color Cyan
     foreach ($entity in $Data.by_entity_type.GetEnumerator()) {
-        Write-ColorOutput "  $($entity.Key): $($entity.Value)" "Info"
+        Write-ColorOutput "  $($entity.Key): $($entity.Value)" -Color Cyan
     }
     
-    Write-ColorOutput "`n📈 Recent Sessions:" "Info"
+    Write-ColorOutput "`n📈 Recent Sessions:" -Color Cyan
     foreach ($session in $Data.recent_sessions) {
-        $status = if ($session.total_errors -eq 0) { "Success" } else { "Warning" }
-        Write-ColorOutput "  Session: $($session.session_id)" $status
-        Write-ColorOutput "    Type: $($session.sync_type)" "Info"
-        Write-ColorOutput "    Duration: $($session.duration_seconds)s" "Info"
-        Write-ColorOutput "    Processed: $($session.total_processed)" "Info"
-        Write-ColorOutput "    Created: $($session.total_created)" "Success"
-        Write-ColorOutput "    Updated: $($session.total_updated)" "Info"
-        Write-ColorOutput "    Errors: $($session.total_errors)" $(if ($session.total_errors -eq 0) { "Success" } else { "Error" })
+        $statusColor = if ($session.total_errors -eq 0) { 'Green' } else { 'Yellow' }
+        Write-ColorOutput "  Session: $($session.session_id)" -Color $statusColor
+        Write-ColorOutput "    Type: $($session.sync_type)" -Color Cyan
+        Write-ColorOutput "    Duration: $($session.duration_seconds)s" -Color Cyan
+        Write-ColorOutput "    Processed: $($session.total_processed)" -Color Cyan
+        Write-ColorOutput "    Created: $($session.total_created)" -Color Green
+        Write-ColorOutput "    Updated: $($session.total_updated)" -Color Cyan
+        Write-ColorOutput "    Errors: $($session.total_errors)" -Color $(if ($session.total_errors -eq 0) { 'Green' } else { 'Red' })
         Write-ColorOutput ""
     }
 }
@@ -108,10 +88,10 @@ function Show-SummaryReport {
 function Show-DetailedChanges {
     param($Data, [string]$EntityType, [string]$Operation)
     
-    Write-ColorOutput "`n=== Detailed Changes (Last $Hours hours) ===" "Header"
+    Write-ColorOutput "`n=== Detailed Changes (Last $Hours hours) ===" -Color Magenta
     
     if ($Data.Count -eq 0) {
-        Write-ColorOutput "No changes found in the last $Hours hours." "Warning"
+        Write-ColorOutput "No changes found in the last $Hours hours." -Color Yellow
         return
     }
     
@@ -127,42 +107,42 @@ function Show-DetailedChanges {
     }
     
     if ($filteredData.Count -eq 0) {
-        Write-ColorOutput "No changes match the specified filters." "Warning"
+        Write-ColorOutput "No changes match the specified filters." -Color Yellow
         return
     }
     
     foreach ($change in $filteredData) {
         $timestamp = [datetime]::Parse($change.timestamp).ToString("yyyy-MM-dd HH:mm:ss")
         $color = switch ($change.operation) {
-            "created" { "Success" }
-            "updated" { "Info" }
-            "deleted" { "Warning" }
-            "skipped" { "Warning" }
-            "error" { "Error" }
-            default { "White" }
+            "created" { 'Green' }
+            "updated" { 'Cyan' }
+            "deleted" { 'Yellow' }
+            "skipped" { 'Yellow' }
+            "error" { 'Red' }
+            default { 'White' }
         }
         
-        Write-ColorOutput "`n[$timestamp] $($change.operation.ToUpper()) $($change.entity_type) $($change.entity_id)" $color
+        Write-ColorOutput "`n[$timestamp] $($change.operation.ToUpper()) $($change.entity_type) $($change.entity_id)" -Color $color
         
         if ($change.changes) {
-            Write-ColorOutput "  Changes: $($change.changes | ConvertTo-Json -Compress)" "Info"
+            Write-ColorOutput "  Changes: $($change.changes | ConvertTo-Json -Compress)" -Color Cyan
         }
         
         if ($change.reason) {
-            Write-ColorOutput "  Reason: $($change.reason)" "Warning"
+            Write-ColorOutput "  Reason: $($change.reason)" -Color Yellow
         }
         
         if ($change.error) {
-            Write-ColorOutput "  Error: $($change.error)" "Error"
+            Write-ColorOutput "  Error: $($change.error)" -Color Red
         }
         
-        Write-ColorOutput "  Session: $($change.session_id)" "Info"
+        Write-ColorOutput "  Session: $($change.session_id)" -Color Cyan
     }
 }
 
 function Start-RealTimeMonitoring {
-    Write-ColorOutput "`n🔄 Starting real-time change monitoring..." "Info"
-    Write-ColorOutput "Press Ctrl+C to stop monitoring" "Warning"
+    Write-ColorOutput "`n🔄 Starting real-time change monitoring..." -Color Cyan
+    Write-ColorOutput "Press Ctrl+C to stop monitoring" -Color Yellow
     
     $lastSessionId = ""
     
@@ -174,12 +154,12 @@ function Start-RealTimeMonitoring {
                 if ($data) {
                     $latestSession = $data.recent_sessions | Select-Object -First 1
                     if ($latestSession -and $latestSession.session_id -ne $lastSessionId) {
-                        Write-ColorOutput "`n🆕 New sync session detected: $($latestSession.session_id)" "Success"
-                        Write-ColorOutput "  Type: $($latestSession.sync_type)" "Info"
-                        Write-ColorOutput "  Processed: $($latestSession.total_processed)" "Info"
-                        Write-ColorOutput "  Created: $($latestSession.total_created)" "Success"
-                        Write-ColorOutput "  Updated: $($latestSession.total_updated)" "Info"
-                        Write-ColorOutput "  Errors: $($latestSession.total_errors)" $(if ($latestSession.total_errors -eq 0) { "Success" } else { "Error" })
+                        Write-ColorOutput "`n🆕 New sync session detected: $($latestSession.session_id)" -Color Green
+                        Write-ColorOutput "  Type: $($latestSession.sync_type)" -Color Cyan
+                        Write-ColorOutput "  Processed: $($latestSession.total_processed)" -Color Cyan
+                        Write-ColorOutput "  Created: $($latestSession.total_created)" -Color Green
+                        Write-ColorOutput "  Updated: $($latestSession.total_updated)" -Color Cyan
+                        Write-ColorOutput "  Errors: $($latestSession.total_errors)" -Color $(if ($latestSession.total_errors -eq 0) { 'Green' } else { 'Red' })
                         
                         $lastSessionId = $latestSession.session_id
                     }
@@ -189,7 +169,7 @@ function Start-RealTimeMonitoring {
             Start-Sleep -Seconds 30
         }
         catch {
-            Write-ColorOutput "Error in real-time monitoring: $_" "Error"
+            Write-ColorOutput "Error in real-time monitoring: $_" -Color Red
             Start-Sleep -Seconds 60
         }
     }
@@ -235,24 +215,24 @@ function Export-ChangeData {
             $csvData | Export-Csv -Path $filename -NoTypeInformation
         }
         
-        Write-ColorOutput "`n✅ Data exported to: $filename" "Success"
+    Write-ColorOutput "`n✅ Data exported to: $filename" -Color Green
     }
     catch {
-        Write-ColorOutput "Error exporting data: $_" "Error"
+        Write-ColorOutput "Error exporting data: $_" -Color Red
     }
 }
 
 # Main execution
-Write-ColorOutput "🔍 SafetyAmp Integration Change Monitor" "Header"
-Write-ColorOutput "Action: $Action, Hours: $Hours" "Info"
+Write-ColorOutput "🔍 SafetyAmp Integration Change Monitor" -Color Magenta
+Write-ColorOutput "Action: $Action, Hours: $Hours" -Color Cyan
 
 $pod = Get-SafetyAmpPod
 if (-not $pod) {
-    Write-ColorOutput "❌ No SafetyAmp pods found running" "Error"
+    Write-ColorOutput "❌ No SafetyAmp pods found running" -Color Red
     exit 1
 }
 
-Write-ColorOutput "📦 Using pod: $pod" "Info"
+Write-ColorOutput "📦 Using pod: $pod" -Color Cyan
 
 if ($RealTime) {
     Start-RealTimeMonitoring
@@ -269,8 +249,8 @@ else {
                 Show-DetailedChanges -Data $data -EntityType $EntityType -Operation $Operation
             }
             default {
-                Write-ColorOutput "Unknown action: $Action" "Error"
-                Write-ColorOutput "Available actions: summary, changes" "Info"
+                Write-ColorOutput "Unknown action: $Action" -Color Red
+                Write-ColorOutput "Available actions: summary, changes" -Color Cyan
             }
         }
         
@@ -279,6 +259,6 @@ else {
         }
     }
     else {
-        Write-ColorOutput "❌ No change tracker data available" "Error"
+        Write-ColorOutput "❌ No change tracker data available" -Color Red
     }
 } 

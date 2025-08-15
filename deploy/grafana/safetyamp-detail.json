@@ -1,0 +1,179 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Sync In Progress",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "$datasource" }, "expr": "max(safetyamp_sync_in_progress)" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [ { "type": "value", "options": { "0": { "text": "False" }, "1": { "text": "True" } } } ]
+        },
+        "overrides": []
+      },
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto" }
+    },
+    {
+      "type": "stat",
+      "title": "Minutes Since Last Sync",
+      "gridPos": { "h": 4, "w": 6, "x": 4, "y": 0 },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "$datasource" }, "expr": "(time() - max(safetyamp_last_sync_timestamp_seconds)) / 60" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "min" }, "overrides": [] },
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto" }
+    },
+    {
+      "type": "timeseries",
+      "title": "Sync Operations (increase)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "$datasource" },
+          "expr": "sum by (operation, status) (increase(safetyamp_sync_operations_total{operation=~\"$operation\",status=~\"$status\"}[$__range]))",
+          "legendFormat": "{{operation}} {{status}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Errors by Type/Entity (increase)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "$datasource" },
+          "expr": "sum by (error_type, entity_type, source) (increase(safetyamp_errors_total[$__range]))",
+          "legendFormat": "{{error_type}} {{entity_type}} {{source}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Records Processed by Sync Type (increase)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "$datasource" },
+          "expr": "sum by (sync_type) (increase(safetyamp_records_processed_total{sync_type=~\"$sync_type\"}[$__range]))",
+          "legendFormat": "{{sync_type}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Changes by Operation/Status/Entity (increase)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "$datasource" },
+          "expr": "sum by (entity_type, operation, status) (increase(safetyamp_changes_total{operation=~\"$operation\",status=~\"$status\",entity_type=~\"$entity_type\"}[$__range]))",
+          "legendFormat": "{{operation}} {{status}} {{entity_type}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "type": "table",
+      "title": "Recent Errors (Azure Monitor Logs)",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 20 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "eev0ievtfeqdce" },
+          "azureLogAnalytics": {
+            "workspace": "$workspace",
+            "resultFormat": "table",
+            "query": "union isfuzzy=true ContainerLogV2, ContainerLog\n| where $__timeFilter(TimeGenerated)\n| where PodNamespace == 'safety-amp' and PodName has 'safety-amp-agent'\n| where LogLevel == 'error' or LogMessage has_any ('ERROR','Exception','Failed','Validation')\n| project TimeGenerated, PodNamespace, PodName, ContainerName, LogLevel, LogMessage\n| order by TimeGenerated desc\n| take 500"
+          }
+        }
+      ],
+      "options": { "showHeader": true },
+      "fieldConfig": { "defaults": {}, "overrides": [] }
+    },
+    {
+      "type": "table",
+      "title": "Recent Changes / Operations (Azure Monitor Logs)",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 30 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "eev0ievtfeqdce" },
+          "azureLogAnalytics": {
+            "workspace": "$workspace",
+            "resultFormat": "table",
+            "query": "let op = iff('$operation' == '.*' or '$operation' == 'all', '', '$operation');\nlet st = iff('$status' == '.*' or '$status' == 'all', '', '$status');\nunion isfuzzy=true ContainerLogV2, ContainerLog\n| where $__timeFilter(TimeGenerated)\n| where PodNamespace == 'safety-amp' and PodName has 'safety-amp-agent'\n| where isempty(op) or LogMessage has op\n| where isempty(st) or LogMessage has st\n| project TimeGenerated, PodNamespace, PodName, ContainerName, LogMessage\n| order by TimeGenerated desc\n| take 500"
+          }
+        }
+      ],
+      "options": { "showHeader": true },
+      "fieldConfig": { "defaults": {}, "overrides": [] }
+    },
+    {
+      "type": "text",
+      "title": "Metrics Drilldown",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 40 },
+      "options": {
+        "mode": "markdown",
+        "content": "### How to drill down (native Grafana)\n- Click a series and use the data link to this view; time range and labels are preserved.\n- Use Explore to pivot from metrics to logs: keep time range, choose Azure Monitor Logs, inspect the queries from the tables above.\n- Use variables to scope by operation, status, entity type, and sync type.\n- Share deep links; filters and time are encoded in the URL."
+      }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 41,
+  "tags": [ "safetyamp", "prometheus" ],
+  "templating": {
+    "list": [
+      { "name": "datasource", "type": "datasource", "label": "Datasource", "query": "prometheus", "refresh": 1 },
+      {
+        "current": {
+          "selected": true,
+          "text": "Azure Monitor Logs",
+          "value": "Azure Monitor Logs"
+        },
+        "datasource": {
+          "type": "grafana-azure-monitor-datasource",
+          "uid": "eev0ievtfeqdce"
+        },
+        "definition": "Azure Monitor Logs",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Azure Logs",
+        "multi": false,
+        "name": "azlogs",
+        "options": [],
+        "query": "Azure Monitor Logs",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "datasource"
+      },
+      { "name": "operation", "type": "custom", "query": "employees,departments,jobs,titles,vehicles|all", "current": { "text": "all", "value": ".*" } },
+      { "name": "status", "type": "custom", "query": "success,error|all", "current": { "text": "all", "value": ".*" } },
+      { "name": "entity_type", "type": "custom", "query": "employee,vehicle,department,job,title|all", "current": { "text": "all", "value": ".*" } },
+      { "name": "sync_type", "type": "custom", "query": "employees,departments,jobs,titles,vehicles|all", "current": { "text": "all", "value": ".*" } }
+    ]
+  },
+  "time": { "from": "now-2d", "to": "now" },
+  "timezone": "browser",
+  "title": "SafetyAmp Detail",
+  "uid": "safetyamp-detail",
+  "version": 1
+}
+
+

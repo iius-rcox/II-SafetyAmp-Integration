@@ -55,29 +55,31 @@ param(
 $scriptRoot = $PSScriptRoot
 if (-not $scriptRoot) { $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path }
 
+Import-Module "$scriptRoot/modules/Output.psm1" -Force
+Import-Module "$scriptRoot/modules/Kube.psm1" -Force
+Import-Module "$scriptRoot/modules/Monitoring.psm1" -Force
+
 Write-Host "📊 SafetyAmp Monitoring (feature: $Feature)" -ForegroundColor Cyan
 
 switch ($Feature) {
     'logs' {
-        & "$scriptRoot/monitor-logs.ps1" -Mode $Mode -Pod $Pod -Hours $Hours -SaveErrors:$SaveErrors
+        & "$scriptRoot/monitoring-dashboard.ps1" -Hours $Hours -Sections @('logs')
         break
     }
     'validation' {
-        $valAction = if ($Action) { $Action } else { 'validation-summary' }
-        & "$scriptRoot/monitor-validation.ps1" -Action $valAction -Hours $Hours
+        & "$scriptRoot/monitoring-dashboard.ps1" -Hours $Hours -Sections @('validation')
         break
     }
     'changes' {
-        $chgAction = if ($Action) { $Action } else { 'summary' }
-        & "$scriptRoot/monitor-changes.ps1" -Action $chgAction -Hours $Hours -EntityType $EntityType -Operation $Operation -RealTime:$RealTime -Export:$Export
+        & "$scriptRoot/monitoring-dashboard.ps1" -Hours $Hours -Sections @('changes')
         break
     }
     'sync' {
-        & "$scriptRoot/monitor-sync-logs.ps1" -Filter $Filter -Lines $Lines -Follow:$Follow -Summary:$Summary
+        & "$scriptRoot/monitoring-dashboard.ps1" -Hours $Hours -Sections @('sync-summary')
         break
     }
     'dashboard' {
-        & "$scriptRoot/monitoring-dashboard.ps1"
+        & "$scriptRoot/monitoring-dashboard.ps1" -Hours $Hours -Sections @('pods','services','logs','errors','resources','health','connectivity','cache','config')
         break
     }
     default {

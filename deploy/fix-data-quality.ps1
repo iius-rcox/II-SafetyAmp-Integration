@@ -104,16 +104,17 @@ import sys
 sys.path.append('/app')
 
 try:
-    from sync.sync_employees import EmployeeSync
     from services.safetyamp_api import SafetyAmpAPI
-    from utils.cache_manager import CacheManager
+    from services.data_manager import data_manager
     
-    # Initialize components
-    cache = CacheManager()
     api = SafetyAmpAPI()
-    
-    # Get employee data
-    employees = cache.get_employees()
+    # Get employee data via data_manager
+    employees_by_id = data_manager.get_cached_data_with_fallback(
+        "safetyamp_users_by_id",
+        lambda: api.get_all_paginated("/api/users", key_field="id"),
+        max_age_hours=1,
+    ) or {}
+    employees = list(employees_by_id.values())
     
     print('VALIDATION_DATA_START')
     

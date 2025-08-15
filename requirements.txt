@@ -20,13 +20,21 @@ redis>=5.0.0
 redis[hiredis]>=5.0.0
 
 # Azure integration
-azure-identity>=1.15.0
+azure-identity>=1.16.0
 azure-keyvault-secrets>=4.7.0
 
 # Monitoring
 prometheus-client>=0.17.0
 # Enhanced monitoring
 structlog>=23.1.0
+
+# Validation and retry utilities
+pydantic>=2.6
+tenacity>=8.2
+
+# OpenTelemetry (optional)
+opentelemetry-api>=1.25
+opentelemetry-sdk>=1.25
 
 # Development and linting (optional) - used for CI/CD
 black>=23.0.0

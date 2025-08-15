@@ -38,8 +38,8 @@ kubectl logs -f deployment/safety-amp-agent -n safety-amp --tail=50 | Select-Str
 
 Write-Host "`n✅ Cache manager fix completed!" -ForegroundColor Green
 Write-Host "`n💡 Next steps:" -ForegroundColor Cyan
-Write-Host "  - Monitor logs: .\deploy\monitor-sync-logs.ps1 -Filter cache" -ForegroundColor Gray
+Write-Host "  - Monitor logs: .\deploy\monitor.ps1 -Feature sync -Hours 1" -ForegroundColor Gray
 Write-Host "  - Check health: kubectl get pods -n safety-amp" -ForegroundColor Gray
 Write-Host "  - View detailed logs: kubectl logs -f deployment/safety-amp-agent -n safety-amp" -ForegroundColor Gray
-Write-Host "  - Test sync: .\deploy\monitor-sync-logs.ps1 -Filter sync" -ForegroundColor Gray
+Write-Host "  - Test sync: .\deploy\monitor.ps1 -Feature sync -Hours 1" -ForegroundColor Gray
 

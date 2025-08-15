@@ -6,8 +6,8 @@ from utils.logger import get_logger
 from services.viewpoint_api import ViewpointAPI
 from services.safetyamp_api import SafetyAmpAPI
 from services.samsara_api import SamsaraAPI
-from utils.cache_manager import CacheManager
-from config import settings
+from services.data_manager import data_manager
+from config import config
 
 logger = get_logger("health")
 
@@ -41,8 +41,8 @@ def check_samsara() -> Dict[str, Any]:
     start = time.time()
     try:
         # Use direct request to keep it lightweight
-        url = f"{settings.SAMSARA_DOMAIN.rstrip('/')}/fleet/vehicles"
-        headers = {"Authorization": f"Bearer {settings.SAMSARA_API_KEY}", "Accept": "application/json"}
+        url = f"{config.SAMSARA_DOMAIN.rstrip('/')}/fleet/vehicles"
+        headers = {"Authorization": f"Bearer {config.SAMSARA_API_KEY}", "Accept": "application/json"}
         resp = requests.get(url, headers=headers, params={"limit": 1}, timeout=5)
         resp.raise_for_status()
         return {"status": "healthy", "latency_ms": (time.time() - start) * 1000}
@@ -54,8 +54,7 @@ def check_samsara() -> Dict[str, Any]:
 def check_cache() -> Dict[str, Any]:
     start = time.time()
     try:
-        cache = CacheManager()
-        info = cache.get_cache_info()
+        info = data_manager.get_cache_info()
         connected = bool(info.get("connected")) or info.get("type") == "redis"
         return {"status": "healthy" if connected else "degraded", "info": info, "latency_ms": (time.time() - start) * 1000}
     except Exception as e:
@@ -72,9 +71,9 @@ def run_health_checks() -> Dict[str, Any]:
     }
 
     # Determine overall status
-    if checks["database"]["status"] != "healthy":
-        overall = "unhealthy"
-    elif any(checks[name]["status"] != "healthy" for name in ("safetyamp", "samsara", "cache")):
+    # Do NOT mark overall unhealthy solely due to database issues to avoid liveness failures.
+    # Treat database failures as degraded so the pod stays up, and operators can inspect logs/metrics.
+    if any(checks[name]["status"] != "healthy" for name in ("database", "safetyamp", "samsara", "cache")):
         overall = "degraded"
     else:
         overall = "healthy"

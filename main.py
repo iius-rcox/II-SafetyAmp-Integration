@@ -10,7 +10,8 @@ import threading
 import time
 import os
 from utils.logger import get_logger
-from utils.error_manager import error_manager
+from services.event_manager import event_manager
+from config import config
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST, REGISTRY, start_http_server
 from circuitbreaker import circuit
 import structlog
@@ -39,11 +40,12 @@ structlog.configure(
 app = Flask(__name__)
 logger = get_logger("main")
 
-# Configuration from environment
-DB_POOL_SIZE = int(os.getenv('DB_POOL_SIZE', '5'))
-DB_MAX_OVERFLOW = int(os.getenv('DB_MAX_OVERFLOW', '10'))
-DB_POOL_TIMEOUT = int(os.getenv('DB_POOL_TIMEOUT', '30'))
-SYNC_INTERVAL = int(os.getenv('SYNC_INTERVAL', '3600'))
+# Configuration from unified config manager
+DB_POOL_SIZE = config.DB_POOL_SIZE
+DB_MAX_OVERFLOW = config.DB_MAX_OVERFLOW
+DB_POOL_TIMEOUT = config.DB_POOL_TIMEOUT
+# Convert minutes to seconds for sync interval
+SYNC_INTERVAL = max(1, int(config.SYNC_INTERVAL_MINUTES) * 60)
 HEALTH_CHECK_TIMEOUT = int(os.getenv('HEALTH_CHECK_TIMEOUT', '5'))
 
 # Database connection tracking
@@ -238,7 +240,7 @@ def run_sync_worker():
             
             # Check for error notifications (hourly)
             try:
-                error_manager.send_hourly_notification()
+                event_manager.send_hourly_notification()
             except Exception as e:
                 logger.error(f"Error sending hourly notification: {e}")
             
@@ -255,21 +257,22 @@ def run_sync_worker():
             health_status['errors'].append(error_msg)
             metrics.sync_operations_total.labels(operation='general', status='error').inc()
             
-            # Log to error notifier for email notifications
+            # Log to unified event manager for notifications and tracking
             try:
-                error_manager.log_error(
-                    error_type="sync_worker_error",
-                    entity_type="system",
+                event_manager.log_error(
+                    kind="sync_worker_error",
+                    entity="system",
                     entity_id="sync_worker",
-                    error_message=error_msg,
-                    error_details={
+                    message=error_msg,
+                    operation="sync_worker",
+                    details={
                         "exception_type": type(e).__name__,
                         "sync_in_progress": health_status.get('sync_in_progress', False)
                     },
-                    source="sync_worker"
+                    source="sync_worker",
                 )
             except Exception as notifier_error:
-                logger.error(f"Failed to log error to notifier: {notifier_error}")
+                logger.error(f"Failed to log error to event manager: {notifier_error}")
             
             # Don't mark as unhealthy for single sync failures
             # Allow recovery on next cycle
@@ -312,14 +315,25 @@ if __name__ == "__main__":
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
     
-    # Log startup configuration
-    logger.info("Starting SafetyAmp integration service", 
-                extra={
-                    'port': 8080,
-                    'db_pool_size': DB_POOL_SIZE,
-                    'db_max_overflow': DB_MAX_OVERFLOW,
-                    'sync_interval': SYNC_INTERVAL
-                })
+    # Validate configuration before starting services (feature flaggable)
+    enable_unified_config = (os.getenv('ENABLE_UNIFIED_CONFIG', '1') or '1').lower() in ('1', 'true', 'yes')
+    if enable_unified_config and not config.validate_required_secrets():
+        logger.critical("Configuration validation failed - running in degraded mode", extra={"missing": config.get_configuration_status()["validation"]["missing"]})
+        # Don't exit - continue running in degraded mode so the pod stays up
+        # This allows operators to investigate the issue while the pod remains available
+
+    status = config.get_configuration_status() if enable_unified_config else {"validation": {"is_valid": True}, "azure": {}}
+    logger.info(
+        "Starting SafetyAmp integration service",
+        extra={
+            'port': 8080,
+            'db_pool_size': DB_POOL_SIZE,
+            'db_max_overflow': DB_MAX_OVERFLOW,
+            'sync_interval': SYNC_INTERVAL,
+            'config_validation': status['validation']['is_valid'],
+            'azure_key_vault_enabled': status.get('azure', {}).get('azure_key_vault_enabled'),
+        }
+    )
     
     # Start sync worker in background
     sync_thread = threading.Thread(target=run_sync_worker, daemon=True)

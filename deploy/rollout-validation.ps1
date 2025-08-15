@@ -260,12 +260,12 @@ except Exception as e:
     return $true
 }
 
-function Monitor-ValidationImprovements {
+function Watch-ValidationImprovements {
     Write-Host "`n📊 Monitoring Validation Improvements..." -ForegroundColor Green
     
-    # Run validation monitoring
+    # Run validation monitoring via dashboard
     Write-Host "`n🔍 Running validation monitoring..." -ForegroundColor Yellow
-    & "$PSScriptRoot\monitor-validation.ps1" -Action "validation-summary" -Hours 1
+    & "$PSScriptRoot\monitoring-dashboard.ps1" -Hours 1 -Sections @('validation')
     
     # Check for recent validation logs
     Write-Host "`n🔍 Checking recent validation logs..." -ForegroundColor Yellow
@@ -285,7 +285,7 @@ function Monitor-ValidationImprovements {
     }
 }
 
-function Rollback-Deployment {
+function Restore-Deployment {
     Write-Host "`n🔄 Rolling back deployment..." -ForegroundColor Yellow
     
     # Find the most recent backup file
@@ -352,11 +352,11 @@ switch ($Action.ToLower()) {
     }
     "monitor" {
         Write-Host "`n📊 Monitoring validation improvements..." -ForegroundColor Green
-        Monitor-ValidationImprovements
+        Watch-ValidationImprovements
     }
     "rollback" {
         Write-Host "`n🔄 Rolling back deployment..." -ForegroundColor Yellow
-        if (Rollback-Deployment) {
+        if (Restore-Deployment) {
             Write-Host "`n✅ Rollback completed successfully!" -ForegroundColor Green
         } else {
             Write-Host "`n❌ Rollback failed!" -ForegroundColor Red
@@ -378,6 +378,6 @@ Write-Host "  3. Check logs for validation improvements" -ForegroundColor White
 Write-Host "  4. Monitor error rates to confirm 422 errors are reduced" -ForegroundColor White
 
 Write-Host "`n📞 Support Commands:" -ForegroundColor Cyan
-Write-Host "  .\monitor-validation.ps1 -Action 'validation-summary'" -ForegroundColor Gray
-Write-Host "  .\monitor-logs.ps1 -Mode 'errors' -Hours 1" -ForegroundColor Gray
+Write-Host "  .\monitor.ps1 -Feature validation -Hours 1" -ForegroundColor Gray
+Write-Host "  .\monitor.ps1 -Feature logs -Mode errors -Hours 1" -ForegroundColor Gray
 Write-Host "  .\rollout-validation.ps1 -Action 'monitor'" -ForegroundColor Gray
