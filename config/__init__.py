@@ -221,6 +221,12 @@ class ConfigManager:
         self.RETRY_DELAY_SECONDS: int = int(self.get_env("RETRY_DELAY_SECONDS", "30"))
         self.HTTP_REQUEST_TIMEOUT: int = int(self.get_env("HTTP_REQUEST_TIMEOUT", "15"))
 
+        # Failed Sync Tracker
+        self.FAILED_SYNC_TRACKER_ENABLED: bool = (
+            (self.get_env("FAILED_SYNC_TRACKER_ENABLED", "true") or "true").lower() in ("1", "true", "yes")
+        )
+        self.FAILED_SYNC_TTL_DAYS: int = int(self.get_env("FAILED_SYNC_TTL_DAYS", "7"))
+
     def _build_viewpoint_connection_string(self) -> str:
         if self.SQL_AUTH_MODE == "managed_identity":
             return (

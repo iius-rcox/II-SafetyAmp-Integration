@@ -11,12 +11,14 @@ import time
 import os
 from utils.logger import get_logger
 from services.event_manager import event_manager
+from services.data_manager import data_manager
 from config import config
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST, REGISTRY, start_http_server
 from circuitbreaker import circuit
 import structlog
 from utils.metrics import metrics
 from utils.health import run_health_checks
+from utils.failed_sync_tracker import initialize_tracker
 
 # Initialize structured logging
 structlog.configure(
@@ -334,7 +336,14 @@ if __name__ == "__main__":
             'azure_key_vault_enabled': status.get('azure', {}).get('azure_key_vault_enabled'),
         }
     )
-    
+
+    # Initialize failed sync tracker
+    try:
+        initialize_tracker(data_manager, config)
+        logger.info("Failed sync tracker initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize sync tracker: {e}. Continuing without tracker.")
+
     # Start sync worker in background
     sync_thread = threading.Thread(target=run_sync_worker, daemon=True)
     sync_thread.start()

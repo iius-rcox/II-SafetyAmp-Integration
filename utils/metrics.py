@@ -37,6 +37,11 @@ class MetricsCollector:
         self.changes_total: Optional[Counter] = None
         self.errors_total: Optional[Counter] = None
 
+        # Failed sync tracker metrics
+        self.failed_sync_skipped_total: Optional[Counter] = None
+        self.failed_sync_retries_total: Optional[Counter] = None
+        self.failed_sync_records_gauge: Optional[Gauge] = None
+
     # ---------- Low-level helpers ----------
     def _get_existing(self, name: str):
         try:
@@ -146,6 +151,23 @@ class MetricsCollector:
             "safetyamp_errors_total",
             "Total error events by error type, entity type, and source",
             labelnames=["error_type", "entity_type", "source"],
+        )
+
+        # Failed sync tracker metrics
+        self.failed_sync_skipped_total = self.get_counter(
+            "safetyamp_failed_sync_skipped_total",
+            "Records skipped due to unchanged problematic fields since last failure",
+            labelnames=["entity_type"],
+        )
+        self.failed_sync_retries_total = self.get_counter(
+            "safetyamp_failed_sync_retries_total",
+            "Records retried after problematic fields changed",
+            labelnames=["entity_type"],
+        )
+        self.failed_sync_records_gauge = self.get_gauge(
+            "safetyamp_failed_sync_records_total",
+            "Total failed sync records currently tracked in Redis",
+            labelnames=["entity_type"],
         )
 
         self._initialized = True

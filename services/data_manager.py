@@ -493,6 +493,143 @@ class DataManager:
     async def _refresh_job_data(self):
         logger.info("Job data refresh requested")
 
+    # ===== Failed Sync Tracking =====
+    def save_failed_sync_record(
+        self,
+        entity_type: str,
+        entity_id: str,
+        metadata: Dict[str, Any],
+        ttl_days: int = 7
+    ) -> bool:
+        """
+        Save failed sync metadata to Redis with TTL.
+
+        Args:
+            entity_type: Type of entity (e.g., "employee", "vehicle")
+            entity_id: Unique identifier for the entity
+            metadata: Failure metadata dictionary
+            ttl_days: Time to live in days (default: 7)
+
+        Returns:
+            True if saved successfully, False otherwise
+        """
+        if not self.redis_client:
+            logger.warning("Redis not available, cannot save failed sync record")
+            return False
+
+        key = f"safetyamp:failed_sync:{entity_type}:{entity_id}"
+        ttl_seconds = ttl_days * 24 * 60 * 60
+
+        try:
+            self.redis_client.setex(key, ttl_seconds, json.dumps(metadata))
+            logger.debug(f"Saved failed sync record: {entity_type}/{entity_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to save failure record for {entity_type}/{entity_id}: {e}")
+            return False
+
+    def get_failed_sync_record(
+        self,
+        entity_type: str,
+        entity_id: str
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve failed sync metadata from Redis.
+
+        Args:
+            entity_type: Type of entity (e.g., "employee", "vehicle")
+            entity_id: Unique identifier for the entity
+
+        Returns:
+            Failure metadata dictionary or None if not found
+        """
+        if not self.redis_client:
+            return None
+
+        key = f"safetyamp:failed_sync:{entity_type}:{entity_id}"
+
+        try:
+            data = self.redis_client.get(key)
+            if data:
+                return json.loads(data)
+            return None
+        except Exception as e:
+            logger.error(f"Failed to get failure record for {entity_type}/{entity_id}: {e}")
+            return None
+
+    def delete_failed_sync_record(
+        self,
+        entity_type: str,
+        entity_id: str
+    ) -> bool:
+        """
+        Delete a failed sync record from Redis.
+
+        Args:
+            entity_type: Type of entity (e.g., "employee", "vehicle")
+            entity_id: Unique identifier for the entity
+
+        Returns:
+            True if deleted successfully, False otherwise
+        """
+        if not self.redis_client:
+            return False
+
+        key = f"safetyamp:failed_sync:{entity_type}:{entity_id}"
+
+        try:
+            self.redis_client.delete(key)
+            logger.debug(f"Deleted failed sync record: {entity_type}/{entity_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to delete failure record for {entity_type}/{entity_id}: {e}")
+            return False
+
+    def get_all_failed_records(
+        self,
+        entity_type: Optional[str] = None,
+        limit: int = 100
+    ) -> List[Dict[str, Any]]:
+        """
+        Get all failed sync records, optionally filtered by entity type.
+
+        Args:
+            entity_type: Optional filter by entity type
+            limit: Maximum number of records to return
+
+        Returns:
+            List of failure metadata dictionaries
+        """
+        if not self.redis_client:
+            return []
+
+        try:
+            # Build pattern for scanning
+            if entity_type:
+                pattern = f"safetyamp:failed_sync:{entity_type}:*"
+            else:
+                pattern = "safetyamp:failed_sync:*"
+
+            # Scan for matching keys
+            records = []
+            for key in self.redis_client.scan_iter(match=pattern, count=100):
+                if len(records) >= limit:
+                    break
+
+                try:
+                    data = self.redis_client.get(key)
+                    if data:
+                        record = json.loads(data)
+                        records.append(record)
+                except Exception as e:
+                    logger.warning(f"Error parsing failed sync record {key}: {e}")
+                    continue
+
+            return records
+        except Exception as e:
+            logger.error(f"Failed to get all failure records: {e}")
+            return []
+
     # ===== Validation bridge =====
     def validate_employee_data(self, payload: Dict[str, Any], emp_id: str, full_name: str):
         return validator.validate_employee_data(payload, emp_id, full_name)

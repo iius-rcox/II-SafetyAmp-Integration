@@ -7,6 +7,7 @@ from services.viewpoint_api import ViewpointAPI
 from services.safetyamp_api import SafetyAmpAPI
 from services.samsara_api import SamsaraAPI
 from services.data_manager import data_manager
+from utils import failed_sync_tracker
 from config import config
 
 logger = get_logger("health")
@@ -62,18 +63,41 @@ def check_cache() -> Dict[str, Any]:
         return {"status": "degraded", "error": str(e), "latency_ms": (time.time() - start) * 1000}
 
 
+def check_failed_syncs() -> Dict[str, Any]:
+    """Check failed sync tracker status"""
+    start = time.time()
+    try:
+        if not failed_sync_tracker.failed_sync_tracker or not failed_sync_tracker.failed_sync_tracker.enabled:
+            return {"status": "disabled", "latency_ms": (time.time() - start) * 1000}
+
+        stats = failed_sync_tracker.failed_sync_tracker.get_failure_stats()
+
+        return {
+            "status": "healthy",
+            "total_failures": stats.get("total", 0),
+            "by_entity_type": stats.get("by_entity_type", {}),
+            "by_reason": stats.get("by_reason", {}),
+            "oldest_failure": stats.get("oldest_failure"),
+            "latency_ms": (time.time() - start) * 1000
+        }
+    except Exception as e:
+        logger.warning(f"Failed sync tracker health check failed: {e}")
+        return {"status": "degraded", "error": str(e), "latency_ms": (time.time() - start) * 1000}
+
+
 def run_health_checks() -> Dict[str, Any]:
     checks = {
         "database": check_database(),
         "safetyamp": check_safetyamp(),
         "samsara": check_samsara(),
         "cache": check_cache(),
+        "failed_syncs": check_failed_syncs(),
     }
 
     # Determine overall status
     # Do NOT mark overall unhealthy solely due to database issues to avoid liveness failures.
     # Treat database failures as degraded so the pod stays up, and operators can inspect logs/metrics.
-    if any(checks[name]["status"] != "healthy" for name in ("database", "safetyamp", "samsara", "cache")):
+    if any(checks[name]["status"] not in ("healthy", "disabled") for name in ("database", "safetyamp", "samsara", "cache", "failed_syncs")):
         overall = "degraded"
     else:
         overall = "healthy"

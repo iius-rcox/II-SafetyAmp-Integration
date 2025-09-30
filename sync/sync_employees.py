@@ -5,6 +5,8 @@ from services.safetyamp_api import SafetyAmpAPI
 from services.viewpoint_api import ViewpointAPI
 from services.graph_api import MSGraphAPI
 from services.data_manager import data_manager
+from utils import failed_sync_tracker
+from utils.metrics import metrics
 
 import requests
 
@@ -261,6 +263,21 @@ class EmployeeSyncer:
             existing_user = self.existing_users.get(emp_id)
             full_name = f"{payload.get('first_name', '')} {payload.get('last_name', '')}".strip()
 
+            # Check failed sync tracker - skip if problematic fields unchanged
+            if failed_sync_tracker.failed_sync_tracker and failed_sync_tracker.failed_sync_tracker.should_skip_retry(
+                entity_id=emp_id,
+                entity_type="employee",
+                current_data=payload
+            ):
+                logger.debug(f"Skipping {full_name} (ID: {emp_id}) - problematic fields unchanged since last failure")
+                event_manager.log_skip("employee", emp_id, "No changes to previously failed fields")
+                sync_results["skipped"] += 1
+                try:
+                    metrics.failed_sync_skipped_total.labels(entity_type="employee").inc()  # type: ignore[union-attr]
+                except Exception:
+                    pass
+                continue
+
             if not payload.get("home_site_id"):
                 reason = f"No matching site for PRDept {emp.get('PRDept')} or Job {emp.get('Job')}"
                 logger.warning(f"Skipping employee {full_name} (ID: {emp_id}): {reason}")
@@ -272,6 +289,17 @@ class EmployeeSyncer:
             is_valid, validation_errors, cleaned_payload = self.validate_required_fields(payload, emp_id, full_name)
             
             if not is_valid:
+                # Record validation failure in tracker
+                if failed_sync_tracker.failed_sync_tracker:
+                    failed_sync_tracker.failed_sync_tracker.record_failure(
+                        entity_id=emp_id,
+                        entity_type="employee",
+                        data=payload,
+                        error_response={"message": "Validation failed", "errors": {err.split(":")[0] if ":" in err else "_general": err for err in validation_errors}},
+                        http_status=400,
+                        operation="validation"
+                    )
+
                 event_manager.log_error(
                     kind="validation_error",
                     entity="employee",
@@ -333,6 +361,11 @@ class EmployeeSyncer:
                     try:
                         # Use PATCH for partial updates (including required core fields)
                         self.api_client.patch(f"/api/users/{existing_user['id']}", patch_payload)
+
+                        # Clear failed sync tracker on success
+                        if failed_sync_tracker.failed_sync_tracker:
+                            failed_sync_tracker.failed_sync_tracker.clear_failure(emp_id, "employee")
+
                         logger.info(f"Updated user {full_name} (ID: {emp_id}) with fields: {list(sanitized_update_fields.keys())}")
                         event_manager.log_update("employee", emp_id, patch_payload, existing_user)
                         sync_results["updated"] += 1
@@ -342,6 +375,18 @@ class EmployeeSyncer:
                         consecutive_errors += 1
                         if e.response.status_code == 422:
                             error_response = e.response.json()
+
+                            # Record 422 failure in tracker
+                            if failed_sync_tracker.failed_sync_tracker:
+                                failed_sync_tracker.failed_sync_tracker.record_failure(
+                                    entity_id=emp_id,
+                                    entity_type="employee",
+                                    data=patch_payload,
+                                    error_response=error_response,
+                                    http_status=422,
+                                    operation="update"
+                                )
+
                             error_msg = f"Validation error (422): {error_response}"
                             event_manager.log_error(
                                 kind="validation_error",
@@ -358,7 +403,7 @@ class EmployeeSyncer:
                                 source="sync_update"
                             )
                             sync_results["errors"] += 1
-                            
+
                             # Log the problematic fields for debugging
                             logger.error(f"Failed update fields for {full_name}: {updated_fields}")
                         else:
@@ -399,6 +444,11 @@ class EmployeeSyncer:
             else:
                 try:
                     self.api_client.create_user(cleaned_payload)
+
+                    # Clear failed sync tracker on success
+                    if failed_sync_tracker.failed_sync_tracker:
+                        failed_sync_tracker.failed_sync_tracker.clear_failure(emp_id, "employee")
+
                     logger.info(f"Created user {full_name} (ID: {emp_id})")
                     event_manager.log_creation("employee", emp_id, cleaned_payload)
                     sync_results["created"] += 1
@@ -408,6 +458,18 @@ class EmployeeSyncer:
                     consecutive_errors += 1
                     if e.response.status_code == 422:
                         error_response = e.response.json()
+
+                        # Record 422 failure in tracker
+                        if failed_sync_tracker.failed_sync_tracker:
+                            failed_sync_tracker.failed_sync_tracker.record_failure(
+                                entity_id=emp_id,
+                                entity_type="employee",
+                                data=cleaned_payload,
+                                error_response=error_response,
+                                http_status=422,
+                                operation="create"
+                            )
+
                         error_msg = f"Validation error (422): {error_response}"
                         event_manager.log_error(
                             kind="validation_error",
@@ -422,7 +484,7 @@ class EmployeeSyncer:
                             },
                             source="sync_create"
                         )
-                        
+
                         # Log the problematic payload for debugging
                         logger.error(f"Failed create payload for {full_name}: {cleaned_payload}")
                         
@@ -449,6 +511,11 @@ class EmployeeSyncer:
                         
                         try:
                             self.api_client.create_user(cleaned_fallback_payload)
+
+                            # Clear failed sync tracker on successful fallback
+                            if failed_sync_tracker.failed_sync_tracker:
+                                failed_sync_tracker.failed_sync_tracker.clear_failure(emp_id, "employee")
+
                             logger.info(f"Created user {full_name} (ID: {emp_id}) on fallback attempt without email/phone")
                             event_manager.log_creation("employee", emp_id, cleaned_fallback_payload)
                             sync_results["created"] += 1
