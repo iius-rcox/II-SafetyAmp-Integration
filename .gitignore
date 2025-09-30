@@ -39,6 +39,7 @@
 *.tmp
 *.temp
 /tmp/
+nul
 
 # IDE and editor files
 .vscode/

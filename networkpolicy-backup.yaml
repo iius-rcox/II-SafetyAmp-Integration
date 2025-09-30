@@ -1,0 +1,75 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"networking.k8s.io/v1","kind":"NetworkPolicy","metadata":{"annotations":{},"labels":{"app":"safety-amp"},"name":"safety-amp-integration-netpol","namespace":"safety-amp"},"spec":{"egress":[{"ports":[{"port":53,"protocol":"UDP"},{"port":53,"protocol":"TCP"}],"to":[]},{"ports":[{"port":443,"protocol":"TCP"}],"to":[]},{"ports":[{"port":80,"protocol":"TCP"}],"to":[]},{"ports":[{"port":6379,"protocol":"TCP"}],"to":[{"podSelector":{"matchLabels":{"app":"redis"}}}]},{"ports":[{"port":443,"protocol":"TCP"}],"to":[]},{"to":[{"namespaceSelector":{"matchLabels":{"name":"safety-amp"}}}]},{"to":[{"namespaceSelector":{"matchLabels":{"name":"monitoring"}}}]}],"ingress":[{"from":[{"namespaceSelector":{"matchLabels":{"name":"monitoring"}}}],"ports":[{"port":9090,"protocol":"TCP"}]},{"from":[{"namespaceSelector":{"matchLabels":{"name":"ingress-nginx"}}}],"ports":[{"port":8080,"protocol":"TCP"}]},{"from":[{"namespaceSelector":{"matchLabels":{"name":"safety-amp"}}}],"ports":[{"port":8080,"protocol":"TCP"},{"port":9090,"protocol":"TCP"}]}],"podSelector":{"matchLabels":{"app":"safety-amp"}},"policyTypes":["Ingress","Egress"]}}
+  creationTimestamp: "2025-08-12T21:23:39Z"
+  generation: 5
+  labels:
+    app: safety-amp
+  name: safety-amp-integration-netpol
+  namespace: safety-amp
+  resourceVersion: "40569413"
+  uid: 4495baf0-a164-4c56-bda1-9df43b040354
+spec:
+  egress:
+  - ports:
+    - port: 53
+      protocol: UDP
+    - port: 53
+      protocol: TCP
+  - ports:
+    - port: 443
+      protocol: TCP
+  - ports:
+    - port: 80
+      protocol: TCP
+  - ports:
+    - port: 6379
+      protocol: TCP
+    to:
+    - podSelector:
+        matchLabels:
+          app: redis
+  - ports:
+    - port: 443
+      protocol: TCP
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: safety-amp
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - port: 9090
+      protocol: TCP
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - port: 8080
+      protocol: TCP
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: safety-amp
+    ports:
+    - port: 8080
+      protocol: TCP
+    - port: 9090
+      protocol: TCP
+  podSelector:
+    matchLabels:
+      app: safety-amp
+  policyTypes:
+  - Ingress
+  - Egress

@@ -1,0 +1,126 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: safety-amp-agent
+  namespace: safety-amp
+  labels:
+    app: safety-amp
+    component: agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: safety-amp
+      component: agent
+  template:
+    metadata:
+      labels:
+        app: safety-amp
+        component: agent
+        azure.workload.identity/use: "true"
+      annotations:
+        kubectl.kubernetes.io/restartedAt: "2025-09-29T15:30:00-05:00"
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: safety-amp-workload-identity-sa
+      containers:
+      - name: safety-amp-agent
+        image: iiusacr.azurecr.io/safety-amp-agent:v3
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        - containerPort: 9090
+          name: metrics
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /live
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 6
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "100m"
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+        envFrom:
+        - configMapRef:
+            name: safety-amp-config
+        - secretRef:
+            name: safety-amp-secrets
+        env:
+        - name: AZURE_CLIENT_ID
+          value: "a2bcb3ce-a89b-43af-804c-e8029e0bafb4"
+        volumeMounts:
+        - name: app-overrides
+          mountPath: /app/config/overrides.yaml
+          subPath: overrides.yaml
+        - name: app-overrides2
+          mountPath: /app/config2/overrides2.yaml
+          subPath: overrides2.yaml
+      - name: fluentbit-sidecar
+        image: fluent/fluent-bit:2.2.0
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 2020
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 2020
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+        resources:
+          limits:
+            memory: "64Mi"
+            cpu: "50m"
+          requests:
+            memory: "32Mi"
+            cpu: "25m"
+        volumeMounts:
+        - name: fluentbit-config
+          mountPath: /fluent-bit/etc/
+        env:
+        - name: WORKSPACE_ID
+          valueFrom:
+            secretKeyRef:
+              name: log-analytics-secrets
+              key: workspace-id
+        - name: WORKSPACE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: log-analytics-secrets
+              key: workspace-key
+      volumes:
+      - name: fluentbit-config
+        configMap:
+          name: fluentbit-config
+      - name: app-overrides
+        configMap:
+          name: app-overrides
+          optional: false
+      - name: app-overrides2
+        configMap:
+          name: app-overrides2
+          optional: false

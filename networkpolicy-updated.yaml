@@ -1,0 +1,80 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: safety-amp-integration-netpol
+  namespace: safety-amp
+  labels:
+    app: safety-amp
+spec:
+  podSelector:
+    matchLabels:
+      app: safety-amp
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - port: 9090
+      protocol: TCP
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - port: 8080
+      protocol: TCP
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: safety-amp
+    ports:
+    - port: 8080
+      protocol: TCP
+    - port: 9090
+      protocol: TCP
+  egress:
+  # DNS
+  - ports:
+    - port: 53
+      protocol: UDP
+    - port: 53
+      protocol: TCP
+  # HTTPS
+  - ports:
+    - port: 443
+      protocol: TCP
+  # HTTP
+  - ports:
+    - port: 80
+      protocol: TCP
+  # Redis
+  - ports:
+    - port: 6379
+      protocol: TCP
+    to:
+    - podSelector:
+        matchLabels:
+          app: redis
+  # SQL Server - Viewpoint Database
+  - ports:
+    - port: 1433
+      protocol: TCP
+    - port: 1434
+      protocol: UDP
+    to:
+    - ipBlock:
+        cidr: 10.0.0.5/32  # INSCOLVSQL server
+  # Allow traffic within namespace
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: safety-amp
+  # Allow traffic to monitoring namespace
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring

@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(az account show:*)",
+      "Bash(az aks list:*)",
+      "Bash(powershell.exe:*)",
+      "Bash(kubectl set image:*)",
+      "Bash(kubectl rollout status:*)",
+      "Bash(kubectl create secret:*)",
+      "Bash(kubectl patch:*)",
+      "Bash(kubectl delete secret:*)",
+      "Bash(az aks get-credentials:*)",
+      "Bash(kubectl rollout restart:*)",
+      "Bash(start \"\" \"C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe\")",
+      "Bash(powershell -Command \"Start-Sleep -Seconds 15; docker version\")",
+      "Bash(docker tag:*)",
+      "Bash(docker push:*)",
+      "Bash(az acr login:*)",
+      "Bash(kubectl delete pods:*)",
+      "Bash(kubectl scale:*)",
+      "Bash(kubectl create configmap:*)",
+      "Bash(kubectl delete:*)",
+      "Bash(kubectl wait:*)",
+      "Bash(az sql server list:*)",
+      "Bash(az keyvault secret list:*)",
+      "Bash(az keyvault secret show:*)",
+      "Bash(kubectl exec:*)",
+      "Bash(az network vnet list:*)",
+      "Bash(az aks show:*)",
+      "Bash(az network nic show:*)",
+      "Bash(az network nic list:*)",
+      "Bash(kubectl run:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
