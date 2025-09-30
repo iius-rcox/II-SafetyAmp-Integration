@@ -24,7 +24,9 @@ RUN apt-get update \
 COPY --from=builder /opt/venv /opt/venv
 WORKDIR /app
 COPY . .
-RUN useradd --create-home --shell /bin/bash app && chown -R app:app /app
+RUN useradd --create-home --shell /bin/bash app \
+    && mkdir -p /app/output/changes /app/output/errors /app/output/logs \
+    && chown -R app:app /app
 USER app
 ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONPATH="/app" \
