@@ -130,14 +130,6 @@ spec:
       imagePullSecrets:
       - name: acr-secret
       affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: kubernetes.azure.com/mode
-                operator: In
-                values:
-                - user
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
           - weight: 100
