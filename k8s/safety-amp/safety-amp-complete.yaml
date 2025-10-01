@@ -129,6 +129,13 @@ spec:
       serviceAccountName: safety-amp-workload-identity-sa
       imagePullSecrets:
       - name: acr-secret
+      nodeSelector:
+        agentpool: systempool
+      tolerations:
+      - key: "CriticalAddonsOnly"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
