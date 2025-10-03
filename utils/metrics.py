@@ -97,6 +97,7 @@ class MetricsCollector:
             "safetyamp_sync_duration_seconds",
             "Sync operation duration",
             labelnames=["operation"],
+            buckets=[0.1, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0, 120.0, 300.0, 600.0],
         )
         self.records_processed_total = self.get_counter(
             "safetyamp_records_processed_total",
