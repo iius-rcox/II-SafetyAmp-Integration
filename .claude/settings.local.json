@@ -29,7 +29,21 @@
       "Bash(az aks show:*)",
       "Bash(az network nic show:*)",
       "Bash(az network nic list:*)",
-      "Bash(kubectl run:*)"
+      "Bash(kubectl run:*)",
+      "Bash(gh pr:*)",
+      "Bash(az network vnet show:*)",
+      "Bash(az network vnet subnet show:*)",
+      "Bash(kubectl debug:*)",
+      "Bash(az monitor log-analytics workspace list:*)",
+      "Bash(az monitor log-analytics workspace show:*)",
+      "Bash(az monitor log-analytics workspace get-shared-keys:*)",
+      "Bash(az acr repository show-tags:*)",
+      "Bash(az acr repository list:*)",
+      "Bash(az grafana list:*)",
+      "Bash(cut:*)",
+      "Bash(kubectl:*)",
+      "Bash(az grafana data-source list:*)",
+      "Bash(nslookup:*)"
     ],
     "deny": [],
     "ask": []

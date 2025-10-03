@@ -4,7 +4,7 @@ import requests
 
 from utils.logger import get_logger
 from utils.data_validator import validator
-from utils.error_manager import error_manager
+from services.event_manager import event_manager
 from services.safetyamp_api import SafetyAmpAPI
 
 
@@ -13,7 +13,7 @@ class BaseSyncOperation:
 
     - Centralized logger per sync type
     - Shared SafetyAmp API client
-    - Unified error/change tracking via ErrorManager
+    - Unified error/change tracking via EventManager
     - Validation helpers
     - Simple safety-stop error backoff
     """
@@ -22,7 +22,7 @@ class BaseSyncOperation:
         self.sync_type = sync_type
         self.logger = get_logger(logger_name or f"sync_{sync_type}")
         self.api_client = SafetyAmpAPI()
-        self.error_manager = error_manager
+        self.event_manager = event_manager
         self.validator = validator
 
         # Basic error backoff
@@ -31,10 +31,10 @@ class BaseSyncOperation:
 
     # ----- Change tracking lifecycle -----
     def start_sync(self) -> None:
-        self.error_manager.start_sync(self.sync_type)
+        self.event_manager.start_sync(self.sync_type)
 
     def end_sync(self) -> Dict[str, Any]:
-        return self.error_manager.end_sync()
+        return self.event_manager.end_sync()
 
     # ----- Error handling helpers -----
     def record_success(self) -> None:
@@ -46,13 +46,13 @@ class BaseSyncOperation:
     def should_abort_for_safety(self, processed_count: int = 0) -> bool:
         if self.consecutive_errors >= self.max_consecutive_errors:
             error_msg = f"Stopping sync due to {self.consecutive_errors} consecutive errors"
-            self.error_manager.log_error(
-                error_type="safety_stop",
-                entity_type="sync",
+            self.event_manager.log_error(
+                kind="safety_stop",
+                entity="sync",
                 entity_id="system",
-                error_message=error_msg,
+                message=error_msg,
                 operation="safety_stop",
-                error_details={
+                details={
                     "consecutive_errors": self.consecutive_errors,
                     "max_consecutive_errors": self.max_consecutive_errors,
                     "processed_count": processed_count,
@@ -95,26 +95,26 @@ class BaseSyncOperation:
                     error_response = e.response.json()
                 except Exception:
                     error_response = str(e)
-                self.error_manager.log_error(
-                    error_type="validation_error",
-                    entity_type=entity_type,
+                self.event_manager.log_error(
+                    kind="validation_error",
+                    entity=entity_type,
                     entity_id=entity_id,
-                    error_message=f"Validation error (422): {error_response}",
+                    message=f"Validation error (422): {error_response}",
                     operation=operation,
-                    error_details={
+                    details={
                         "status_code": 422,
                         "payload": payload,
                     },
                     source=f"sync_{operation}",
                 )
             else:
-                self.error_manager.log_error(
-                    error_type="http_error",
-                    entity_type=entity_type,
+                self.event_manager.log_error(
+                    kind="http_error",
+                    entity=entity_type,
                     entity_id=entity_id,
-                    error_message=f"HTTP error {status}: {str(e)}",
+                    message=f"HTTP error {status}: {str(e)}",
                     operation=operation,
-                    error_details={
+                    details={
                         "status_code": status,
                         "payload": payload,
                     },
@@ -123,13 +123,13 @@ class BaseSyncOperation:
             return False, None
         except Exception as e:
             self.record_error()
-            self.error_manager.log_error(
-                error_type="unexpected_error",
-                entity_type=entity_type,
+            self.event_manager.log_error(
+                kind="unexpected_error",
+                entity=entity_type,
                 entity_id=entity_id,
-                error_message=f"Unexpected error: {str(e)}",
+                message=f"Unexpected error: {str(e)}",
                 operation=operation,
-                error_details={
+                details={
                     "exception_type": type(e).__name__,
                     "payload": payload,
                 },
@@ -161,7 +161,7 @@ class BaseSyncOperation:
 
     # ----- Change-tracking helpers -----
     def log_creation(self, entity_type: str, entity_id: str, data: Dict[str, Any]) -> None:
-        self.error_manager.log_creation(entity_type, entity_id, data)
+        self.event_manager.log_creation(entity_type, entity_id, data)
 
     def log_update(
         self,
@@ -170,10 +170,10 @@ class BaseSyncOperation:
         changes: Dict[str, Any],
         original_data: Optional[Dict[str, Any]] = None,
     ) -> None:
-        self.error_manager.log_update(entity_type, entity_id, changes, original_data)
+        self.event_manager.log_update(entity_type, entity_id, changes, original_data)
 
     def log_skip(self, entity_type: str, entity_id: str, reason: str) -> None:
-        self.error_manager.log_skip(entity_type, entity_id, reason)
+        self.event_manager.log_skip(entity_type, entity_id, reason)
 
     def log_error(
         self,
@@ -185,12 +185,12 @@ class BaseSyncOperation:
         error_details: Optional[Dict[str, Any]] = None,
         source: str = "sync",
     ) -> None:
-        self.error_manager.log_error(
-            error_type=error_type,
-            entity_type=entity_type,
+        self.event_manager.log_error(
+            kind=error_type,
+            entity=entity_type,
             entity_id=entity_id,
-            error_message=error_message,
+            message=error_message,
             operation=operation,
-            error_details=error_details,
+            details=error_details,
             source=source,
         )

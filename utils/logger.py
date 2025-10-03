@@ -15,7 +15,7 @@ class _JsonFormatter(logging.Formatter):
             "logger": record.name,
             "message": record.getMessage(),
         }
-        for extra_key in ("sync_type", "session_id", "operation", "entity_type", "error_type", "metrics"):
+        for extra_key in ("sync_type", "session_id", "operation", "entity_type", "error_type", "metrics", "duration_seconds"):
             if hasattr(record, extra_key):
                 payload[extra_key] = getattr(record, extra_key)
         return json.dumps(payload, separators=(",", ":"))

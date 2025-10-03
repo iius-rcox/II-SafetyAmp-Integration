@@ -237,8 +237,8 @@ def run_sync_worker():
             # Update last completed sync timestamp metric
             metrics.last_sync_timestamp_seconds.set(health_status['last_sync'])
             
-            logger.info("Sync operations completed successfully", 
-                       duration_seconds=sync_duration)
+            logger.info("Sync operations completed successfully",
+                       extra={"duration_seconds": sync_duration})
             
             # Check for error notifications (hourly)
             try:
