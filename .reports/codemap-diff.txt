@@ -1,0 +1,52 @@
+Codemap Diff Report
+===================
+Generated: 2026-01-27
+Previous Version: None (Initial Creation)
+Current Version: 2026-01-27
+
+Summary
+-------
+Status: INITIAL CREATION
+Diff Percentage: 100% (new files)
+
+Files Created
+-------------
+1. codemaps/architecture.md - Overall system architecture and data flow
+2. codemaps/backend.md - Python services, sync operations, utilities
+3. codemaps/frontend.md - N/A (backend-only service notation)
+4. codemaps/data.md - Data models, schemas, caching, validation
+
+Architecture Highlights Captured
+--------------------------------
+- Project Type: Python Backend Integration Service
+- Framework: Flask with Gunicorn
+- Deployment: Docker + Kubernetes (AKS)
+- External Systems: SafetyAmp, Vista/Viewpoint, Samsara, Microsoft Graph
+
+Key Modules Documented
+----------------------
+config/           - ConfigManager (Azure Key Vault + env vars)
+services/         - API clients (SafetyAmp, Viewpoint, Graph, Samsara)
+                  - Data management (caching, events)
+sync/             - Sync operations (employees, vehicles, departments, jobs, titles)
+utils/            - Logging, metrics, health, validation, resilience
+
+Patterns Identified
+-------------------
+- Singleton pattern for global services
+- Base class for sync operations
+- Context managers for DB connections
+- Decorators for rate limiting/retry
+- Circuit breaker for fault tolerance
+
+Data Flow Documented
+--------------------
+Sources: Vista SQL Server, Microsoft Graph, Samsara API
+Target: SafetyAmp API
+Caching: Redis with file fallback
+Tracking: Event manager, failed sync tracker
+
+No Approval Required
+--------------------
+This is an initial creation with 0% existing content.
+All codemaps are new documentation of the existing codebase.
