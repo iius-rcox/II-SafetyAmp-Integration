@@ -8,31 +8,41 @@ CLUSTER_ROOT_NAME = "I&I"
 
 logger = get_logger("sync_departments")
 
+
 class DepartmentSyncer(BaseSyncOperation):
     def __init__(self):
         super().__init__(sync_type="departments", logger_name="sync_departments")
         self.viewpoint = ViewpointAPI()
         logger.info("Fetching department data from Viewpoint...")
         self.source_data = self.viewpoint.get_departments()
-        logger.info(f"Retrieved {len(self.source_data)} department records from Viewpoint.")
+        logger.info(
+            f"Retrieved {len(self.source_data)} department records from Viewpoint."
+        )
         logger.info("Fetching existing clusters from SafetyAmp...")
         self.existing_clusters = self.api_client.get_site_clusters()
-        logger.info(f"Retrieved {len(self.existing_clusters)} existing clusters from SafetyAmp.")
+        logger.info(
+            f"Retrieved {len(self.existing_clusters)} existing clusters from SafetyAmp."
+        )
 
     def ensure_cluster(self, name, parent_id, external_code):
         for cluster in self.existing_clusters.values():
-            if cluster.get('name') == name and cluster.get('external_code') in (None, external_code):
-                if (cluster.get('parent_cluster_id') or None) != parent_id:
+            if cluster.get("name") == name and cluster.get("external_code") in (
+                None,
+                external_code,
+            ):
+                if (cluster.get("parent_cluster_id") or None) != parent_id:
                     patch_data = {"parent_cluster_id": parent_id}
-                    self.api_client.put(f"/api/site_clusters/{cluster['id']}", patch_data)
+                    self.api_client.put(
+                        f"/api/site_clusters/{cluster['id']}", patch_data
+                    )
                     logger.info(f"Moved cluster: {name} to new parent_id: {parent_id}")
-                return cluster['id']
+                return cluster["id"]
 
         cluster_data = {
             "name": name,
             "parent_cluster_id": parent_id,
             "external_code": external_code,
-            "osha_establishment": 0
+            "osha_establishment": 0,
         }
         created_cluster = self.api_client.create_cluster(cluster_data)
         if isinstance(created_cluster, dict):
@@ -40,24 +50,28 @@ class DepartmentSyncer(BaseSyncOperation):
             self.existing_clusters[str(created_cluster["id"])] = created_cluster
         else:
             logger.warning(f"Failed to create cluster: {name}")
-        return created_cluster.get('id') if isinstance(created_cluster, dict) else None
+        return created_cluster.get("id") if isinstance(created_cluster, dict) else None
 
     def sync(self):
         self.start_sync()
         logger.info("Starting department cluster sync...")
 
-        root_cluster_id = self.ensure_cluster(CLUSTER_ROOT_NAME, None, CLUSTER_ROOT_NAME)
+        root_cluster_id = self.ensure_cluster(
+            CLUSTER_ROOT_NAME, None, CLUSTER_ROOT_NAME
+        )
 
         region_cluster_ids = {}
         for row in self.source_data:
-            region = row.get('udRegion')
+            region = row.get("udRegion")
             if region and region not in region_cluster_ids:
-                region_cluster_ids[region] = self.ensure_cluster(region, root_cluster_id, region)
+                region_cluster_ids[region] = self.ensure_cluster(
+                    region, root_cluster_id, region
+                )
 
         for row in self.source_data:
-            region = row.get('udRegion')
-            pr_dept = row.get('PRDept')
-            desc = row.get('Description')
+            region = row.get("udRegion")
+            pr_dept = row.get("PRDept")
+            desc = row.get("Description")
 
             if region and pr_dept and desc:
                 dept_name = f"{pr_dept} - {desc}"

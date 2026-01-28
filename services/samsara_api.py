@@ -6,16 +6,17 @@ from utils.logger import get_logger
 
 logger = get_logger("samsara")
 
+
 class SamsaraAPI:
     CALLS = 25  # Vehicle endpoint limit (most restrictive)
-    PERIOD = 1   # Per second
+    PERIOD = 1  # Per second
     MAX_RETRY_WAIT = 60
 
     def __init__(self):
         self.base_url = config.SAMSARA_DOMAIN.rstrip("/")
         self.headers = {
             "Authorization": f"Bearer {config.SAMSARA_API_KEY}",
-            "Accept": "application/json"
+            "Accept": "application/json",
         }
 
     @sleep_and_retry
@@ -33,8 +34,10 @@ class SamsaraAPI:
                 return response
             except requests.HTTPError as e:
                 if e.response.status_code == 429:
-                    wait_time = min(2 ** retry, self.MAX_RETRY_WAIT)
-                    logger.warning(f"Rate limited (429). Retrying in {wait_time} seconds...")
+                    wait_time = min(2**retry, self.MAX_RETRY_WAIT)
+                    logger.warning(
+                        f"Rate limited (429). Retrying in {wait_time} seconds..."
+                    )
                     time.sleep(wait_time)
                     retry += 1
                 else:
@@ -64,7 +67,9 @@ class SamsaraAPI:
             if cursor:
                 params["after"] = cursor
 
-            response = self._exponential_retry(self._rate_limited_request, requests.get, endpoint, params=params)
+            response = self._exponential_retry(
+                self._rate_limited_request, requests.get, endpoint, params=params
+            )
             data = self._handle_response(response, "GET", endpoint)
 
             batch = data.get("data", [])

@@ -6,6 +6,7 @@ from services.data_manager import data_manager
 
 logger = get_logger("sync_jobs")
 
+
 class JobSyncer:
     def __init__(self):
         self.api_client = SafetyAmpAPI()
@@ -27,7 +28,9 @@ class JobSyncer:
             for cluster in self.api_client.get_site_clusters().values()
             if cluster.get("depth") == 2 and cluster.get("external_code")
         }
-        logger.info(f"Built department-to-cluster map with {len(self.dept_cluster_map)} entries.")
+        logger.info(
+            f"Built department-to-cluster map with {len(self.dept_cluster_map)} entries."
+        )
 
     def find_existing_site(self, name):
         for site in self.existing_sites:
@@ -53,11 +56,13 @@ class JobSyncer:
                 self.api_client.put(f"/api/sites/{existing_site['id']}", patch_data)
                 logger.info(f"Updated site: {name} with changes: {patch_data}")
                 try:
-                    event_manager.log_update("site", str(existing_site['id']), patch_data, existing_site)
+                    event_manager.log_update(
+                        "site", str(existing_site["id"]), patch_data, existing_site
+                    )
                 except Exception:
                     pass
             # else:
-                # logger.info(f"No update needed for existing site: {name}")
+            # logger.info(f"No update needed for existing site: {name}")
             return
 
         site_data = {
@@ -69,20 +74,24 @@ class JobSyncer:
             "country": "US",
             "timezone": "America/Chicago",
             "zip_code": zip_code,
-            "cluster_id": cluster_id
+            "cluster_id": cluster_id,
         }
 
         created = self.api_client.create_site(site_data)
         if isinstance(created, dict):
             logger.info(f"Created site: {name} under cluster {cluster_id}")
             try:
-                event_manager.log_creation("site", str(created.get("id", name)), site_data)
+                event_manager.log_creation(
+                    "site", str(created.get("id", name)), site_data
+                )
             except Exception:
                 pass
         else:
             logger.warning(f"Failed to create site: {name}")
             try:
-                event_manager.log_error("create_failed", "site", name, f"Failed to create site {name}")
+                event_manager.log_error(
+                    "create_failed", "site", name, f"Failed to create site {name}"
+                )
             except Exception:
                 pass
 
@@ -93,9 +102,13 @@ class JobSyncer:
             dept = job.get("Department")
             cluster_id = self.dept_cluster_map.get(dept)
             if not cluster_id:
-                logger.warning(f"Skipping job {job['Job']} — unknown department: {dept}")
+                logger.warning(
+                    f"Skipping job {job['Job']} — unknown department: {dept}"
+                )
                 try:
-                    event_manager.log_skip("job", job.get("Job"), f"unknown department: {dept}")
+                    event_manager.log_skip(
+                        "job", job.get("Job"), f"unknown department: {dept}"
+                    )
                 except Exception:
                     pass
                 continue

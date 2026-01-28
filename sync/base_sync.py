@@ -45,7 +45,9 @@ class BaseSyncOperation:
 
     def should_abort_for_safety(self, processed_count: int = 0) -> bool:
         if self.consecutive_errors >= self.max_consecutive_errors:
-            error_msg = f"Stopping sync due to {self.consecutive_errors} consecutive errors"
+            error_msg = (
+                f"Stopping sync due to {self.consecutive_errors} consecutive errors"
+            )
             self.event_manager.log_error(
                 kind="safety_stop",
                 entity="sync",
@@ -150,7 +152,9 @@ class BaseSyncOperation:
         Returns (is_valid, errors, cleaned_payload)
         """
         if entity_type == "employee":
-            return self.validator.validate_employee_data(payload, entity_id, display_name or "")
+            return self.validator.validate_employee_data(
+                payload, entity_id, display_name or ""
+            )
         if entity_type == "vehicle":
             return self.validator.validate_vehicle_data(payload, entity_id)
         if entity_type == "site":
@@ -160,7 +164,9 @@ class BaseSyncOperation:
         return True, [], cleaned
 
     # ----- Change-tracking helpers -----
-    def log_creation(self, entity_type: str, entity_id: str, data: Dict[str, Any]) -> None:
+    def log_creation(
+        self, entity_type: str, entity_id: str, data: Dict[str, Any]
+    ) -> None:
         self.event_manager.log_creation(entity_type, entity_id, data)
 
     def log_update(

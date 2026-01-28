@@ -19,7 +19,9 @@ def main():
         print("Status:", data.get("status"))
         checks = data.get("checks", {})
         for name, result in checks.items():
-            print(f" - {name}: {result.get('status')} ({int(result.get('latency_ms', 0))} ms)")
+            print(
+                f" - {name}: {result.get('status')} ({int(result.get('latency_ms', 0))} ms)"
+            )
         # Exit code: 0 if healthy or degraded, 1 if unhealthy
         if data.get("status") == "unhealthy":
             return 1
@@ -30,4 +32,4 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main()) 
+    sys.exit(main())

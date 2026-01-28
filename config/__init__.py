@@ -7,13 +7,16 @@ try:
     # dotenv is optional; used in local/dev
     from dotenv import load_dotenv  # type: ignore
 except Exception:  # pragma: no cover
+
     def load_dotenv(*args, **kwargs):
         return False
+
 
 # Azure SDK imports are optional at import-time; code handles absence gracefully
 try:
     from azure.identity import DefaultAzureCredential, ManagedIdentityCredential  # type: ignore
     from azure.keyvault.secrets import SecretClient  # type: ignore
+
     AZURE_SDK_AVAILABLE = True
 except Exception:
     DefaultAzureCredential = object  # type: ignore
@@ -61,7 +64,9 @@ class ConfigManager:
             if env_path.exists():
                 load_dotenv(dotenv_path=env_path)
             else:
-                logger.debug("No .env file found; relying on Key Vault and environment variables")
+                logger.debug(
+                    "No .env file found; relying on Key Vault and environment variables"
+                )
         except Exception as exc:  # pragma: no cover
             logger.warning(f"Failed to load .env: {exc}")
 
@@ -89,13 +94,20 @@ class ConfigManager:
                 vault_url=self.azure_key_vault_url,
                 credential=self._azure_credential,  # type: ignore[arg-type]
             )
-            logger.info(f"Azure Key Vault client initialized: {self.azure_key_vault_url}")
+            logger.info(
+                f"Azure Key Vault client initialized: {self.azure_key_vault_url}"
+            )
         except Exception as exc:
             logger.error(f"Failed to initialize Azure Key Vault: {exc}")
             self._azure_secret_client = None
 
     # ---------- Public helpers ----------
-    def get_env(self, name: str, default: Optional[_T] = None, cast: Optional[Callable[[str], _T]] = None) -> Optional[_T]:
+    def get_env(
+        self,
+        name: str,
+        default: Optional[_T] = None,
+        cast: Optional[Callable[[str], _T]] = None,
+    ) -> Optional[_T]:
         value = os.getenv(name)
         if value is None:
             return default
@@ -110,7 +122,9 @@ class ConfigManager:
     def clear_secret_cache(self) -> None:
         self._secrets_cache.clear()
 
-    def get_secret(self, secret_name: str, default: Optional[str] = None, use_cache: bool = True) -> Optional[str]:
+    def get_secret(
+        self, secret_name: str, default: Optional[str] = None, use_cache: bool = True
+    ) -> Optional[str]:
         # Cache
         if use_cache and secret_name in self._secrets_cache:
             return self._secrets_cache[secret_name]
@@ -125,7 +139,9 @@ class ConfigManager:
                         self._secrets_cache[secret_name] = value
                     return value
             except Exception as exc:
-                logger.warning(f"Key Vault get_secret failed for '{secret_name}': {exc}")
+                logger.warning(
+                    f"Key Vault get_secret failed for '{secret_name}': {exc}"
+                )
 
         # Fallback to environment variable
         fallback = os.getenv(secret_name, default)
@@ -151,7 +167,9 @@ class ConfigManager:
         return {
             "azure_key_vault_enabled": self._azure_secret_client is not None,
             "azure_key_vault_url": self.azure_key_vault_url,
-            "azure_managed_identity_enabled": isinstance(self._azure_credential, ManagedIdentityCredential),
+            "azure_managed_identity_enabled": isinstance(
+                self._azure_credential, ManagedIdentityCredential
+            ),
         }
 
     # ---------- Settings loading ----------
@@ -163,7 +181,9 @@ class ConfigManager:
 
         # === MS Graph ===
         self.MS_GRAPH_CLIENT_ID: Optional[str] = self.get_secret("MS-GRAPH-CLIENT-ID")
-        self.MS_GRAPH_CLIENT_SECRET: Optional[str] = self.get_secret("MS-GRAPH-CLIENT-SECRET")
+        self.MS_GRAPH_CLIENT_SECRET: Optional[str] = self.get_secret(
+            "MS-GRAPH-CLIENT-SECRET"
+        )
         self.MS_GRAPH_TENANT_ID: Optional[str] = self.get_secret("MS-GRAPH-TENANT-ID")
 
         # === Samsara ===
@@ -174,7 +194,9 @@ class ConfigManager:
         self.SQL_SERVER: Optional[str] = self.get_secret("SQL-SERVER")
         self.SQL_DATABASE: Optional[str] = self.get_secret("SQL-DATABASE")
         self.SQL_DRIVER: str = self.get_env("SQL_DRIVER", "{ODBC Driver 18 for SQL Server}")  # type: ignore[assignment]
-        self.SQL_AUTH_MODE: str = (self.get_env("SQL_AUTH_MODE", "managed_identity") or "managed_identity").lower()
+        self.SQL_AUTH_MODE: str = (
+            self.get_env("SQL_AUTH_MODE", "managed_identity") or "managed_identity"
+        ).lower()
 
         self.VIEWPOINT_CONN_STRING: str = self._build_viewpoint_connection_string()
 
@@ -196,35 +218,47 @@ class ConfigManager:
         self.REDIS_HOST: str = self.get_env("REDIS_HOST", "localhost")  # type: ignore[assignment]
         self.REDIS_PORT: int = int(self.get_env("REDIS_PORT", 6379))
         self.REDIS_DB: int = int(self.get_env("REDIS_DB", 0))
-        self.REDIS_PASSWORD: Optional[str] = self.get_env("REDIS_PASSWORD", None)  # no default password
+        self.REDIS_PASSWORD: Optional[str] = self.get_env(
+            "REDIS_PASSWORD", None
+        )  # no default password
 
         # Logging
         self.LOG_LEVEL: str = self.get_env("LOG_LEVEL", "INFO")  # type: ignore[assignment]
         self.LOG_DIR: str = self.get_env("LOG_DIR", "output/logs")  # type: ignore[assignment]
         self.LOG_FORMAT: str = (self.get_env("LOG_FORMAT", "text") or "text").lower()
         self.STRUCTURED_LOGGING_ENABLED: bool = (
-            ((self.get_env("STRUCTURED_LOGGING_ENABLED", "") or "").lower() in ("1", "true", "yes"))
-            or self.LOG_FORMAT == "json"
-        )
+            (self.get_env("STRUCTURED_LOGGING_ENABLED", "") or "").lower()
+            in ("1", "true", "yes")
+        ) or self.LOG_FORMAT == "json"
 
         # Runtime
-        self.SYNC_INTERVAL_MINUTES: int = int(self.get_env("SYNC_INTERVAL_MINUTES", "60"))
-        self.VISTA_REFRESH_MINUTES: int = int(self.get_env("VISTA_REFRESH_MINUTES", "30"))
-        self.PRODUCTION: bool = (self.get_env("ENV", "production") or "production").lower() == "production"
+        self.SYNC_INTERVAL_MINUTES: int = int(
+            self.get_env("SYNC_INTERVAL_MINUTES", "60")
+        )
+        self.VISTA_REFRESH_MINUTES: int = int(
+            self.get_env("VISTA_REFRESH_MINUTES", "30")
+        )
+        self.PRODUCTION: bool = (
+            self.get_env("ENV", "production") or "production"
+        ).lower() == "production"
 
         # Cache / Retry / HTTP
         self.CACHE_TTL_HOURS: int = int(self.get_env("CACHE_TTL_HOURS", "4"))
-        self.CACHE_REFRESH_INTERVAL_HOURS: int = int(self.get_env("CACHE_REFRESH_INTERVAL_HOURS", "4"))
+        self.CACHE_REFRESH_INTERVAL_HOURS: int = int(
+            self.get_env("CACHE_REFRESH_INTERVAL_HOURS", "4")
+        )
         self.API_RATE_LIMIT_CALLS: int = int(self.get_env("API_RATE_LIMIT_CALLS", "60"))
-        self.API_RATE_LIMIT_PERIOD: int = int(self.get_env("API_RATE_LIMIT_PERIOD", "61"))
+        self.API_RATE_LIMIT_PERIOD: int = int(
+            self.get_env("API_RATE_LIMIT_PERIOD", "61")
+        )
         self.MAX_RETRY_ATTEMPTS: int = int(self.get_env("MAX_RETRY_ATTEMPTS", "3"))
         self.RETRY_DELAY_SECONDS: int = int(self.get_env("RETRY_DELAY_SECONDS", "30"))
         self.HTTP_REQUEST_TIMEOUT: int = int(self.get_env("HTTP_REQUEST_TIMEOUT", "15"))
 
         # Failed Sync Tracker
         self.FAILED_SYNC_TRACKER_ENABLED: bool = (
-            (self.get_env("FAILED_SYNC_TRACKER_ENABLED", "true") or "true").lower() in ("1", "true", "yes")
-        )
+            self.get_env("FAILED_SYNC_TRACKER_ENABLED", "true") or "true"
+        ).lower() in ("1", "true", "yes")
         self.FAILED_SYNC_TTL_DAYS: int = int(self.get_env("FAILED_SYNC_TTL_DAYS", "7"))
 
     def _build_viewpoint_connection_string(self) -> str:
@@ -259,7 +293,9 @@ class ConfigManager:
                 "Connect Timeout=30;"
                 "Command Timeout=60;"
             )
-        raise ValueError(f"Invalid SQL_AUTH_MODE: {self.SQL_AUTH_MODE}. Must be 'managed_identity' or 'sql_auth'")
+        raise ValueError(
+            f"Invalid SQL_AUTH_MODE: {self.SQL_AUTH_MODE}. Must be 'managed_identity' or 'sql_auth'"
+        )
 
     # ---------- Validation and status ----------
     def validate_required_secrets(self) -> bool:
@@ -292,6 +328,7 @@ class ConfigManager:
 
     def get_configuration_status(self) -> dict:
         """Return a redacted, structured view of configuration status for logging/health."""
+
         def mask(value: object) -> object:
             if value is None or value is False:
                 return None

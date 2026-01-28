@@ -11,10 +11,10 @@ Diff Percentage: 100% (new files)
 
 Files Created
 -------------
-1. codemaps/architecture.md - Overall system architecture and data flow
-2. codemaps/backend.md - Python services, sync operations, utilities
-3. codemaps/frontend.md - N/A (backend-only service notation)
-4. codemaps/data.md - Data models, schemas, caching, validation
+1. docs/codemaps/architecture.md - Overall system architecture and data flow
+2. docs/codemaps/backend.md - Python services, sync operations, utilities
+3. docs/codemaps/frontend.md - N/A (backend-only service notation)
+4. docs/codemaps/data.md - Data models, schemas, caching, validation
 
 Architecture Highlights Captured
 --------------------------------

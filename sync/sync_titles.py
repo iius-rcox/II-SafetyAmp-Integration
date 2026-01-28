@@ -6,17 +6,22 @@ from services.data_manager import data_manager
 
 logger = get_logger("sync_titles")
 
+
 class TitleSyncer:
     def __init__(self):
         self.api_client = SafetyAmpAPI()
         self.viewpoint = ViewpointAPI()
-        logger.info("Initializing TitleSyncer and fetching existing titles from SafetyAmp...")
+        logger.info(
+            "Initializing TitleSyncer and fetching existing titles from SafetyAmp..."
+        )
         self.title_map = self._build_title_map()
 
     def _build_title_map(self):
         titles = data_manager.get_cached_data_with_fallback(
             "safetyamp_titles",
-            lambda: self.api_client.get_all_paginated("/api/user_titles", key_field="id"),
+            lambda: self.api_client.get_all_paginated(
+                "/api/user_titles", key_field="id"
+            ),
             max_age_hours=1,
         )
         title_map = {
@@ -48,7 +53,12 @@ class TitleSyncer:
 
         logger.warning(f"Failed to create title '{title_name}'")
         try:
-            event_manager.log_error("create_failed", "title", title_name, f"Failed to create title '{title_name}'")
+            event_manager.log_error(
+                "create_failed",
+                "title",
+                title_name,
+                f"Failed to create title '{title_name}'",
+            )
         except Exception:
             pass
         return None

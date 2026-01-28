@@ -7,6 +7,7 @@ This module syncs vehicles from Samsara to SafetyAmp as assets.
 
 import sys
 import os
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from services.samsara_api import SamsaraAPI
@@ -21,54 +22,58 @@ import re
 
 logger = get_logger("vehicle_sync")
 
+
 class VehicleSync(BaseSyncOperation):
     def __init__(self):
         super().__init__(sync_type="vehicles", logger_name="vehicle_sync")
         self.samsara_api = SamsaraAPI()
         self.safetyamp_api = SafetyAmpAPI()
-        
-        self.status_mapping = {
-            "regulated": 1,
-            "unregulated": 0
-        }
-        
+
+        self.status_mapping = {"regulated": 1, "unregulated": 0}
+
         self.defaults = {
             "created_by": "system",
             "updated_by": "system",
-            "deleted_at": None
+            "deleted_at": None,
         }
 
         self.default_site_id = 5145
         self.default_vehicle_asset_type_id = 3183
-        
+
         self.safetyamp_users_cache = {}
         self._load_safetyamp_users_cache()
-    
+
     def _load_safetyamp_users_cache(self):
         """Load SafetyAmp users into cache for efficient lookup"""
         try:
             logger.info("Loading SafetyAmp users cache...")
             safetyamp_users = data_manager.get_cached_data_with_fallback(
                 "safetyamp_users_by_id",
-                lambda: self.safetyamp_api.get_all_paginated("/api/users", key_field="id"),
+                lambda: self.safetyamp_api.get_all_paginated(
+                    "/api/users", key_field="id"
+                ),
                 max_age_hours=1,
             )
             self.safetyamp_users_cache = safetyamp_users or {}
-            logger.info(f"Loaded {len(self.safetyamp_users_cache)} SafetyAmp users into cache")
-        
+            logger.info(
+                f"Loaded {len(self.safetyamp_users_cache)} SafetyAmp users into cache"
+            )
+
         except Exception as e:
             logger.error(f"Error loading SafetyAmp users cache: {e}")
             self.safetyamp_users_cache = {}
-    
+
     def _get_asset_type_for_site(self, site_id):
         """Get the appropriate asset type ID for a given site"""
         try:
             asset_types = data_manager.get_cached_data_with_fallback(
                 "safetyamp_asset_types",
-                lambda: self.safetyamp_api.get_all_paginated("/api/asset_types", key_field="id"),
+                lambda: self.safetyamp_api.get_all_paginated(
+                    "/api/asset_types", key_field="id"
+                ),
                 max_age_hours=1,
             )
-            
+
             for asset_type_id, asset_type in asset_types.items():
                 name = str(asset_type.get("name", "")).lower()
                 at_site_id = asset_type.get("site_id")
@@ -78,20 +83,27 @@ class VehicleSync(BaseSyncOperation):
                 except Exception:
                     at_site_id_int = at_site_id
                     site_id_int = site_id
-                if ("vehicle" in name and at_site_id_int is not None and site_id_int is not None and at_site_id_int == site_id_int):
+                if (
+                    "vehicle" in name
+                    and at_site_id_int is not None
+                    and site_id_int is not None
+                    and at_site_id_int == site_id_int
+                ):
                     return int(asset_type_id)
             return None
-            
+
         except Exception as e:
             logger.error(f"Error getting asset type for site {site_id}: {e}")
             return None
-    
+
     def _get_site_for_asset_type(self, asset_type_id):
         """Get the site ID that an asset type is valid for"""
         try:
             asset_types = data_manager.get_cached_data_with_fallback(
                 "safetyamp_asset_types",
-                lambda: self.safetyamp_api.get_all_paginated("/api/asset_types", key_field="id"),
+                lambda: self.safetyamp_api.get_all_paginated(
+                    "/api/asset_types", key_field="id"
+                ),
                 max_age_hours=1,
             )
             if str(asset_type_id) in asset_types:
@@ -100,49 +112,51 @@ class VehicleSync(BaseSyncOperation):
         except Exception as e:
             logger.error(f"Error getting site for asset type {asset_type_id}: {e}")
             return None
-    
+
     def get_driver_safetyamp_id(self, driver_id):
         """Get SafetyAmp user ID and home_site_id by looking up employee ID in SafetyAmp users cache"""
         try:
             if not driver_id:
                 return None, None
-                
+
             endpoint = f"{self.samsara_api.base_url}/fleet/drivers/{driver_id}"
-            
+
             response = self.samsara_api._exponential_retry(
-                self.samsara_api._rate_limited_request, 
-                requests.get, 
-                endpoint
+                self.samsara_api._rate_limited_request, requests.get, endpoint
             )
             driver_data = self.samsara_api._handle_response(response, "GET", endpoint)
-            
+
             if not driver_data:
                 logger.warning(f"Could not fetch driver data for ID: {driver_id}")
                 return None, None
-            
+
             notes = driver_data.get("data", {}).get("notes", "")
             if not notes:
                 logger.warning(f"No notes found for driver ID: {driver_id}")
                 return None, None
-            
-            match = re.search(r'(\d{4,})', notes)
+
+            match = re.search(r"(\d{4,})", notes)
             if not match:
-                logger.warning(f"No employee ID found in driver notes for ID: {driver_id}")
+                logger.warning(
+                    f"No employee ID found in driver notes for ID: {driver_id}"
+                )
                 return None, None
-            
+
             employee_id = match.group(1).strip()
             logger.info(f"Found employee ID '{employee_id}' in driver notes")
-            
+
             for user in self.safetyamp_users_cache.values():
                 if user.get("emp_id") == employee_id:
                     safetyamp_user_id = user.get("id")
                     home_site_id = user.get("home_site_id")
-                    logger.info(f"Found SafetyAmp user ID '{safetyamp_user_id}' with home_site_id '{home_site_id}' for employee ID '{employee_id}'")
+                    logger.info(
+                        f"Found SafetyAmp user ID '{safetyamp_user_id}' with home_site_id '{home_site_id}' for employee ID '{employee_id}'"
+                    )
                     return safetyamp_user_id, home_site_id
-            
+
             logger.warning(f"No SafetyAmp user found for employee ID: {employee_id}")
             return None, None
-            
+
         except Exception as e:
             logger.error(f"Error fetching driver data for ID {driver_id}: {e}")
             return None, None
@@ -152,7 +166,7 @@ class VehicleSync(BaseSyncOperation):
         try:
             vehicle_id = vehicle.get("id")
             name = vehicle.get("name", "")
-            make = vehicle.get("make", "")
+            _make = vehicle.get("make", "")  # noqa: F841
             model = vehicle.get("model", "")
             year = vehicle.get("year", "")
             license_plate = vehicle.get("licensePlate", "")
@@ -160,24 +174,32 @@ class VehicleSync(BaseSyncOperation):
             serial = vehicle.get("serial", "")
             notes = vehicle.get("notes", "")
             regulation_mode = vehicle.get("vehicleRegulationMode", "")
-            
+
             driver = vehicle.get("staticAssignedDriver", {})
-            driver_name = driver.get("name", "") if driver else ""
+            _driver_name = driver.get("name", "") if driver else ""  # noqa: F841
             driver_id = driver.get("id", "") if driver else ""
-            
+
             safetyamp_user_id = None
             home_site_id = None
             if driver_id:
-                safetyamp_user_id, home_site_id = self.get_driver_safetyamp_id(driver_id)
-            
+                safetyamp_user_id, home_site_id = self.get_driver_safetyamp_id(
+                    driver_id
+                )
+
             tags = vehicle.get("tags", [])
-            department_tag = next((tag for tag in tags if "Department" in tag.get("name", "")), {})
-            department_name = department_tag.get("name", "") if department_tag else ""
-            department_id = department_tag.get("id", "") if department_tag else ""
-            
+            department_tag = next(
+                (tag for tag in tags if "Department" in tag.get("name", "")), {}
+            )
+            _department_name = (  # noqa: F841
+                department_tag.get("name", "") if department_tag else ""
+            )
+            _department_id = (  # noqa: F841
+                department_tag.get("id", "") if department_tag else ""
+            )
+
             created_at = vehicle.get("createdAtTime", "")
             updated_at = vehicle.get("updatedAtTime", "")
-            
+
             site_to_use = self.default_site_id
             resolved_asset_type_id = self.default_vehicle_asset_type_id
 
@@ -188,96 +210,119 @@ class VehicleSync(BaseSyncOperation):
                 "description": notes,
                 "created_at": created_at,
                 "updated_at": updated_at,
-                "code": license_plate or f"Unit_{vehicle_id[-4:]}" if vehicle_id else "",
+                "code": (
+                    license_plate or f"Unit_{vehicle_id[-4:]}" if vehicle_id else ""
+                ),
                 "asset_type_id": resolved_asset_type_id,
                 "status": self.status_mapping.get(regulation_mode, 1),
                 "location_id": None,
                 "created_by": self.defaults["created_by"],
                 "updated_by": self.defaults["updated_by"],
-                "deleted_at": self.defaults["deleted_at"]
+                "deleted_at": self.defaults["deleted_at"],
             }
-            
+
             asset_data["site_id"] = site_to_use
-            
+
             if vin:
                 asset_data["vin"] = vin
             if year:
                 asset_data["year"] = year
-            
+
             logger.debug(f"Transformed vehicle {vehicle_id} to asset format")
             return asset_data
-            
+
         except Exception as e:
-            logger.error(f"Error transforming vehicle {vehicle.get('id', 'unknown')}: {e}")
+            logger.error(
+                f"Error transforming vehicle {vehicle.get('id', 'unknown')}: {e}"
+            )
             return None
-    
+
     def get_existing_assets(self):
         """Get existing SafetyAmp assets for comparison"""
         try:
             assets = data_manager.get_cached_data_with_fallback(
                 "safetyamp_assets",
-                lambda: self.safetyamp_api.get_all_paginated("/api/assets", key_field="id"),
+                lambda: self.safetyamp_api.get_all_paginated(
+                    "/api/assets", key_field="id"
+                ),
                 max_age_hours=1,
             )
-            return {asset.get("serial"): asset for asset in assets.values() if asset.get("serial")}
+            return {
+                asset.get("serial"): asset
+                for asset in assets.values()
+                if asset.get("serial")
+            }
         except Exception as e:
             logger.error(f"Error fetching existing assets: {e}")
             return {}
-    
+
     def sync_vehicles(self):
         """Sync vehicles from Samsara to SafetyAmp"""
         self.start_sync()
         logger.info("Starting vehicle sync from Samsara to SafetyAmp")
         event_manager.start_sync("vehicles")
-        
+
         try:
             logger.info("Fetching vehicles from Samsara...")
             vehicles = self.samsara_api.get_all_vehicles()
-            
+
             if not vehicles:
                 logger.warning("No vehicles found in Samsara")
                 return {"synced": 0, "errors": 0, "skipped": 0}
-            
+
             logger.info(f"Found {len(vehicles)} vehicles in Samsara")
-            
+
             existing_assets = self.get_existing_assets()
             logger.info(f"Found {len(existing_assets)} existing assets in SafetyAmp")
-            
+
             synced_count = 0
             error_count = 0
             skipped_count = 0
-            
+
             for vehicle in vehicles:
                 try:
                     asset_data = self.transform_vehicle_to_asset(vehicle)
                     if not asset_data:
                         error_count += 1
                         continue
-                    
-                    vehicle_id = str(vehicle.get('id', 'unknown'))
-                    is_valid, validation_errors, cleaned_asset_data = self.validator.validate_vehicle_data(asset_data, vehicle_id)
-                    
+
+                    vehicle_id = str(vehicle.get("id", "unknown"))
+                    is_valid, validation_errors, cleaned_asset_data = (
+                        self.validator.validate_vehicle_data(asset_data, vehicle_id)
+                    )
+
                     if not is_valid:
-                        logger.error(f"Validation failed for vehicle {vehicle_id}: {validation_errors}")
+                        logger.error(
+                            f"Validation failed for vehicle {vehicle_id}: {validation_errors}"
+                        )
                         error_count += 1
                         continue
-                    
+
                     vehicle_serial = cleaned_asset_data.get("serial")
                     if not vehicle_serial:
-                        logger.warning(f"Vehicle {vehicle.get('id')} has no serial number, skipping")
+                        logger.warning(
+                            f"Vehicle {vehicle.get('id')} has no serial number, skipping"
+                        )
                         skipped_count += 1
                         continue
-                    
+
                     existing_asset = existing_assets.get(vehicle_serial)
-                    
+
                     if existing_asset:
                         if self._needs_update(existing_asset, cleaned_asset_data):
-                            result = self.safetyamp_api.update_asset(existing_asset["id"], cleaned_asset_data)
+                            result = self.safetyamp_api.update_asset(
+                                existing_asset["id"], cleaned_asset_data
+                            )
                             if result:
                                 synced_count += 1
                                 logger.info(f"Updated asset {vehicle_serial}")
                                 try:
-                                    event_manager.log_update("asset", str(existing_asset["id"]), cleaned_asset_data, existing_asset)
+                                    event_manager.log_update(
+                                        "asset",
+                                        str(existing_asset["id"]),
+                                        cleaned_asset_data,
+                                        existing_asset,
+                                    )
                                 except Exception:
                                     pass
                             else:
@@ -288,7 +333,7 @@ class VehicleSync(BaseSyncOperation):
                                         "update_failed",
                                         "asset",
                                         str(existing_asset.get("id", vehicle_serial)),
-                                        f"Failed to update asset {vehicle_serial}"
+                                        f"Failed to update asset {vehicle_serial}",
                                     )
                                 except Exception:
                                     pass
@@ -297,7 +342,9 @@ class VehicleSync(BaseSyncOperation):
                             skipped_count += 1
                     else:
                         if not cleaned_asset_data.get("site_id"):
-                            logger.error(f"Missing required site_id for asset {vehicle_serial}, skipping create")
+                            logger.error(
+                                f"Missing required site_id for asset {vehicle_serial}, skipping create"
+                            )
                             skipped_count += 1
                             continue
 
@@ -306,54 +353,65 @@ class VehicleSync(BaseSyncOperation):
                             synced_count += 1
                             logger.info(f"Created asset {vehicle_serial}")
                             try:
-                                event_manager.log_creation("asset", str(result.get("id", vehicle_serial)), cleaned_asset_data)
+                                event_manager.log_creation(
+                                    "asset",
+                                    str(result.get("id", vehicle_serial)),
+                                    cleaned_asset_data,
+                                )
                             except Exception:
                                 pass
                         else:
                             error_count += 1
                             logger.error(f"Failed to create asset {vehicle_serial}")
                             try:
-                                event_manager.log_error("create_failed", "asset", vehicle_serial, f"Failed to create asset {vehicle_serial}")
+                                event_manager.log_error(
+                                    "create_failed",
+                                    "asset",
+                                    vehicle_serial,
+                                    f"Failed to create asset {vehicle_serial}",
+                                )
                             except Exception:
                                 pass
-                
+
                 except Exception as e:
                     error_count += 1
-                    logger.error(f"Error processing vehicle {vehicle.get('id', 'unknown')}: {e}")
-            
+                    logger.error(
+                        f"Error processing vehicle {vehicle.get('id', 'unknown')}: {e}"
+                    )
+
             logger.info("Vehicle sync completed:")
             logger.info(f"  Synced: {synced_count}")
             logger.info(f"  Errors: {error_count}")
             logger.info(f"  Skipped: {skipped_count}")
-            
-            summary = event_manager.end_sync()
+
+            event_manager.end_sync()
             return {
                 "synced": synced_count,
                 "errors": error_count,
-                "skipped": skipped_count
+                "skipped": skipped_count,
             }
-            
+
         except Exception as e:
             logger.error(f"Error during vehicle sync: {e}")
-            summary = event_manager.end_sync()
+            event_manager.end_sync()
             return {"synced": 0, "errors": 1, "skipped": 0}
         finally:
             self.end_sync()
 
     def _needs_update(self, existing_asset, new_data):
         """Check if asset needs to be updated"""
-        fields_to_check = [
-            "current_user_id", "asset_type_id"
-        ]
-        
+        fields_to_check = ["current_user_id", "asset_type_id"]
+
         for field in fields_to_check:
             existing_value = str(existing_asset.get(field, "")).strip()
             new_value = str(new_data.get(field, "")).strip()
-            
+
             if existing_value != new_value:
-                logger.debug(f"Field {field} changed: '{existing_value}' -> '{new_value}'")
+                logger.debug(
+                    f"Field {field} changed: '{existing_value}' -> '{new_value}'"
+                )
                 return True
-        
+
         return False
 
     def get_sync_summary(self):
@@ -362,29 +420,36 @@ class VehicleSync(BaseSyncOperation):
             samsara_vehicles = self.samsara_api.get_all_vehicles()
             safetyamp_assets = data_manager.get_cached_data_with_fallback(
                 "safetyamp_assets",
-                lambda: self.safetyamp_api.get_all_paginated("/api/assets", key_field="id"),
+                lambda: self.safetyamp_api.get_all_paginated(
+                    "/api/assets", key_field="id"
+                ),
                 max_age_hours=1,
             )
-            
+
             syncable_vehicles = [v for v in samsara_vehicles if v.get("serial")]
-            samsara_assets = [a for a in safetyamp_assets.values() if a.get("serial") and a.get("serial", "").startswith("G")]
-            
+            samsara_assets = [
+                a
+                for a in safetyamp_assets.values()
+                if a.get("serial") and a.get("serial", "").startswith("G")
+            ]
+
             return {
                 "samsara_vehicles": len(samsara_vehicles),
                 "syncable_vehicles": len(syncable_vehicles),
                 "safetyamp_assets": len(safetyamp_assets),
                 "samsara_assets": len(samsara_assets),
-                "pending_sync": len(syncable_vehicles) - len(samsara_assets)
+                "pending_sync": len(syncable_vehicles) - len(samsara_assets),
             }
-            
+
         except Exception as e:
             logger.error(f"Error getting sync summary: {e}")
             return {}
 
+
 def main():
     """Main function for testing vehicle sync"""
     sync = VehicleSync()
-    
+
     summary = sync.get_sync_summary()
     if summary:
         print("Vehicle Sync Summary:")
@@ -393,10 +458,11 @@ def main():
         print(f"  SafetyAmp Assets: {summary.get('safetyamp_assets', 0)}")
         print(f"  Samsara Assets: {summary.get('samsara_assets', 0)}")
         print(f"  Pending Sync: {summary.get('pending_sync', 0)}")
-    
+
     print("\nRunning vehicle sync...")
     result = sync.sync_vehicles()
     print(f"Sync result: {result}")
 
+
 if __name__ == "__main__":
-    main() 
+    main()

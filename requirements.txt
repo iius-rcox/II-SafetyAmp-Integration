@@ -1,8 +1,8 @@
 # Core dependencies
-requests>=2.31.0
-python-dotenv>=1.0.0
 Flask>=2.3.0
 gunicorn>=21.0.0
+python-dotenv>=1.0.0
+requests>=2.31.0
 
 # Database connectivity
 pyodbc>=4.0.39
@@ -16,7 +16,6 @@ ratelimit>=2.2.1
 
 # Redis for caching
 redis>=5.0.0
-# Redis connection pooling
 redis[hiredis]>=5.0.0
 
 # Azure integration
@@ -25,20 +24,15 @@ azure-keyvault-secrets>=4.7.0
 
 # Monitoring
 prometheus-client>=0.17.0
-# Enhanced monitoring
 structlog>=23.1.0
-
-# Validation and retry utilities
-pydantic>=2.6
-tenacity>=8.2
 
 # OpenTelemetry (optional)
 opentelemetry-api>=1.25
 opentelemetry-sdk>=1.25
 
-# Development and linting (optional) - used for CI/CD
+# Circuit breaker for external dependencies
+circuitbreaker>=1.4.0
+
+# Development and linting (optional, used for CI/CD)
 black>=23.0.0
 flake8>=6.0.0
-
-# Circuit breaker for external dependencies
-circuitbreaker>=1.4.0 

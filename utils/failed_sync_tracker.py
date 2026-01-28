@@ -49,7 +49,7 @@ class FailedSyncTracker:
         else:
             normalized = str(value).strip()
 
-        return hashlib.sha256(normalized.encode('utf-8')).hexdigest()
+        return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
     def compute_hash(self, data: Dict[str, Any]) -> str:
         """
@@ -62,7 +62,7 @@ class FailedSyncTracker:
             Hexadecimal hash string
         """
         normalized = json.dumps(data, sort_keys=True)
-        return hashlib.sha256(normalized.encode('utf-8')).hexdigest()
+        return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
     def extract_failed_fields_from_error(self, error_response: Any) -> Dict[str, str]:
         """
@@ -91,7 +91,9 @@ class FailedSyncTracker:
             try:
                 error_response = json.loads(error_response)
             except (json.JSONDecodeError, ValueError):
-                logger.warning(f"Could not parse error response as JSON: {error_response}")
+                logger.warning(
+                    f"Could not parse error response as JSON: {error_response}"
+                )
                 return failed_fields
 
         if not isinstance(error_response, dict):
@@ -121,10 +123,7 @@ class FailedSyncTracker:
         return failed_fields
 
     def should_skip_retry(
-        self,
-        entity_id: str,
-        entity_type: str,
-        current_data: Dict[str, Any]
+        self, entity_id: str, entity_type: str, current_data: Dict[str, Any]
     ) -> bool:
         """
         Determine if a retry should be skipped based on field-level change detection.
@@ -144,7 +143,9 @@ class FailedSyncTracker:
             return False
 
         # Get previous failure record
-        failure_record = self.data_manager.get_failed_sync_record(entity_type, entity_id)
+        failure_record = self.data_manager.get_failed_sync_record(
+            entity_type, entity_id
+        )
 
         if not failure_record:
             return False  # No previous failure, don't skip
@@ -158,10 +159,14 @@ class FailedSyncTracker:
             previous_hash = failure_record.get("full_payload_hash", "")
 
             if current_hash != previous_hash:
-                logger.debug(f"Full payload changed for {entity_type} {entity_id}, will retry")
+                logger.debug(
+                    f"Full payload changed for {entity_type} {entity_id}, will retry"
+                )
                 return False
             else:
-                logger.debug(f"Full payload unchanged for {entity_type} {entity_id}, skipping retry")
+                logger.debug(
+                    f"Full payload unchanged for {entity_type} {entity_id}, skipping retry"
+                )
                 return True
 
         # Field-level comparison
@@ -188,7 +193,7 @@ class FailedSyncTracker:
         data: Dict[str, Any],
         error_response: Any,
         http_status: int,
-        operation: str = "sync"
+        operation: str = "sync",
     ) -> None:
         """
         Record a failed sync operation with field-level error tracking.
@@ -214,11 +219,15 @@ class FailedSyncTracker:
             field_hashes[field_name] = {
                 "value_hash": self.compute_field_hash(field_value),
                 "error": error_msg,
-                "value": str(field_value)[:100] if field_value is not None else None  # Store truncated value for debugging
+                "value": (
+                    str(field_value)[:100] if field_value is not None else None
+                ),  # Store truncated value for debugging
             }
 
         # Get existing record to preserve history
-        existing_record = self.data_manager.get_failed_sync_record(entity_type, entity_id)
+        existing_record = self.data_manager.get_failed_sync_record(
+            entity_type, entity_id
+        )
 
         now = datetime.now(timezone.utc).isoformat()
 
@@ -229,12 +238,16 @@ class FailedSyncTracker:
             "failed_fields": field_hashes,
             "full_payload_hash": self.compute_hash(data),
             "failure_reason": self._categorize_failure(error_response, http_status),
-            "first_failed_at": existing_record.get("first_failed_at", now) if existing_record else now,
+            "first_failed_at": (
+                existing_record.get("first_failed_at", now) if existing_record else now
+            ),
             "last_failed_at": now,
-            "attempt_count": (existing_record.get("attempt_count", 0) + 1) if existing_record else 1,
+            "attempt_count": (
+                (existing_record.get("attempt_count", 0) + 1) if existing_record else 1
+            ),
             "http_status": http_status,
             "operation": operation,
-            "last_error_message": str(error_response)[:500]  # Truncate for storage
+            "last_error_message": str(error_response)[:500],  # Truncate for storage
         }
 
         # Save to Redis with configured TTL
@@ -242,7 +255,7 @@ class FailedSyncTracker:
             entity_type=entity_type,
             entity_id=entity_id,
             metadata=failure_metadata,
-            ttl_days=self.ttl_days
+            ttl_days=self.ttl_days,
         )
 
         if success:
@@ -301,7 +314,9 @@ class FailedSyncTracker:
         if success:
             logger.debug(f"Cleared failure record for {entity_type} {entity_id}")
         else:
-            logger.warning(f"Failed to clear failure record for {entity_type} {entity_id}")
+            logger.warning(
+                f"Failed to clear failure record for {entity_type} {entity_id}"
+            )
 
     def get_failure_stats(self, entity_type: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -320,7 +335,7 @@ class FailedSyncTracker:
                 "total": 0,
                 "by_entity_type": {},
                 "by_reason": {},
-                "oldest_failure": None
+                "oldest_failure": None,
             }
 
         by_entity_type = {}
@@ -346,7 +361,7 @@ class FailedSyncTracker:
             "total": len(all_failures),
             "by_entity_type": by_entity_type,
             "by_reason": by_reason,
-            "oldest_failure": oldest_timestamp
+            "oldest_failure": oldest_timestamp,
         }
 
 
@@ -368,5 +383,7 @@ def initialize_tracker(data_manager, config) -> FailedSyncTracker:
     global failed_sync_tracker
     failed_sync_tracker = FailedSyncTracker(data_manager, config)
     enabled_status = "enabled" if config.FAILED_SYNC_TRACKER_ENABLED else "disabled"
-    logger.info(f"Failed sync tracker initialized ({enabled_status}, TTL: {config.FAILED_SYNC_TTL_DAYS} days)")
+    logger.info(
+        f"Failed sync tracker initialized ({enabled_status}, TTL: {config.FAILED_SYNC_TTL_DAYS} days)"
+    )
     return failed_sync_tracker

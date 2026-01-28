@@ -7,6 +7,7 @@ from utils.data_validator import validator
 
 logger = get_logger("safetyamp")
 
+
 class SafetyAmpAPI:
     CALLS = 60
     PERIOD = 61  # in seconds
@@ -18,7 +19,7 @@ class SafetyAmpAPI:
             "Authorization": f"Bearer {config.SAFETYAMP_TOKEN}",
             "Fqdn": config.SAFETYAMP_FQDN,
             "Accept": "application/json",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
     def _preprocess_payload(self, endpoint: str, data: dict, method: str) -> dict:
@@ -38,17 +39,25 @@ class SafetyAmpAPI:
             if endpoint_lower.startswith("/api/users"):
                 # Employee payload validation
                 emp_id = str(data.get("emp_id", data.get("id", "unknown")))
-                full_name = f"{data.get('first_name', '')} {data.get('last_name', '')}".strip()
-                is_valid, errs, cleaned = validator.validate_employee_data(data, emp_id, full_name)
+                full_name = (
+                    f"{data.get('first_name', '')} {data.get('last_name', '')}".strip()
+                )
+                is_valid, errs, cleaned = validator.validate_employee_data(
+                    data, emp_id, full_name
+                )
                 cleaned_payload = cleaned
                 validation_errors = errs
             elif endpoint_lower.startswith("/api/assets"):
                 # Vehicle/asset payload validation (best-effort)
                 asset_id = str(data.get("id", data.get("serial", "unknown")))
-                is_valid, errs, cleaned = validator.validate_vehicle_data(data, asset_id)
+                is_valid, errs, cleaned = validator.validate_vehicle_data(
+                    data, asset_id
+                )
                 cleaned_payload = cleaned
                 validation_errors = errs
-            elif endpoint_lower.startswith("/api/sites") or endpoint_lower.startswith("/api/site_clusters"):
+            elif endpoint_lower.startswith("/api/sites") or endpoint_lower.startswith(
+                "/api/site_clusters"
+            ):
                 site_id = str(data.get("id", data.get("external_code", "unknown")))
                 is_valid, errs, cleaned = validator.validate_site_data(data, site_id)
                 cleaned_payload = cleaned
@@ -57,11 +66,19 @@ class SafetyAmpAPI:
             logger.warning(f"Validation preprocessing skipped due to error: {e}")
 
         if validation_errors:
-            logger.warning(f"{method} {endpoint}: payload had validation issues: {validation_errors}")
+            logger.warning(
+                f"{method} {endpoint}: payload had validation issues: {validation_errors}"
+            )
             if method.upper() == "POST":
-                has_missing_required = any(str(err).startswith("Missing required field:") for err in validation_errors)
+                has_missing_required = any(
+                    str(err).startswith("Missing required field:")
+                    for err in validation_errors
+                )
                 if has_missing_required:
-                    raise requests.HTTPError("Validation failed: missing required fields", response=requests.Response())
+                    raise requests.HTTPError(
+                        "Validation failed: missing required fields",
+                        response=requests.Response(),
+                    )
 
         return cleaned_payload
 
@@ -80,8 +97,10 @@ class SafetyAmpAPI:
                 return response
             except requests.HTTPError as e:
                 if e.response.status_code == 429:
-                    wait_time = min(2 ** retry, self.MAX_RETRY_WAIT)
-                    logger.warning(f"Rate limited (429). Retrying in {wait_time} seconds...")
+                    wait_time = min(2**retry, self.MAX_RETRY_WAIT)
+                    logger.warning(
+                        f"Rate limited (429). Retrying in {wait_time} seconds..."
+                    )
                     time.sleep(wait_time)
                     retry += 1
                 else:
@@ -104,7 +123,9 @@ class SafetyAmpAPI:
     def get(self, endpoint, params=None):
         url = f"{self.base_url}{endpoint}"
         try:
-            response = self._exponential_retry(self._rate_limited_request, requests.get, url, params=params)
+            response = self._exponential_retry(
+                self._rate_limited_request, requests.get, url, params=params
+            )
             return self._handle_response(response, "GET", url)
         except requests.RequestException as e:
             logger.error(f"GET {url} request failed: {e}")
@@ -129,7 +150,9 @@ class SafetyAmpAPI:
         url = f"{self.base_url}{endpoint}"
         try:
             cleaned = self._preprocess_payload(endpoint, data, "POST")
-            response = self._exponential_retry(self._rate_limited_request, requests.post, url, json=cleaned)
+            response = self._exponential_retry(
+                self._rate_limited_request, requests.post, url, json=cleaned
+            )
             return self._handle_response(response, "POST", url)
         except requests.RequestException as e:
             logger.error(f"POST {url} request failed: {e}")
@@ -139,7 +162,9 @@ class SafetyAmpAPI:
         url = f"{self.base_url}{endpoint}"
         try:
             cleaned = self._preprocess_payload(endpoint, data, "PUT")
-            response = self._exponential_retry(self._rate_limited_request, requests.put, url, json=cleaned)
+            response = self._exponential_retry(
+                self._rate_limited_request, requests.put, url, json=cleaned
+            )
             return self._handle_response(response, "PUT", url)
         except requests.RequestException as e:
             logger.error(f"PUT {url} request failed: {e}")
@@ -149,7 +174,9 @@ class SafetyAmpAPI:
         url = f"{self.base_url}{endpoint}"
         try:
             cleaned = self._preprocess_payload(endpoint, data, "PATCH")
-            response = self._exponential_retry(self._rate_limited_request, requests.patch, url, json=cleaned)
+            response = self._exponential_retry(
+                self._rate_limited_request, requests.patch, url, json=cleaned
+            )
             return self._handle_response(response, "PATCH", url)
         except requests.RequestException as e:
             logger.error(f"PATCH {url} request failed: {e}")
@@ -158,7 +185,9 @@ class SafetyAmpAPI:
     def delete(self, endpoint):
         url = f"{self.base_url}{endpoint}"
         try:
-            response = self._exponential_retry(self._rate_limited_request, requests.delete, url)
+            response = self._exponential_retry(
+                self._rate_limited_request, requests.delete, url
+            )
             response.raise_for_status()
             logger.debug(f"DELETE {url} succeeded")
             return True

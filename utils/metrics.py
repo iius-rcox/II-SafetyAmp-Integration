@@ -49,20 +49,28 @@ class MetricsCollector:
         except KeyError:
             return None
 
-    def get_counter(self, name: str, description: str, labelnames: Optional[List[str]] = None) -> Counter:
+    def get_counter(
+        self, name: str, description: str, labelnames: Optional[List[str]] = None
+    ) -> Counter:
         existing = self._get_existing(name)
         if isinstance(existing, Counter):
             return existing
         if existing is not None:
-            raise ValueError(f"A collector named '{name}' is already registered with a different type")
+            raise ValueError(
+                f"A collector named '{name}' is already registered with a different type"
+            )
         return Counter(name, description, labelnames=labelnames or [])
 
-    def get_gauge(self, name: str, description: str, labelnames: Optional[List[str]] = None) -> Gauge:
+    def get_gauge(
+        self, name: str, description: str, labelnames: Optional[List[str]] = None
+    ) -> Gauge:
         existing = self._get_existing(name)
         if isinstance(existing, Gauge):
             return existing
         if existing is not None:
-            raise ValueError(f"A collector named '{name}' is already registered with a different type")
+            raise ValueError(
+                f"A collector named '{name}' is already registered with a different type"
+            )
         return Gauge(name, description, labelnames=labelnames or [])
 
     def get_histogram(
@@ -76,9 +84,13 @@ class MetricsCollector:
         if isinstance(existing, Histogram):
             return existing
         if existing is not None:
-            raise ValueError(f"A collector named '{name}' is already registered with a different type")
+            raise ValueError(
+                f"A collector named '{name}' is already registered with a different type"
+            )
         if buckets is not None:
-            return Histogram(name, description, labelnames=labelnames or [], buckets=buckets)
+            return Histogram(
+                name, description, labelnames=labelnames or [], buckets=buckets
+            )
         return Histogram(name, description, labelnames=labelnames or [])
 
     # ---------- High-level initialization ----------

@@ -65,9 +65,13 @@ class DataManager:
                 socket_timeout=5,
             )
             self.redis_client.ping()
-            logger.info(f"Redis connected successfully to {self.redis_host}:{self.redis_port}")
+            logger.info(
+                f"Redis connected successfully to {self.redis_host}:{self.redis_port}"
+            )
         except Exception as e:
-            logger.warning(f"Redis connection failed: {e}. Falling back to file-based caching.")
+            logger.warning(
+                f"Redis connection failed: {e}. Falling back to file-based caching."
+            )
             self.redis_client = None
 
     def _get_cache_key(self, cache_name: str, key: Optional[str] = None) -> str:
@@ -100,7 +104,11 @@ class DataManager:
                         cache_info["caches"][cache_name] = {
                             "ttl_seconds": ttl,
                             "size_bytes": size,
-                            "expires_in": f"{ttl//3600}h {(ttl%3600)//60}m" if ttl and ttl > 0 else "expired",
+                            "expires_in": (
+                                f"{ttl//3600}h {(ttl%3600)//60}m"
+                                if ttl and ttl > 0
+                                else "expired"
+                            ),
                         }
                         try:
                             _cache_items_total.labels(cache=cache_name).set(size)
@@ -117,10 +125,14 @@ class DataManager:
             "type": "file",
             "connected": False,
             "total_files": len(cache_files),
-            "caches": {f.stem: {"path": str(f), "size": f.stat().st_size} for f in cache_files},
+            "caches": {
+                f.stem: {"path": str(f), "size": f.stat().st_size} for f in cache_files
+            },
         }
 
-    def get_cached_data(self, cache_name: str, key: Optional[str] = None) -> Optional[Any]:
+    def get_cached_data(
+        self, cache_name: str, key: Optional[str] = None
+    ) -> Optional[Any]:
         if self.redis_client:
             try:
                 cache_key = self._get_cache_key(cache_name, key)
@@ -157,14 +169,18 @@ class DataManager:
                     logger.info(f"Using valid cached data for {cache_name}")
                     return cached_data
                 else:
-                    logger.info(f"Cache for {cache_name} is expired, fetching fresh data")
+                    logger.info(
+                        f"Cache for {cache_name} is expired, fetching fresh data"
+                    )
 
         try:
             logger.info(f"Fetching fresh data for {cache_name}")
             fresh_data = fetch_func()
             if fresh_data is not None:
                 self.save_cache(cache_name, fresh_data)
-                logger.info(f"Saved fresh data to cache for {cache_name}: {len(fresh_data)} items")
+                logger.info(
+                    f"Saved fresh data to cache for {cache_name}: {len(fresh_data)} items"
+                )
                 return fresh_data
             else:
                 logger.warning(f"Fetch function returned None for {cache_name}")
@@ -173,14 +189,18 @@ class DataManager:
             logger.error(f"Error fetching fresh data for {cache_name}: {e}")
             return self.get_cached_data(cache_name)
 
-    def is_cache_valid(self, cache_name: str, max_age_hours: int = 1, key: Optional[str] = None) -> bool:
+    def is_cache_valid(
+        self, cache_name: str, max_age_hours: int = 1, key: Optional[str] = None
+    ) -> bool:
         try:
             if self.redis_client:
                 metadata_key = self._get_metadata_key(cache_name, key)
                 metadata_json = self.redis_client.get(metadata_key)
                 if metadata_json:
                     metadata = json.loads(metadata_json)
-                    cache_age_hours = (time.time() - metadata.get("last_updated", 0)) / 3600
+                    cache_age_hours = (
+                        time.time() - metadata.get("last_updated", 0)
+                    ) / 3600
                     return cache_age_hours <= max_age_hours
             safe_key = f"_{key}" if key else ""
             metadata_file = self.cache_dir / f"{cache_name}{safe_key}_metadata.json"
@@ -208,13 +228,25 @@ class DataManager:
             try:
                 cache_key = self._get_cache_key(cache_name, key)
                 metadata_key = self._get_metadata_key(cache_name, key)
-                effective_ttl_seconds = int(ttl_seconds) if ttl_seconds is not None else int(self.cache_ttl_hours * 3600)
-                self.redis_client.setex(cache_key, effective_ttl_seconds, json.dumps(data))
+                effective_ttl_seconds = (
+                    int(ttl_seconds)
+                    if ttl_seconds is not None
+                    else int(self.cache_ttl_hours * 3600)
+                )
+                self.redis_client.setex(
+                    cache_key, effective_ttl_seconds, json.dumps(data)
+                )
                 if metadata is None:
                     metadata = {"created": now_ts, "items": len(data), "source": "api"}
                 metadata["last_updated"] = now_ts
-                metadata["ttl_seconds"] = int(ttl_seconds) if ttl_seconds is not None else int(self.cache_ttl_hours * 3600)
-                self.redis_client.setex(metadata_key, effective_ttl_seconds, json.dumps(metadata))
+                metadata["ttl_seconds"] = (
+                    int(ttl_seconds)
+                    if ttl_seconds is not None
+                    else int(self.cache_ttl_hours * 3600)
+                )
+                self.redis_client.setex(
+                    metadata_key, effective_ttl_seconds, json.dumps(metadata)
+                )
                 logger.info(f"Saved {len(data)} items to Redis cache: {cache_name}")
             except Exception as e:
                 logger.error(f"Redis save failed for {cache_name}: {e}")
@@ -229,7 +261,11 @@ class DataManager:
             if metadata is None:
                 metadata = {"created": now_ts, "items": len(data), "source": "api"}
             metadata["last_updated"] = now_ts
-            metadata["ttl_seconds"] = int(ttl_seconds) if ttl_seconds is not None else int(self.cache_ttl_hours * 3600)
+            metadata["ttl_seconds"] = (
+                int(ttl_seconds)
+                if ttl_seconds is not None
+                else int(self.cache_ttl_hours * 3600)
+            )
             with open(metadata_file, "w") as f:
                 json.dump(metadata, f, indent=2)
             logger.info(f"Saved {len(data)} items to file cache: {cache_name}")
@@ -242,13 +278,21 @@ class DataManager:
             _cache_items_total.labels(cache=cache_name).set(size)
             _cache_last_updated_ts.labels(cache=cache_name).set(now_ts)
             _cache_ttl_seconds.labels(cache=cache_name).set(
-                int(ttl_seconds) if ttl_seconds is not None else int(self.cache_ttl_hours * 3600)
+                int(ttl_seconds)
+                if ttl_seconds is not None
+                else int(self.cache_ttl_hours * 3600)
             )
         except Exception:
             pass
         return success
 
-    def update_cache_directly(self, cache_name: str, data: Any, source: str = "sync", key: Optional[str] = None) -> bool:
+    def update_cache_directly(
+        self,
+        cache_name: str,
+        data: Any,
+        source: str = "sync",
+        key: Optional[str] = None,
+    ) -> bool:
         metadata = {
             "created": time.time(),
             "items": len(data) if hasattr(data, "__len__") else 1,
@@ -257,7 +301,9 @@ class DataManager:
         }
         success = self.save_cache(cache_name, data, metadata, key=key)
         if success:
-            logger.info(f"Direct cache update successful for {cache_name}: {len(data)} items from {source}")
+            logger.info(
+                f"Direct cache update successful for {cache_name}: {len(data)} items from {source}"
+            )
         else:
             logger.error(f"Direct cache update failed for {cache_name}")
         return success
@@ -268,7 +314,9 @@ class DataManager:
             try:
                 if key is None:
                     # pattern delete for all keys under this cache_name
-                    for k in self.redis_client.scan_iter(match=f"safetyamp:{cache_name}*"):
+                    for k in self.redis_client.scan_iter(
+                        match=f"safetyamp:{cache_name}*"
+                    ):
                         self.redis_client.delete(k)
                 else:
                     cache_key = self._get_cache_key(cache_name, key)
@@ -297,7 +345,11 @@ class DataManager:
         return success
 
     def get_cache_stats(self) -> Dict[str, Any]:
-        stats: Dict[str, Any] = {"redis_connected": self.redis_client is not None, "cache_ttl_hours": self.cache_ttl_hours, "caches": {}}
+        stats: Dict[str, Any] = {
+            "redis_connected": self.redis_client is not None,
+            "cache_ttl_hours": self.cache_ttl_hours,
+            "caches": {},
+        }
         if self.redis_client:
             try:
                 keys = self.redis_client.keys("safetyamp:*")
@@ -307,7 +359,12 @@ class DataManager:
                         ttl = self.redis_client.ttl(key)
                         data = self.redis_client.get(key)
                         size = len(data) if data else 0
-                        stats["caches"][cache_name] = {"type": "redis", "ttl_seconds": ttl, "size_bytes": size, "valid": ttl > 0}
+                        stats["caches"][cache_name] = {
+                            "type": "redis",
+                            "ttl_seconds": ttl,
+                            "size_bytes": size,
+                            "valid": ttl > 0,
+                        }
             except Exception as e:
                 logger.error(f"Error getting Redis stats: {e}")
         cache_files = list(self.cache_dir.glob("*.json"))
@@ -317,7 +374,12 @@ class DataManager:
                 if cache_name not in stats["caches"]:
                     file_age = time.time() - cache_file.stat().st_mtime
                     max_age = self.cache_ttl_hours * 3600
-                    stats["caches"][cache_name] = {"type": "file", "size_bytes": cache_file.stat().st_size, "age_seconds": file_age, "valid": file_age < max_age}
+                    stats["caches"][cache_name] = {
+                        "type": "file",
+                        "size_bytes": cache_file.stat().st_size,
+                        "age_seconds": file_age,
+                        "valid": file_age < max_age,
+                    }
         return stats
 
     def should_refresh_cache(self, cache_name: str, key: Optional[str] = None) -> bool:
@@ -334,7 +396,9 @@ class DataManager:
                 else:
                     return True
             except Exception as e:
-                logger.warning(f"Error checking cache refresh time for {cache_name}: {e}")
+                logger.warning(
+                    f"Error checking cache refresh time for {cache_name}: {e}"
+                )
                 return True
         safe_key = f"_{key}" if key else ""
         metadata_file = self.cache_dir / f"{cache_name}{safe_key}_metadata.json"
@@ -348,12 +412,17 @@ class DataManager:
             refresh_interval_seconds = self.cache_refresh_interval_hours * 3600
             return (current_time - last_refresh) >= refresh_interval_seconds
         except Exception as e:
-            logger.warning(f"Error checking file cache refresh time for {cache_name}: {e}")
+            logger.warning(
+                f"Error checking file cache refresh time for {cache_name}: {e}"
+            )
             return True
 
     def mark_cache_refreshed(self, cache_name: str, key: Optional[str] = None) -> bool:
         try:
-            metadata = {"last_refresh": time.time(), "refresh_interval_hours": self.cache_refresh_interval_hours}
+            metadata = {
+                "last_refresh": time.time(),
+                "refresh_interval_hours": self.cache_refresh_interval_hours,
+            }
             if self.redis_client:
                 metadata_key = self._get_metadata_key(cache_name, key)
                 ttl_seconds = int(self.cache_ttl_hours * 3600)
@@ -384,7 +453,9 @@ class DataManager:
     ) -> Any:
         # Try cache first
         cached = self.get_cached_data(name, key)
-        if cached is not None and self.is_cache_valid(name, max_age_hours=max(1, ttl_seconds // 3600), key=key):
+        if cached is not None and self.is_cache_valid(
+            name, max_age_hours=max(1, ttl_seconds // 3600), key=key
+        ):
             return cached
 
         if not lock or self.redis_client is None:
@@ -392,20 +463,26 @@ class DataManager:
             try:
                 fresh = loader()
                 if fresh is not None:
-                    self.save_cache(name, fresh, metadata=metadata, ttl_seconds=ttl_seconds, key=key)
+                    self.save_cache(
+                        name, fresh, metadata=metadata, ttl_seconds=ttl_seconds, key=key
+                    )
                 return fresh
             except Exception:
                 return self.get_cached_data(name, key)
 
         # Distributed lock (Redis SET NX PX)
-        import uuid, random
+        import random
+        import uuid
+
         token = str(uuid.uuid4())
         lock_key = f"{self._get_cache_key(name, key)}:lock"
         lock_ttl_ms = max(5000, min(ttl_seconds * 1000, 30000))  # 5s..30s
 
         def acquire_lock() -> bool:
             try:
-                return bool(self.redis_client.set(lock_key, token, nx=True, px=lock_ttl_ms))
+                return bool(
+                    self.redis_client.set(lock_key, token, nx=True, px=lock_ttl_ms)
+                )
             except Exception:
                 return False
 
@@ -422,7 +499,9 @@ class DataManager:
             try:
                 fresh = loader()
                 if fresh is not None:
-                    self.save_cache(name, fresh, metadata=metadata, ttl_seconds=ttl_seconds, key=key)
+                    self.save_cache(
+                        name, fresh, metadata=metadata, ttl_seconds=ttl_seconds, key=key
+                    )
                 return fresh
             finally:
                 release_lock()
@@ -461,7 +540,10 @@ class DataManager:
         logger.info(f"Loaded {len(job_data)} jobs into memory")
 
     def get_employee_by_id(self, employee_id: int) -> Optional[Dict[str, Any]]:
-        return next((emp for emp in self._employee_data if emp.get("Employee") == employee_id), None)
+        return next(
+            (emp for emp in self._employee_data if emp.get("Employee") == employee_id),
+            None,
+        )
 
     def get_employees_by_department(self, department: str) -> List[Dict[str, Any]]:
         return [emp for emp in self._employee_data if emp.get("PRDept") == department]
@@ -482,10 +564,18 @@ class DataManager:
         return next((job for job in self._job_data if job.get("Job") == job_code), None)
 
     def _should_refresh_employees(self) -> bool:
-        return not self._employee_data or not self._last_employee_refresh or (datetime.now() - self._last_employee_refresh) > self._refresh_interval
+        return (
+            not self._employee_data
+            or not self._last_employee_refresh
+            or (datetime.now() - self._last_employee_refresh) > self._refresh_interval
+        )
 
     def _should_refresh_jobs(self) -> bool:
-        return not self._job_data or not self._last_job_refresh or (datetime.now() - self._last_job_refresh) > self._refresh_interval
+        return (
+            not self._job_data
+            or not self._last_job_refresh
+            or (datetime.now() - self._last_job_refresh) > self._refresh_interval
+        )
 
     async def _refresh_employee_data(self):
         logger.info("Employee data refresh requested")
@@ -499,7 +589,7 @@ class DataManager:
         entity_type: str,
         entity_id: str,
         metadata: Dict[str, Any],
-        ttl_days: int = 7
+        ttl_days: int = 7,
     ) -> bool:
         """
         Save failed sync metadata to Redis with TTL.
@@ -525,13 +615,13 @@ class DataManager:
             logger.debug(f"Saved failed sync record: {entity_type}/{entity_id}")
             return True
         except Exception as e:
-            logger.error(f"Failed to save failure record for {entity_type}/{entity_id}: {e}")
+            logger.error(
+                f"Failed to save failure record for {entity_type}/{entity_id}: {e}"
+            )
             return False
 
     def get_failed_sync_record(
-        self,
-        entity_type: str,
-        entity_id: str
+        self, entity_type: str, entity_id: str
     ) -> Optional[Dict[str, Any]]:
         """
         Retrieve failed sync metadata from Redis.
@@ -554,14 +644,12 @@ class DataManager:
                 return json.loads(data)
             return None
         except Exception as e:
-            logger.error(f"Failed to get failure record for {entity_type}/{entity_id}: {e}")
+            logger.error(
+                f"Failed to get failure record for {entity_type}/{entity_id}: {e}"
+            )
             return None
 
-    def delete_failed_sync_record(
-        self,
-        entity_type: str,
-        entity_id: str
-    ) -> bool:
+    def delete_failed_sync_record(self, entity_type: str, entity_id: str) -> bool:
         """
         Delete a failed sync record from Redis.
 
@@ -582,13 +670,13 @@ class DataManager:
             logger.debug(f"Deleted failed sync record: {entity_type}/{entity_id}")
             return True
         except Exception as e:
-            logger.error(f"Failed to delete failure record for {entity_type}/{entity_id}: {e}")
+            logger.error(
+                f"Failed to delete failure record for {entity_type}/{entity_id}: {e}"
+            )
             return False
 
     def get_all_failed_records(
-        self,
-        entity_type: Optional[str] = None,
-        limit: int = 100
+        self, entity_type: Optional[str] = None, limit: int = 100
     ) -> List[Dict[str, Any]]:
         """
         Get all failed sync records, optionally filtered by entity type.
@@ -631,7 +719,9 @@ class DataManager:
             return []
 
     # ===== Validation bridge =====
-    def validate_employee_data(self, payload: Dict[str, Any], emp_id: str, full_name: str):
+    def validate_employee_data(
+        self, payload: Dict[str, Any], emp_id: str, full_name: str
+    ):
         return validator.validate_employee_data(payload, emp_id, full_name)
 
     def validate_site_data(self, payload: Dict[str, Any], site_id: str):

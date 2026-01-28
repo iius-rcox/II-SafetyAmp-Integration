@@ -6,8 +6,8 @@
 # 2. Click "Agents management" in the left menu
 # 3. Copy "Workspace ID" and "Primary key"
 
-# Then run this script with those values:
-# ./update-log-analytics-secret.sh <workspace-id> <primary-key>
+# Then run from project root:
+# ./scripts/update-log-analytics-secret.sh <workspace-id> <primary-key>
 
 if [ "$#" -ne 2 ]; then
     echo "Usage: $0 <workspace-id> <primary-key>"

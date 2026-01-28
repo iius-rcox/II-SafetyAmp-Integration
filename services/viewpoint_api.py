@@ -1,10 +1,6 @@
-import os
-import pyodbc
-from datetime import datetime
 from contextlib import contextmanager
 from sqlalchemy import create_engine, text
 from sqlalchemy.pool import QueuePool
-from sqlalchemy.engine import Engine
 from urllib.parse import quote_plus
 from config import config
 from utils.logger import get_logger
@@ -12,16 +8,17 @@ from .data_manager import data_manager
 
 logger = get_logger("viewpoint")
 
+
 class ViewpointAPI:
     def __init__(self):
         # Build SQLAlchemy connection URL from ODBC connection string
         self.conn_str = config.VIEWPOINT_CONN_STRING
-        
+
         # Convert ODBC connection string to SQLAlchemy URL
         # Format: mssql+pyodbc:///?odbc_connect=<encoded_connection_string>
         encoded_conn_str = quote_plus(self.conn_str)
         sqlalchemy_url = f"mssql+pyodbc:///?odbc_connect={encoded_conn_str}"
-        
+
         # Create engine with connection pooling
         self.engine = create_engine(
             sqlalchemy_url,
@@ -32,10 +29,12 @@ class ViewpointAPI:
             pool_recycle=config.DB_POOL_RECYCLE,
             echo=False,  # Set to True for SQL debugging
             pool_pre_ping=True,  # Verify connections before use
-            pool_reset_on_return='commit'  # Reset connections on return
+            pool_reset_on_return="commit",  # Reset connections on return
         )
-        
-        logger.info(f"Initialized Viewpoint API with connection pool (size={config.DB_POOL_SIZE}, max_overflow={config.DB_MAX_OVERFLOW})")
+
+        logger.info(
+            f"Initialized Viewpoint API with connection pool (size={config.DB_POOL_SIZE}, max_overflow={config.DB_MAX_OVERFLOW})"
+        )
 
     @contextmanager
     def _get_connection(self):
@@ -77,10 +76,10 @@ class ViewpointAPI:
         """
         return self._fetch_query(connection, query)
 
-
     def fetch_recent_jobs(self, connection):
         # Optimized query - using EXISTS instead of CTE for better performance
-        query = text("""
+        query = text(
+            """
         SELECT 
             JC.PREndDate,
             JC.Job,
@@ -102,9 +101,12 @@ class ViewpointAPI:
             )
         ORDER BY
             JC.Employee
-        """)
+        """
+        )
         recent_jobs = connection.execute(query, {"start_date": "2024-01-01"}).fetchall()
-        return {row.Employee: row.Job.strip() if row.Job else None for row in recent_jobs}
+        return {
+            row.Employee: row.Job.strip() if row.Job else None for row in recent_jobs
+        }
 
     def fetch_employees(self, connection):
         query = """

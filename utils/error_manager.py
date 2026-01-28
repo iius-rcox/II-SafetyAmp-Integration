@@ -17,16 +17,18 @@ class ErrorManager:
     def log_error(self, error: Exception, context: Optional[Dict[str, Any]] = None):
         """Log an error with optional context."""
         error_info = {
-            'timestamp': datetime.utcnow().isoformat(),
-            'error_type': type(error).__name__,
-            'error_message': str(error),
-            'context': context or {}
+            "timestamp": datetime.utcnow().isoformat(),
+            "error_type": type(error).__name__,
+            "error_message": str(error),
+            "context": context or {},
         }
         self.errors.append(error_info)
         self.last_error_time = datetime.utcnow()
 
-        logger.error(f"Error occurred: {error_info['error_type']} - {error_info['error_message']}",
-                    extra={'context': context})
+        logger.error(
+            f"Error occurred: {error_info['error_type']} - {error_info['error_message']}",
+            extra={"context": context},
+        )
 
     def get_recent_errors(self, limit: int = 10):
         """Get the most recent errors."""

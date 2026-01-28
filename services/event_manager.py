@@ -23,7 +23,13 @@ class _ChangeTracker:
             "session_id": f"sync_{int(time.time())}",
             "start_time": datetime.now(timezone.utc).isoformat(),
             "sync_type": None,
-            "changes": {"created": [], "updated": [], "deleted": [], "skipped": [], "errors": []},
+            "changes": {
+                "created": [],
+                "updated": [],
+                "deleted": [],
+                "skipped": [],
+                "errors": [],
+            },
             "summary": {
                 "total_processed": 0,
                 "total_created": 0,
@@ -36,12 +42,16 @@ class _ChangeTracker:
                 "duration_seconds": 0,
             },
         }
-        self.current_session["summary"]["start_time"] = datetime.now(timezone.utc).isoformat()
+        self.current_session["summary"]["start_time"] = datetime.now(
+            timezone.utc
+        ).isoformat()
 
     def start_sync(self, sync_type: str) -> None:
         self.current_session["sync_type"] = sync_type
 
-    def log_creation(self, entity_type: str, entity_id: str, data: Dict[str, Any]) -> None:
+    def log_creation(
+        self, entity_type: str, entity_id: str, data: Dict[str, Any]
+    ) -> None:
         self.current_session["changes"]["created"].append(
             {
                 "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -59,7 +69,13 @@ class _ChangeTracker:
         except Exception:
             pass
 
-    def log_update(self, entity_type: str, entity_id: str, changes: Dict[str, Any], original_data: Optional[Dict[str, Any]]) -> None:
+    def log_update(
+        self,
+        entity_type: str,
+        entity_id: str,
+        changes: Dict[str, Any],
+        original_data: Optional[Dict[str, Any]],
+    ) -> None:
         self.current_session["changes"]["updated"].append(
             {
                 "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -113,7 +129,14 @@ class _ChangeTracker:
         except Exception:
             pass
 
-    def log_error(self, entity_type: str, entity_id: str, error: str, operation: str, data: Optional[Dict[str, Any]]) -> None:
+    def log_error(
+        self,
+        entity_type: str,
+        entity_id: str,
+        error: str,
+        operation: str,
+        data: Optional[Dict[str, Any]],
+    ) -> None:
         self.current_session["changes"]["errors"].append(
             {
                 "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -140,7 +163,10 @@ class _ChangeTracker:
         self.current_session["summary"]["duration_seconds"] = duration
         session_file = self.output_dir / f"{self.current_session['session_id']}.json"
         try:
-            session_file.write_text(json.dumps(self.current_session, indent=2, default=str), encoding="utf-8")
+            session_file.write_text(
+                json.dumps(self.current_session, indent=2, default=str),
+                encoding="utf-8",
+            )
         except Exception:
             pass
         return self.current_session
@@ -148,7 +174,11 @@ class _ChangeTracker:
     # ---- Reporting helpers for external scripts ----
     def _session_files(self) -> List[Path]:
         try:
-            return sorted(self.output_dir.glob("sync_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+            return sorted(
+                self.output_dir.glob("sync_*.json"),
+                key=lambda p: p.stat().st_mtime,
+                reverse=True,
+            )
         except Exception:
             return []
 
@@ -185,13 +215,19 @@ class _ChangeTracker:
                         all_changes.append(change)
             except Exception:
                 continue
+
         # Sort by timestamp descending
         def _parse_ts(val: str) -> float:
             try:
                 return datetime.fromisoformat(val).timestamp()
             except Exception:
                 return 0.0
-        return sorted(all_changes, key=lambda c: _parse_ts(str(c.get("timestamp", ""))), reverse=True)
+
+        return sorted(
+            all_changes,
+            key=lambda c: _parse_ts(str(c.get("timestamp", ""))),
+            reverse=True,
+        )
 
     def get_summary_report(self, hours: int = 24) -> Dict[str, Any]:
         """Return a compact summary for dashboards and scripts.
@@ -252,7 +288,9 @@ class _ErrorNotifier:
         self.last_notification_file = self.data_dir / "last_notification.json"
         if self.errors_file.exists():
             try:
-                self.errors: List[Dict[str, Any]] = json.loads(self.errors_file.read_text(encoding="utf-8"))
+                self.errors: List[Dict[str, Any]] = json.loads(
+                    self.errors_file.read_text(encoding="utf-8")
+                )
             except Exception:
                 self.errors = []
         else:
@@ -260,11 +298,21 @@ class _ErrorNotifier:
 
     def _save(self) -> None:
         try:
-            self.errors_file.write_text(json.dumps(self.errors, indent=2, default=str), encoding="utf-8")
+            self.errors_file.write_text(
+                json.dumps(self.errors, indent=2, default=str), encoding="utf-8"
+            )
         except Exception:
             pass
 
-    def log_error(self, error_type: str, entity_type: str, entity_id: str, error_message: str, error_details: Optional[Dict[str, Any]] = None, source: str = "sync") -> None:
+    def log_error(
+        self,
+        error_type: str,
+        entity_type: str,
+        entity_id: str,
+        error_message: str,
+        error_details: Optional[Dict[str, Any]] = None,
+        source: str = "sync",
+    ) -> None:
         self.errors.append(
             {
                 "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -307,7 +355,9 @@ class _ErrorNotifier:
     def _mark_sent(self) -> None:
         try:
             self.last_notification_file.write_text(
-                json.dumps({"timestamp": datetime.now(timezone.utc).isoformat()}, indent=2),
+                json.dumps(
+                    {"timestamp": datetime.now(timezone.utc).isoformat()}, indent=2
+                ),
                 encoding="utf-8",
             )
         except Exception:
@@ -340,7 +390,11 @@ class _ErrorNotifier:
         return {
             "total_errors_last_hour": len(recent),
             "should_send_notification": self._should_send(),
-            "last_notification_sent": json.loads(self.last_notification_file.read_text()) if self.last_notification_file.exists() else None,
+            "last_notification_sent": (
+                json.loads(self.last_notification_file.read_text())
+                if self.last_notification_file.exists()
+                else None
+            ),
         }
 
 
@@ -351,7 +405,11 @@ class EventManager:
     for emitting creation/update/deletion events, errors, and session lifecycle.
     """
 
-    def __init__(self, change_tracker: Optional[_ChangeTracker] = None, error_notifier: Optional[_ErrorNotifier] = None) -> None:
+    def __init__(
+        self,
+        change_tracker: Optional[_ChangeTracker] = None,
+        error_notifier: Optional[_ErrorNotifier] = None,
+    ) -> None:
         self.change_tracker = change_tracker or _ChangeTracker()
         self.error_notifier = error_notifier or _ErrorNotifier()
         self._current_session_id: Optional[str] = None
@@ -360,26 +418,60 @@ class EventManager:
     def start_sync(self, name: str, correlation_id: Optional[str] = None) -> str:
         self.change_tracker.start_sync(name)
         self._current_session_id = self.change_tracker.current_session.get("session_id")
-        logger.info("Sync session started", extra={"sync_type": name, "session_id": self._current_session_id, "correlation_id": correlation_id})
+        logger.info(
+            "Sync session started",
+            extra={
+                "sync_type": name,
+                "session_id": self._current_session_id,
+                "correlation_id": correlation_id,
+            },
+        )
         return self._current_session_id or ""
 
     def end_sync(self, session_id: Optional[str] = None) -> Dict[str, Any]:
         summary = self.change_tracker.end_sync()
-        logger.info("Sync session ended", extra={"session_id": session_id or self._current_session_id, "summary": summary.get("summary")})
+        logger.info(
+            "Sync session ended",
+            extra={
+                "session_id": session_id or self._current_session_id,
+                "summary": summary.get("summary"),
+            },
+        )
         self._current_session_id = None
         return summary
 
     # ----- Change events -----
-    def log_creation(self, entity: str, entity_id: str, details: Optional[Dict[str, Any]] = None, session_id: Optional[str] = None) -> None:
+    def log_creation(
+        self,
+        entity: str,
+        entity_id: str,
+        details: Optional[Dict[str, Any]] = None,
+        session_id: Optional[str] = None,
+    ) -> None:
         self.change_tracker.log_creation(entity, entity_id, details or {})
 
-    def log_update(self, entity: str, entity_id: str, changes: Optional[Dict[str, Any]] = None, original_data: Optional[Dict[str, Any]] = None, session_id: Optional[str] = None) -> None:
+    def log_update(
+        self,
+        entity: str,
+        entity_id: str,
+        changes: Optional[Dict[str, Any]] = None,
+        original_data: Optional[Dict[str, Any]] = None,
+        session_id: Optional[str] = None,
+    ) -> None:
         self.change_tracker.log_update(entity, entity_id, changes or {}, original_data)
 
-    def log_deletion(self, entity: str, entity_id: str, reason: Optional[str] = None, session_id: Optional[str] = None) -> None:
+    def log_deletion(
+        self,
+        entity: str,
+        entity_id: str,
+        reason: Optional[str] = None,
+        session_id: Optional[str] = None,
+    ) -> None:
         self.change_tracker.log_deletion(entity, entity_id, reason or "sync_cleanup")
 
-    def log_skip(self, entity: str, entity_id: str, reason: str, session_id: Optional[str] = None) -> None:
+    def log_skip(
+        self, entity: str, entity_id: str, reason: str, session_id: Optional[str] = None
+    ) -> None:
         self.change_tracker.log_skip(entity, entity_id, reason)
 
     # ----- Errors -----
@@ -423,6 +515,3 @@ class EventManager:
 
 # Global singleton
 event_manager = EventManager()
-
-
-
