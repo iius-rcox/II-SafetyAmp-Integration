@@ -5,3 +5,4 @@ metadata:
   namespace: safety-amp
 data:
   ENVIRONMENT: "development"
+  LOG_LEVEL: "DEBUG"

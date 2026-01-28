@@ -1,0 +1,130 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "*.md"
+      - "k8s/argocd/**"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+
+env:
+  REGISTRY: iiusacr.azurecr.io
+  IMAGE_NAME: safety-amp-agent
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  build-and-push:
+    name: Build and Push Image
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+      short_sha: ${{ steps.vars.outputs.short_sha }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set build variables
+        id: vars
+        run: |
+          echo "short_sha=$(echo ${GITHUB_SHA} | cut -c1-7)" >> $GITHUB_OUTPUT
+          echo "build_time=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=sha-${{ steps.vars.outputs.short_sha }}
+            type=raw,value=dev
+            type=sha,prefix=
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILDTIME=${{ steps.vars.outputs.build_time }}
+            VERSION=${{ steps.vars.outputs.short_sha }}
+            REVISION=${{ github.sha }}
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ steps.vars.outputs.short_sha }}
+          format: "sarif"
+          output: "trivy-results.sarif"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
+
+  update-manifests:
+    name: Update Kubernetes Manifests
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    env:
+      SHORT_SHA: ${{ needs.build-and-push.outputs.short_sha }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update dev kustomization with new image tag
+        run: |
+          cd k8s/overlays/dev
+
+          # Check if images section exists, if not create it
+          if ! grep -q "^images:" kustomization.yaml; then
+            echo "" >> kustomization.yaml
+            echo "images:" >> kustomization.yaml
+            echo "  - name: safety-amp-agent" >> kustomization.yaml
+            echo "    newName: ${REGISTRY}/${IMAGE_NAME}" >> kustomization.yaml
+            echo "    newTag: sha-${SHORT_SHA}" >> kustomization.yaml
+          else
+            # Update existing image tag using sed
+            sed -i "s/newTag:.*/newTag: sha-${SHORT_SHA}/" kustomization.yaml
+          fi
+
+          cat kustomization.yaml
+
+      - name: Commit and push manifest changes
+        env:
+          COMMIT_MSG: "ci: update dev image to sha-${{ needs.build-and-push.outputs.short_sha }}"
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add k8s/overlays/dev/kustomization.yaml
+          git diff --staged --quiet || git commit -m "${COMMIT_MSG}"
+          git push

@@ -1,0 +1,82 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: safetyamp-integration
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: SafetyAmp Integration Service - Data sync between Viewpoint, Samsara, and SafetyAmp
+
+  # Source repositories that this project can use
+  sourceRepos:
+    - "https://github.com/iius-rcox/II-SafetyAmp-Integration.git"
+    - "git@github.com:iius-rcox/II-SafetyAmp-Integration.git"
+
+  # Destination clusters and namespaces
+  destinations:
+    - namespace: safety-amp-dev
+      server: https://kubernetes.default.svc
+    - namespace: safety-amp-staging
+      server: https://kubernetes.default.svc
+    - namespace: safety-amp-prod
+      server: https://kubernetes.default.svc
+
+  # Cluster resource allow list
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+
+  # Namespace-scoped resource allow list
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: ConfigMap
+    - group: ""
+      kind: Secret
+    - group: ""
+      kind: Service
+    - group: ""
+      kind: ServiceAccount
+    - group: ""
+      kind: PersistentVolumeClaim
+    - group: apps
+      kind: Deployment
+    - group: apps
+      kind: StatefulSet
+    - group: batch
+      kind: Job
+    - group: batch
+      kind: CronJob
+    - group: networking.k8s.io
+      kind: Ingress
+    - group: networking.k8s.io
+      kind: NetworkPolicy
+    - group: policy
+      kind: PodDisruptionBudget
+    - group: autoscaling
+      kind: HorizontalPodAutoscaler
+
+  # Roles for project-level access control
+  roles:
+    - name: developer
+      description: Developer access - can sync and view applications
+      policies:
+        - p, proj:safetyamp-integration:developer, applications, get, safetyamp-integration/*, allow
+        - p, proj:safetyamp-integration:developer, applications, sync, safetyamp-integration/*, allow
+      groups:
+        - safetyamp-developers
+
+    - name: admin
+      description: Admin access - full control over applications
+      policies:
+        - p, proj:safetyamp-integration:admin, applications, *, safetyamp-integration/*, allow
+      groups:
+        - safetyamp-admins
+
+  # Sync windows - optional: restrict when syncs can occur
+  # syncWindows:
+  #   - kind: deny
+  #     schedule: "0 22 * * 5"  # No deploys Friday 10pm
+  #     duration: 36h
+  #     applications:
+  #       - "*-prod"

@@ -1,0 +1,177 @@
+name: Release and Promote
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_tag:
+        description: "Source image tag (e.g., sha-abc1234)"
+        required: true
+        type: string
+      target_environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        options:
+          - staging
+          - prod
+      release_version:
+        description: "Release version for prod (e.g., v1.2.3)"
+        required: false
+        type: string
+
+env:
+  REGISTRY: iiusacr.azurecr.io
+  IMAGE_NAME: safety-amp-agent
+
+jobs:
+  validate:
+    name: Validate Inputs
+    runs-on: ubuntu-latest
+    outputs:
+      source_tag: ${{ steps.validate.outputs.source_tag }}
+      target_env: ${{ steps.validate.outputs.target_env }}
+      release_version: ${{ steps.validate.outputs.release_version }}
+    steps:
+      - name: Validate inputs
+        id: validate
+        env:
+          INPUT_SOURCE_TAG: ${{ github.event.inputs.source_tag }}
+          INPUT_TARGET_ENV: ${{ github.event.inputs.target_environment }}
+          INPUT_RELEASE_VERSION: ${{ github.event.inputs.release_version }}
+        run: |
+          # Validate source tag format
+          if [[ ! "$INPUT_SOURCE_TAG" =~ ^sha-[a-f0-9]{7}$ ]]; then
+            echo "Error: source_tag must be in format 'sha-XXXXXXX'"
+            exit 1
+          fi
+
+          # Validate release version for prod
+          if [[ "$INPUT_TARGET_ENV" == "prod" ]]; then
+            if [[ -z "$INPUT_RELEASE_VERSION" ]]; then
+              echo "Error: release_version is required for prod deployments"
+              exit 1
+            fi
+            if [[ ! "$INPUT_RELEASE_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "Error: release_version must be in format 'vX.Y.Z'"
+              exit 1
+            fi
+          fi
+
+          echo "source_tag=$INPUT_SOURCE_TAG" >> $GITHUB_OUTPUT
+          echo "target_env=$INPUT_TARGET_ENV" >> $GITHUB_OUTPUT
+          echo "release_version=$INPUT_RELEASE_VERSION" >> $GITHUB_OUTPUT
+
+  promote:
+    name: Promote Image
+    runs-on: ubuntu-latest
+    needs: validate
+    env:
+      SOURCE_TAG: ${{ needs.validate.outputs.source_tag }}
+      TARGET_ENV: ${{ needs.validate.outputs.target_env }}
+      RELEASE_VERSION: ${{ needs.validate.outputs.release_version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Pull and retag image
+        run: |
+          SOURCE_IMAGE="${REGISTRY}/${IMAGE_NAME}:${SOURCE_TAG}"
+          TARGET_IMAGE="${REGISTRY}/${IMAGE_NAME}:${TARGET_ENV}"
+
+          echo "Pulling $SOURCE_IMAGE"
+          docker pull "$SOURCE_IMAGE"
+
+          echo "Tagging as $TARGET_IMAGE"
+          docker tag "$SOURCE_IMAGE" "$TARGET_IMAGE"
+
+          echo "Pushing $TARGET_IMAGE"
+          docker push "$TARGET_IMAGE"
+
+          # For prod, also tag with release version
+          if [[ "$TARGET_ENV" == "prod" && -n "$RELEASE_VERSION" ]]; then
+            VERSIONED_IMAGE="${REGISTRY}/${IMAGE_NAME}:${RELEASE_VERSION}"
+            echo "Tagging as $VERSIONED_IMAGE"
+            docker tag "$SOURCE_IMAGE" "$VERSIONED_IMAGE"
+            echo "Pushing $VERSIONED_IMAGE"
+            docker push "$VERSIONED_IMAGE"
+          fi
+
+      - name: Update Kustomize overlay
+        run: |
+          OVERLAY_PATH="k8s/overlays/${TARGET_ENV}"
+
+          # Ensure overlay directory exists
+          if [[ ! -d "$OVERLAY_PATH" ]]; then
+            echo "Error: Overlay directory $OVERLAY_PATH does not exist"
+            exit 1
+          fi
+
+          cd "$OVERLAY_PATH"
+
+          # Determine the tag to use
+          if [[ "$TARGET_ENV" == "prod" && -n "$RELEASE_VERSION" ]]; then
+            NEW_TAG="$RELEASE_VERSION"
+          else
+            NEW_TAG="$SOURCE_TAG"
+          fi
+
+          # Check if images section exists
+          if ! grep -q "^images:" kustomization.yaml; then
+            echo "" >> kustomization.yaml
+            echo "images:" >> kustomization.yaml
+            echo "  - name: safety-amp-agent" >> kustomization.yaml
+            echo "    newName: ${REGISTRY}/${IMAGE_NAME}" >> kustomization.yaml
+            echo "    newTag: ${NEW_TAG}" >> kustomization.yaml
+          else
+            sed -i "s/newTag:.*/newTag: ${NEW_TAG}/" kustomization.yaml
+          fi
+
+          echo "Updated kustomization.yaml:"
+          cat kustomization.yaml
+
+      - name: Commit and push changes
+        env:
+          COMMIT_MSG: "release: promote ${{ needs.validate.outputs.source_tag }} to ${{ needs.validate.outputs.target_env }}"
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add "k8s/overlays/${TARGET_ENV}/kustomization.yaml"
+          git diff --staged --quiet || git commit -m "${COMMIT_MSG}"
+          git push
+
+      - name: Create Git tag for prod release
+        if: needs.validate.outputs.target_env == 'prod' && needs.validate.outputs.release_version != ''
+        run: |
+          git tag "${RELEASE_VERSION}" -m "Release ${RELEASE_VERSION}"
+          git push origin "${RELEASE_VERSION}"
+
+  notify:
+    name: Send Notification
+    runs-on: ubuntu-latest
+    needs: [validate, promote]
+    if: always()
+    env:
+      TARGET_ENV: ${{ needs.validate.outputs.target_env }}
+      SOURCE_TAG: ${{ needs.validate.outputs.source_tag }}
+      PROMOTE_RESULT: ${{ needs.promote.result }}
+    steps:
+      - name: Notify on success
+        if: needs.promote.result == 'success'
+        run: |
+          echo "Successfully promoted ${SOURCE_TAG} to ${TARGET_ENV}"
+          # Add Slack/Teams notification here if needed
+
+      - name: Notify on failure
+        if: needs.promote.result == 'failure'
+        run: |
+          echo "Failed to promote ${SOURCE_TAG} to ${TARGET_ENV}"
+          exit 1

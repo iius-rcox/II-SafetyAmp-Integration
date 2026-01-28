@@ -1,0 +1,48 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: safetyamp-integration-staging
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: safetyamp-integration
+    app.kubernetes.io/instance: staging
+    environment: staging
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: safetyamp-integration
+
+  source:
+    repoURL: https://github.com/iius-rcox/II-SafetyAmp-Integration.git
+    targetRevision: main
+    path: k8s/overlays/staging
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: safety-amp-staging
+
+  # Sync policy for staging - automated but requires approval for certain changes
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 5m
+
+  # Health checks
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+
+  revisionHistoryLimit: 10

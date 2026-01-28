@@ -1,0 +1,51 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: safetyamp-integration-prod
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: safetyamp-integration
+    app.kubernetes.io/instance: prod
+    environment: prod
+  annotations:
+    # Notifications for prod deployments
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: safetyamp-alerts
+    notifications.argoproj.io/subscribe.on-sync-failed.slack: safetyamp-alerts
+    notifications.argoproj.io/subscribe.on-health-degraded.slack: safetyamp-alerts
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: safetyamp-integration
+
+  source:
+    repoURL: https://github.com/iius-rcox/II-SafetyAmp-Integration.git
+    targetRevision: main
+    path: k8s/overlays/prod
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: safety-amp-prod
+
+  # Sync policy for prod - MANUAL sync required
+  # Automated sync is disabled for production safety
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 2
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+
+  # Stricter diff handling for prod
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+
+  revisionHistoryLimit: 20
