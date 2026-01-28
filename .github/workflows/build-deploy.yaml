@@ -17,6 +17,10 @@ on:
         options:
           - dev
 
+permissions:
+  contents: write
+  security-events: write
+
 env:
   REGISTRY: iiusacr.azurecr.io
   IMAGE_NAME: safety-amp-agent
