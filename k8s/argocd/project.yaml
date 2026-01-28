@@ -26,6 +26,10 @@ spec:
   clusterResourceWhitelist:
     - group: ""
       kind: Namespace
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
 
   # Namespace-scoped resource allow list
   namespaceResourceWhitelist:
@@ -55,6 +59,14 @@ spec:
       kind: PodDisruptionBudget
     - group: autoscaling
       kind: HorizontalPodAutoscaler
+    - group: rbac.authorization.k8s.io
+      kind: Role
+    - group: rbac.authorization.k8s.io
+      kind: RoleBinding
+    - group: monitoring.coreos.com
+      kind: ServiceMonitor
+    - group: monitoring.coreos.com
+      kind: PrometheusRule
 
   # Roles for project-level access control
   roles:
