@@ -115,7 +115,7 @@ export function ErrorSuggestions() {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <div className="text-red-600">Failed to load error suggestions: {String(error)}</div>
       </div>
     );
@@ -126,19 +126,19 @@ export function ErrorSuggestions() {
   const lowCount = data?.suggestions.filter(s => s.severity === 'low').length || 0;
 
   return (
-    <div className="bg-white rounded-lg shadow">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Lightbulb className="w-5 h-5 text-yellow-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Error Suggestions</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Error Suggestions</h2>
           </div>
           <div className="flex items-center gap-3">
             <select
               value={hours}
               onChange={(e) => setHours(Number(e.target.value))}
-              className="text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value={6}>Last 6 hours</option>
               <option value={24}>Last 24 hours</option>
@@ -148,7 +148,7 @@ export function ErrorSuggestions() {
             <button
               onClick={() => refetch()}
               disabled={isFetching}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
             >
               <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
             </button>
@@ -157,7 +157,7 @@ export function ErrorSuggestions() {
 
         {/* Summary */}
         <div className="mt-4 flex items-center gap-6 text-sm">
-          <span className="text-gray-500">
+          <span className="text-gray-500 dark:text-gray-400">
             {data?.total || 0} suggestions found
           </span>
           {highCount > 0 && (
@@ -181,7 +181,7 @@ export function ErrorSuggestions() {
       {/* Suggestions List */}
       <div className="p-6">
         {isLoading ? (
-          <div className="text-center text-gray-500 py-8">Loading...</div>
+          <div className="text-center text-gray-500 dark:text-gray-400 py-8">Loading...</div>
         ) : data?.suggestions && data.suggestions.length > 0 ? (
           <div className="space-y-4">
             {/* High severity first, then medium, then low */}
@@ -196,11 +196,11 @@ export function ErrorSuggestions() {
           </div>
         ) : (
           <div className="text-center py-12">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 mb-4">
               <Lightbulb className="w-8 h-8 text-green-600" />
             </div>
-            <p className="text-gray-600 font-medium">No issues detected</p>
-            <p className="text-sm text-gray-500 mt-1">All systems are running smoothly</p>
+            <p className="text-gray-600 dark:text-gray-300 font-medium">No issues detected</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">All systems are running smoothly</p>
           </div>
         )}
       </div>

@@ -70,7 +70,7 @@ export function DependencyHealth() {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <div className="text-red-600">Failed to load health status: {String(error)}</div>
       </div>
     );
@@ -81,18 +81,18 @@ export function DependencyHealth() {
     Object.values(data?.services || {}).every((s) => s.status === 'healthy');
 
   return (
-    <div className="bg-white rounded-lg shadow">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Heart className={`w-5 h-5 ${allHealthy ? 'text-green-600' : 'text-yellow-600'}`} />
-            <h2 className="text-lg font-semibold text-gray-900">Dependency Health</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Dependency Health</h2>
           </div>
           <button
             onClick={() => refetch()}
             disabled={isFetching}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
           >
             <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
             Refresh
@@ -102,7 +102,7 @@ export function DependencyHealth() {
 
       <div className="p-6">
         {isLoading ? (
-          <div className="text-center text-gray-500 py-4">Loading...</div>
+          <div className="text-center text-gray-500 dark:text-gray-400 py-4">Loading...</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Database */}
@@ -132,12 +132,12 @@ export function DependencyHealth() {
 
         {/* Overall Status Summary */}
         {data && (
-          <div className="mt-6 pt-4 border-t border-gray-200">
+          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
             <div
               className={`flex items-center justify-center gap-2 py-2 rounded-lg ${
                 allHealthy
-                  ? 'bg-green-50 text-green-700'
-                  : 'bg-yellow-50 text-yellow-700'
+                  ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                  : 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
               }`}
             >
               {allHealthy ? (

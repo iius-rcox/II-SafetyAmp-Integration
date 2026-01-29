@@ -46,19 +46,19 @@ export function NotificationLog() {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Bell className="w-5 h-5 text-purple-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Notification Log</h2>
-            {data && <span className="text-sm text-gray-500">({data.total} total)</span>}
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Notification Log</h2>
+            {data && <span className="text-sm text-gray-500 dark:text-gray-400">({data.total} total)</span>}
           </div>
           <button
             onClick={() => refetch()}
             disabled={isFetching}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
           >
             <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
           </button>
@@ -68,7 +68,7 @@ export function NotificationLog() {
         <div className="mt-4 flex items-center gap-4">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-gray-400" />
-            <span className="text-sm text-gray-500">Status:</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">Status:</span>
           </div>
           <div className="flex gap-2">
             {STATUS_OPTIONS.map(status => (
@@ -78,7 +78,7 @@ export function NotificationLog() {
                 className={`px-3 py-1 text-sm rounded-full transition-colors ${
                   statusFilter === status
                     ? 'bg-purple-600 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
                 {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -89,45 +89,45 @@ export function NotificationLog() {
       </div>
 
       {/* Notification List */}
-      <div className="divide-y divide-gray-200">
+      <div className="divide-y divide-gray-200 dark:divide-gray-700">
         {isLoading ? (
-          <div className="p-8 text-center text-gray-500">Loading...</div>
+          <div className="p-8 text-center text-gray-500 dark:text-gray-400">Loading...</div>
         ) : data?.notifications && data.notifications.length > 0 ? (
           data.notifications.map((notification) => (
-            <div key={notification.id} className="px-6 py-4 hover:bg-gray-50">
+            <div key={notification.id} className="px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700">
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3">
                   {getStatusIcon(notification.status)}
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-900">{notification.type}</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{notification.type}</span>
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusBadgeClass(notification.status)}`}>
                         {notification.status}
                       </span>
                     </div>
                     {notification.subject && (
-                      <p className="text-sm text-gray-600 mt-1">{notification.subject}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{notification.subject}</p>
                     )}
                     {notification.recipient && (
-                      <p className="text-sm text-gray-500 mt-1">To: {notification.recipient}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">To: {notification.recipient}</p>
                     )}
                     {notification.error && (
-                      <p className="text-sm text-red-600 mt-1">{notification.error}</p>
+                      <p className="text-sm text-red-600 dark:text-red-400 mt-1">{notification.error}</p>
                     )}
                   </div>
                 </div>
                 <div className="text-right text-sm">
-                  <p className="text-gray-500">{formatRelativeTime(notification.timestamp)}</p>
+                  <p className="text-gray-500 dark:text-gray-400">{formatRelativeTime(notification.timestamp)}</p>
                   {notification.error_count && notification.error_count > 1 && (
-                    <p className="text-red-600">{notification.error_count} errors</p>
+                    <p className="text-red-600 dark:text-red-400">{notification.error_count} errors</p>
                   )}
                 </div>
               </div>
             </div>
           ))
         ) : (
-          <div className="p-8 text-center text-gray-500">
-            <Bell className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+          <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+            <Bell className="w-12 h-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
             <p>No notifications found</p>
           </div>
         )}

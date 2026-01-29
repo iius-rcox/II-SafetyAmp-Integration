@@ -45,11 +45,11 @@ function CustomTooltip({ active, payload, label, timeRange }: CustomTooltipProps
   const formatStr = timeRange === '1d' ? 'MMM d, HH:mm' : 'MMM d, yyyy';
 
   return (
-    <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
-      <p className="text-sm font-medium text-gray-900 mb-1">
+    <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+      <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
         {label && format(parseISO(label), formatStr)}
       </p>
-      <p className="text-lg font-bold text-blue-600">
+      <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
         {formatNumber(payload[0]?.value || 0)} records
       </p>
     </div>
@@ -62,8 +62,8 @@ export function VistaRecordsChart() {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="text-red-600">Failed to load Vista records: {String(error)}</div>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="text-red-600 dark:text-red-400">Failed to load Vista records: {String(error)}</div>
       </div>
     );
   }
@@ -89,13 +89,13 @@ export function VistaRecordsChart() {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Database className="w-5 h-5 text-purple-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Viewpoint Records Retrieved</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Viewpoint Records Retrieved</h2>
           </div>
           <div className="flex items-center gap-3">
             {/* Time Range Buttons */}
@@ -107,7 +107,7 @@ export function VistaRecordsChart() {
                   className={`px-3 py-1.5 text-sm font-medium border first:rounded-l-md last:rounded-r-md -ml-px first:ml-0 transition-colors ${
                     timeRange === option.value
                       ? 'bg-purple-600 text-white border-purple-600 z-10'
-                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
                   }`}
                 >
                   {option.label}
@@ -117,7 +117,7 @@ export function VistaRecordsChart() {
             <button
               onClick={() => refetch()}
               disabled={isFetching}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
             >
               <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
             </button>
@@ -128,15 +128,15 @@ export function VistaRecordsChart() {
         {data && (
           <div className="mt-4 flex items-center gap-8">
             <div>
-              <p className="text-2xl font-bold text-gray-900">{formatNumber(data.total_records)}</p>
-              <p className="text-sm text-gray-500">Total Records</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatNumber(data.total_records)}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Total Records</p>
             </div>
             {data.by_entity_type && Object.entries(data.by_entity_type).length > 0 && (
               <div className="flex items-center gap-4 text-sm">
                 {Object.entries(data.by_entity_type).map(([type, count]) => (
                   <div key={type} className="text-center">
-                    <p className="font-medium text-gray-900">{formatNumber(count)}</p>
-                    <p className="text-gray-500 capitalize">{type}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{formatNumber(count)}</p>
+                    <p className="text-gray-500 dark:text-gray-400 capitalize">{type}</p>
                   </div>
                 ))}
               </div>
@@ -148,7 +148,7 @@ export function VistaRecordsChart() {
       {/* Chart */}
       <div className="p-6">
         {isLoading ? (
-          <div className="h-80 flex items-center justify-center text-gray-500">Loading...</div>
+          <div className="h-80 flex items-center justify-center text-gray-500 dark:text-gray-400">Loading...</div>
         ) : data?.data_points && data.data_points.length > 0 ? (
           <ResponsiveContainer width="100%" height={320}>
             <AreaChart data={data.data_points}>
@@ -158,15 +158,17 @@ export function VistaRecordsChart() {
                   <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+              <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
               <XAxis
                 dataKey="timestamp"
                 tickFormatter={formatXAxis}
-                stroke="#9CA3AF"
+                className="fill-gray-500 dark:fill-gray-400"
+                stroke="currentColor"
                 fontSize={12}
               />
               <YAxis
-                stroke="#9CA3AF"
+                className="fill-gray-500 dark:fill-gray-400"
+                stroke="currentColor"
                 fontSize={12}
                 tickFormatter={(value) => formatNumber(value)}
               />
@@ -183,7 +185,7 @@ export function VistaRecordsChart() {
             </AreaChart>
           </ResponsiveContainer>
         ) : (
-          <div className="h-80 flex items-center justify-center text-gray-500">
+          <div className="h-80 flex items-center justify-center text-gray-500 dark:text-gray-400">
             No data available for the selected time range
           </div>
         )}

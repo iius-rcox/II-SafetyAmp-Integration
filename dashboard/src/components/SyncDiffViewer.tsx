@@ -48,12 +48,12 @@ export function SyncDiffViewer() {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-3 mb-4">
           <GitCompare className="w-5 h-5 text-indigo-600" />
-          <h2 className="text-lg font-semibold text-gray-900">Sync Diff Viewer</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Sync Diff Viewer</h2>
         </div>
 
         {/* Search */}
@@ -61,7 +61,7 @@ export function SyncDiffViewer() {
           <select
             value={entityType}
             onChange={(e) => setEntityType(e.target.value)}
-            className="text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             {ENTITY_TYPES.map(type => (
               <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
@@ -74,7 +74,7 @@ export function SyncDiffViewer() {
               onChange={(e) => setEntityId(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
               placeholder={`Enter ${entityType} ID...`}
-              className="flex-1 text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="flex-1 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             <button
               onClick={handleSearch}
@@ -91,22 +91,22 @@ export function SyncDiffViewer() {
       {/* Results */}
       <div className="p-6">
         {isLoading ? (
-          <div className="text-center text-gray-500 py-8">Loading...</div>
+          <div className="text-center text-gray-500 dark:text-gray-400 py-8">Loading...</div>
         ) : error ? (
-          <div className="text-center text-red-600 py-8">Error loading diff</div>
+          <div className="text-center text-red-600 dark:text-red-400 py-8">Error loading diff</div>
         ) : data ? (
           <div className="space-y-6">
             {/* Status Banner */}
             <div className={`flex items-center gap-3 p-4 rounded-lg ${
-              data.diff?.status === 'in_sync' ? 'bg-green-50' :
-              data.diff?.status === 'different' ? 'bg-yellow-50' :
-              'bg-red-50'
+              data.diff?.status === 'in_sync' ? 'bg-green-50 dark:bg-green-900/30' :
+              data.diff?.status === 'different' ? 'bg-yellow-50 dark:bg-yellow-900/30' :
+              'bg-red-50 dark:bg-red-900/30'
             }`}>
               {getStatusIcon(data.diff?.status)}
               <div>
-                <p className="font-medium">{getStatusText(data.diff?.status)}</p>
+                <p className="font-medium dark:text-white">{getStatusText(data.diff?.status)}</p>
                 {data.diff?.changed_fields && (
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     {data.diff.changed_fields.length} field(s) different
                   </p>
                 )}
@@ -116,27 +116,27 @@ export function SyncDiffViewer() {
             {/* Changed Fields */}
             {data.diff?.changed_fields && data.diff.changed_fields.length > 0 && (
               <div>
-                <h3 className="font-medium text-gray-900 mb-3">Changed Fields</h3>
+                <h3 className="font-medium text-gray-900 dark:text-white mb-3">Changed Fields</h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
                       <tr>
-                        <th className="px-4 py-2 text-left font-medium text-gray-500">Field</th>
-                        <th className="px-4 py-2 text-left font-medium text-gray-500">Source (Viewpoint)</th>
-                        <th className="px-4 py-2 text-left font-medium text-gray-500">Target (SafetyAmp)</th>
+                        <th className="px-4 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Field</th>
+                        <th className="px-4 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Source (Viewpoint)</th>
+                        <th className="px-4 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Target (SafetyAmp)</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                       {data.diff.changed_fields.map((field, idx) => (
-                        <tr key={idx} className="hover:bg-gray-50">
-                          <td className="px-4 py-2 font-mono text-gray-900">{field.field}</td>
+                        <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                          <td className="px-4 py-2 font-mono text-gray-900 dark:text-white">{field.field}</td>
                           <td className="px-4 py-2">
-                            <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs font-mono">
+                            <span className="bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 px-2 py-0.5 rounded text-xs font-mono">
                               {JSON.stringify(field.source_value)}
                             </span>
                           </td>
                           <td className="px-4 py-2">
-                            <span className="bg-red-100 text-red-800 px-2 py-0.5 rounded text-xs font-mono">
+                            <span className="bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 px-2 py-0.5 rounded text-xs font-mono">
                               {JSON.stringify(field.target_value)}
                             </span>
                           </td>
@@ -152,24 +152,24 @@ export function SyncDiffViewer() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Source Data */}
               <div>
-                <h3 className="font-medium text-gray-900 mb-2">Source Data (Viewpoint)</h3>
-                <pre className="bg-gray-50 p-4 rounded-lg text-xs font-mono overflow-auto max-h-80">
+                <h3 className="font-medium text-gray-900 dark:text-white mb-2">Source Data (Viewpoint)</h3>
+                <pre className="bg-gray-50 dark:bg-gray-700 dark:text-gray-300 p-4 rounded-lg text-xs font-mono overflow-auto max-h-80">
                   {data.source_data ? JSON.stringify(data.source_data, null, 2) : 'No data'}
                 </pre>
               </div>
 
               {/* Target Data */}
               <div>
-                <h3 className="font-medium text-gray-900 mb-2">Target Data (SafetyAmp)</h3>
-                <pre className="bg-gray-50 p-4 rounded-lg text-xs font-mono overflow-auto max-h-80">
+                <h3 className="font-medium text-gray-900 dark:text-white mb-2">Target Data (SafetyAmp)</h3>
+                <pre className="bg-gray-50 dark:bg-gray-700 dark:text-gray-300 p-4 rounded-lg text-xs font-mono overflow-auto max-h-80">
                   {data.target_data ? JSON.stringify(data.target_data, null, 2) : 'No data'}
                 </pre>
               </div>
             </div>
           </div>
         ) : (
-          <div className="text-center text-gray-500 py-12">
-            <GitCompare className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+          <div className="text-center text-gray-500 dark:text-gray-400 py-12">
+            <GitCompare className="w-12 h-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
             <p>Enter an entity ID to compare source and target data</p>
           </div>
         )}
