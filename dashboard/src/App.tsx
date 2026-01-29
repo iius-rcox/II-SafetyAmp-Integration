@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { ThemeProvider } from './contexts/ThemeContext';
 import ThemeToggle from './components/ThemeToggle';
+import SyncPauseToggle from './components/SyncPauseToggle';
 import ApiCallHistory from './components/ApiCallHistory';
 import SyncMetricsChart from './components/SyncMetricsChart';
 import ErrorSuggestions from './components/ErrorSuggestions';
@@ -73,6 +74,7 @@ function Dashboard() {
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">SafetyAmp Integration Dashboard</h1>
             </div>
             <div className="flex items-center gap-4">
+              <SyncPauseToggle />
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 Auto-refreshing every 30s
               </span>

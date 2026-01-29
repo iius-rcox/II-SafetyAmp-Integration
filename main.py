@@ -143,6 +143,7 @@ health_status = {
     "database_status": "unknown",
     "external_apis_status": "unknown",
     "sync_in_progress": False,
+    "sync_paused": False,
 }
 
 # Shutdown flag for graceful termination
@@ -243,6 +244,24 @@ def run_sync_worker():
     )
 
     while health_status["healthy"] and not shutdown_requested:
+        # Check if sync is paused
+        try:
+            is_paused = data_manager.get_sync_paused()
+            health_status["sync_paused"] = is_paused
+            if is_paused:
+                logger.info("Sync is paused, waiting for resume...")
+                # Sleep in 30-second intervals, checking for resume or shutdown
+                pause_check_interval = 30
+                while data_manager.get_sync_paused() and not shutdown_requested:
+                    time.sleep(pause_check_interval)
+                if shutdown_requested:
+                    break
+                health_status["sync_paused"] = False
+                logger.info("Sync resumed, continuing with sync operations")
+        except Exception as e:
+            logger.warning(f"Error checking sync pause state: {e}")
+            # Continue with sync if we can't check pause state
+
         try:
             logger.info("Starting sync operations")
             health_status["sync_in_progress"] = True

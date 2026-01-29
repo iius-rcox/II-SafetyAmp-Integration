@@ -18,6 +18,8 @@ import type {
   NotificationsResponse,
   ConfigStatus,
   AuditLogResponse,
+  SyncPauseState,
+  SyncPauseResponse,
 } from '../types/dashboard';
 
 // Create axios instance with base configuration
@@ -199,6 +201,17 @@ export const dashboardApi = {
   // --- Feature 9: Audit Log ---
   getAuditLog: async (params?: { limit?: number; action?: string; resource?: string }): Promise<AuditLogResponse> => {
     const { data } = await api.get('/audit-log', { params });
+    return data;
+  },
+
+  // --- Feature 10: Sync Pause/Resume ---
+  getSyncPauseState: async (): Promise<SyncPauseState> => {
+    const { data } = await api.get('/sync-pause');
+    return data;
+  },
+
+  setSyncPauseState: async (paused: boolean): Promise<SyncPauseResponse> => {
+    const { data } = await api.post('/sync-pause', { paused });
     return data;
   },
 };

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dashboardApi } from '../services/api';
 import type { TimeRange } from '../types/dashboard';
 
@@ -18,6 +18,7 @@ export const dashboardKeys = {
   failedRecords: (entityType?: string) => [...dashboardKeys.all, 'failed-records', entityType] as const,
   dependencyHealth: () => [...dashboardKeys.all, 'dependency-health'] as const,
   durationTrends: (hours?: number) => [...dashboardKeys.all, 'duration-trends', hours] as const,
+  syncPause: () => [...dashboardKeys.all, 'sync-pause'] as const,
 };
 
 // API Calls hook
@@ -130,5 +131,34 @@ export function useDurationTrends(hours: number = 24) {
     queryKey: dashboardKeys.durationTrends(hours),
     queryFn: () => dashboardApi.getDurationTrends(hours),
     refetchInterval: 60000,
+  });
+}
+
+// Sync Pause hook
+export function useSyncPause() {
+  return useQuery({
+    queryKey: dashboardKeys.syncPause(),
+    queryFn: () => dashboardApi.getSyncPauseState(),
+    refetchInterval: 10000, // Refresh every 10 seconds
+  });
+}
+
+// Sync Pause mutation hook
+export function useSyncPauseMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (paused: boolean) => dashboardApi.setSyncPauseState(paused),
+    onSuccess: () => {
+      // Invalidate sync pause query to refetch current state
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.syncPause() });
+      // Also invalidate live status as it may reflect pause state
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.liveStatus() });
+    },
+    onError: (error: Error) => {
+      // Log error for debugging - component can access via mutation.error
+      console.error('Failed to toggle sync pause state:', error.message);
+      // The error will be available to components via mutation.isError and mutation.error
+    },
   });
 }

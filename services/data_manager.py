@@ -718,6 +718,85 @@ class DataManager:
             logger.error(f"Failed to get all failure records: {e}")
             return []
 
+    # ===== Sync Pause/Resume =====
+    def get_sync_paused(self) -> bool:
+        """
+        Get the current sync pause state.
+
+        Returns:
+            True if sync is paused, False otherwise.
+            Returns False if Redis is unavailable or on error.
+        """
+        if not self.redis_client:
+            return False
+
+        try:
+            value = self.redis_client.get("safetyamp:sync:paused")
+            return value == "1"
+        except Exception as e:
+            logger.error(f"Error getting sync pause state: {e}")
+            return False
+
+    def set_sync_paused(self, paused: bool, paused_by: Optional[str] = None) -> bool:
+        """
+        Set the sync pause state.
+
+        Args:
+            paused: True to pause sync, False to resume.
+            paused_by: Optional username/identifier of who paused sync.
+
+        Returns:
+            True if state was set successfully, False otherwise.
+        """
+        if not self.redis_client:
+            logger.warning("Redis not available, cannot set sync pause state")
+            return False
+
+        try:
+            # Set the pause state
+            self.redis_client.set("safetyamp:sync:paused", "1" if paused else "0")
+
+            # Handle metadata
+            if paused:
+                # Store metadata with who paused and when
+                metadata = {
+                    "paused_by": paused_by or "unknown",
+                    "paused_at": time.time(),
+                }
+                self.redis_client.set(
+                    "safetyamp:sync:paused:metadata", json.dumps(metadata)
+                )
+                logger.info(f"Sync paused by {paused_by or 'unknown'}")
+            else:
+                # Clear metadata when resuming
+                self.redis_client.delete("safetyamp:sync:paused:metadata")
+                logger.info("Sync resumed")
+
+            return True
+        except Exception as e:
+            logger.error(f"Error setting sync pause state: {e}")
+            return False
+
+    def get_sync_pause_metadata(self) -> Optional[Dict[str, Any]]:
+        """
+        Get metadata about the current sync pause (who paused and when).
+
+        Returns:
+            Dictionary with paused_by and paused_at, or None if not paused
+            or metadata not available.
+        """
+        if not self.redis_client:
+            return None
+
+        try:
+            metadata_json = self.redis_client.get("safetyamp:sync:paused:metadata")
+            if metadata_json:
+                return json.loads(metadata_json)
+            return None
+        except Exception as e:
+            logger.error(f"Error getting sync pause metadata: {e}")
+            return None
+
     # ===== Validation bridge =====
     def validate_employee_data(
         self, payload: Dict[str, Any], emp_id: str, full_name: str

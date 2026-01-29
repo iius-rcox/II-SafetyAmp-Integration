@@ -303,3 +303,15 @@ export interface AuditLogResponse {
 
 // Theme types - Feature 10
 export type Theme = 'light' | 'dark' | 'system';
+
+// Sync Pause types - Feature 11
+export interface SyncPauseState {
+  paused: boolean;
+  paused_by: string | null;
+  paused_at: number | null;
+}
+
+export interface SyncPauseResponse {
+  paused: boolean;
+  message: string;
+}

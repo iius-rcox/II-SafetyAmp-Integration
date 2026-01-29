@@ -24,6 +24,7 @@ import csv
 import io
 import json
 import os
+import re
 import secrets
 import time
 from datetime import datetime, timezone
@@ -38,14 +39,28 @@ logger = get_logger("dashboard_routes")
 # Rate limiting configuration
 RATE_LIMIT_DEFAULT = "60/minute"
 RATE_LIMIT_HEAVY = "10/minute"  # For expensive operations
+RATE_LIMIT_STATE_CHANGE = "5/minute"  # For state-changing operations (pause/resume)
 
 # Parameter bounds
 MAX_HOURS = 4320  # 6 months in hours
 MAX_LIMIT = 1000  # Max records to return
 MAX_AUDIT_LOG_ENTRIES = 1000  # Max audit log entries to keep
+MAX_PAUSED_BY_LENGTH = 64  # Max length for paused_by identifier
+PAUSED_BY_PATTERN = re.compile(r"^[\w@.\-]+$")  # Allowed chars: alphanumeric, @, ., -
 
-# In-memory audit log (use Redis in production)
+# Redis keys for persistent audit log
+AUDIT_LOG_KEY = "safetyamp:audit:log"
+
+# In-memory audit log fallback (Redis preferred in production)
 _audit_log: List[Dict[str, Any]] = []
+# Module-level data_manager reference for audit logging
+_audit_data_manager = None
+
+
+def _set_audit_data_manager(dm) -> None:
+    """Set the data manager reference for Redis-backed audit logging."""
+    global _audit_data_manager
+    _audit_data_manager = dm
 
 
 def _log_audit_event(
@@ -54,7 +69,12 @@ def _log_audit_event(
     details: Optional[Dict[str, Any]] = None,
     user: str = "dashboard",
 ) -> None:
-    """Log an audit event."""
+    """
+    Log an audit event to Redis (preferred) or in-memory fallback.
+
+    Events are stored in Redis as a list with automatic trimming to MAX_AUDIT_LOG_ENTRIES.
+    Falls back to in-memory storage if Redis is unavailable.
+    """
     global _audit_log
     event = {
         "id": f"audit_{int(time.time() * 1000)}",
@@ -65,16 +85,90 @@ def _log_audit_event(
         "details": details or {},
         "ip_address": request.remote_addr if request else None,
     }
-    _audit_log.insert(0, event)
-    # Trim to max size
-    if len(_audit_log) > MAX_AUDIT_LOG_ENTRIES:
-        _audit_log = _audit_log[:MAX_AUDIT_LOG_ENTRIES]
+
+    # Try Redis first for persistence
+    redis_stored = False
+    if _audit_data_manager and hasattr(_audit_data_manager, "redis_client") and _audit_data_manager.redis_client:
+        try:
+            # Store as JSON in Redis list (newest first)
+            _audit_data_manager.redis_client.lpush(AUDIT_LOG_KEY, json.dumps(event))
+            # Trim to max size
+            _audit_data_manager.redis_client.ltrim(AUDIT_LOG_KEY, 0, MAX_AUDIT_LOG_ENTRIES - 1)
+            redis_stored = True
+        except Exception as e:
+            logger.warning(f"Failed to store audit event in Redis: {e}")
+
+    # Fallback to in-memory if Redis failed
+    if not redis_stored:
+        _audit_log.insert(0, event)
+        if len(_audit_log) > MAX_AUDIT_LOG_ENTRIES:
+            _audit_log = _audit_log[:MAX_AUDIT_LOG_ENTRIES]
+
     logger.info(f"Audit: {action} on {resource}", extra={"audit_event": event})
 
 
 def _get_dashboard_token() -> Optional[str]:
     """Get dashboard token from environment or config."""
     return os.getenv("DASHBOARD_API_TOKEN")
+
+
+# Simple rate limiting for state-changing operations
+_rate_limit_tracker: Dict[str, List[float]] = {}
+
+
+def _reset_rate_limit_tracker() -> None:
+    """Reset the rate limit tracker. Used for testing only."""
+    global _rate_limit_tracker
+    _rate_limit_tracker.clear()
+
+
+def rate_limit_state_change(max_calls: int = 5, period_seconds: int = 60):
+    """
+    Decorator to rate limit state-changing operations.
+
+    Uses a simple sliding window approach based on client IP.
+    Returns 429 Too Many Requests if limit exceeded.
+    """
+
+    def decorator(f: Callable) -> Callable:
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            client_ip = request.remote_addr or "unknown"
+            key = f"{f.__name__}:{client_ip}"
+            current_time = time.time()
+
+            # Get or create request history for this client
+            if key not in _rate_limit_tracker:
+                _rate_limit_tracker[key] = []
+
+            # Remove old requests outside the window
+            _rate_limit_tracker[key] = [
+                t for t in _rate_limit_tracker[key] if current_time - t < period_seconds
+            ]
+
+            # Check if limit exceeded
+            if len(_rate_limit_tracker[key]) >= max_calls:
+                logger.warning(
+                    f"Rate limit exceeded for {key}: {len(_rate_limit_tracker[key])} calls in {period_seconds}s"
+                )
+                return (
+                    jsonify(
+                        {
+                            "error": "Rate limit exceeded. Please wait before trying again.",
+                            "retry_after": period_seconds,
+                        }
+                    ),
+                    429,
+                )
+
+            # Record this request
+            _rate_limit_tracker[key].append(current_time)
+
+            return f(*args, **kwargs)
+
+        return decorated
+
+    return decorator
 
 
 def require_dashboard_auth(f: Callable) -> Callable:
@@ -147,6 +241,10 @@ def create_dashboard_blueprint(
         Flask Blueprint with dashboard routes
     """
     bp = Blueprint("dashboard", __name__, url_prefix="/api/dashboard")
+
+    # Set up Redis-backed audit logging if data_manager is available
+    if data_manager:
+        _set_audit_data_manager(data_manager)
 
     # Apply rate limiting to blueprint if limiter provided
     if limiter:
@@ -1040,6 +1138,115 @@ def create_dashboard_blueprint(
             logger.error(f"Error getting sync status: {e}", exc_info=True)
             return jsonify({"error": "Internal server error"}), 500
 
+    # --- Sync Pause/Resume (Feature 10) ---
+
+    @bp.route("/sync-pause", methods=["GET"])
+    @require_dashboard_auth
+    def get_sync_pause():
+        """
+        Get current sync pause state.
+
+        Returns:
+            JSON with:
+                paused: bool - whether sync is paused
+                paused_by: str | null - who paused sync
+                paused_at: number | null - unix timestamp when paused
+        """
+        try:
+            if not data_manager:
+                return jsonify({"error": "Data manager not available"}), 503
+
+            paused = data_manager.get_sync_paused()
+            metadata = data_manager.get_sync_pause_metadata()
+
+            return (
+                jsonify(
+                    {
+                        "paused": paused,
+                        "paused_by": metadata.get("paused_by") if metadata else None,
+                        "paused_at": metadata.get("paused_at") if metadata else None,
+                    }
+                ),
+                200,
+            )
+
+        except Exception as e:
+            logger.error(f"Error getting sync pause state: {e}", exc_info=True)
+            return jsonify({"error": "Internal server error"}), 500
+
+    @bp.route("/sync-pause", methods=["POST"])
+    @rate_limit_state_change(max_calls=5, period_seconds=60)  # Stricter rate limit for state changes
+    @require_dashboard_auth
+    def set_sync_pause():
+        """
+        Set sync pause state.
+
+        Request body:
+            paused: bool - True to pause sync, False to resume
+            paused_by: str (optional) - Identifier of who triggered the action
+
+        Returns:
+            JSON with:
+                paused: bool - new pause state
+                message: str - status message
+
+        Rate limit: 5 requests per minute (stricter than default)
+        """
+        try:
+            if not data_manager:
+                return jsonify({"error": "Data manager not available"}), 503
+
+            body = request.get_json() or {}
+
+            # Validate 'paused' field exists
+            if "paused" not in body:
+                return jsonify({"error": "Missing required field: paused"}), 400
+
+            # SECURITY: Strict boolean type checking - reject truthy strings like "false"
+            paused_value = body.get("paused")
+            if not isinstance(paused_value, bool):
+                return jsonify({"error": "Field 'paused' must be a boolean (true/false)"}), 400
+            paused = paused_value
+
+            # SECURITY: Validate and sanitize paused_by to prevent log injection
+            paused_by = body.get("paused_by", "dashboard")
+            if not isinstance(paused_by, str):
+                paused_by = "dashboard"
+            # Limit length and strip dangerous characters
+            paused_by = paused_by[:MAX_PAUSED_BY_LENGTH]
+            if not PAUSED_BY_PATTERN.match(paused_by):
+                # Sanitize: remove any characters not matching the pattern
+                paused_by = re.sub(r"[^\w@.\-]", "", paused_by)
+            if not paused_by:
+                paused_by = "dashboard"
+
+            success = data_manager.set_sync_paused(paused, paused_by=paused_by)
+
+            if not success:
+                return (
+                    jsonify({"error": "Failed to update sync pause state"}),
+                    500,
+                )
+
+            # Log audit event
+            action = "pause" if paused else "resume"
+            _log_audit_event(action, "sync", {"paused": paused, "paused_by": paused_by})
+
+            message = "Sync paused" if paused else "Sync resumed"
+            return (
+                jsonify(
+                    {
+                        "paused": paused,
+                        "message": message,
+                    }
+                ),
+                200,
+            )
+
+        except Exception as e:
+            logger.error(f"Error setting sync pause state: {e}", exc_info=True)
+            return jsonify({"error": "Internal server error"}), 500
+
     # --- Audit Log (Feature 9) ---
 
     @bp.route("/audit-log", methods=["GET"])
@@ -1063,13 +1270,26 @@ def create_dashboard_blueprint(
             action_filter = request.args.get("action")
             resource_filter = request.args.get("resource")
 
-            filtered_log = _audit_log[:limit]
+            # Try to read from Redis first
+            audit_entries = []
+            if data_manager and hasattr(data_manager, "redis_client") and data_manager.redis_client:
+                try:
+                    # Read from Redis list (already in newest-first order)
+                    raw_entries = data_manager.redis_client.lrange(AUDIT_LOG_KEY, 0, limit - 1)
+                    audit_entries = [json.loads(entry) for entry in raw_entries]
+                except Exception as e:
+                    logger.warning(f"Failed to read audit log from Redis: {e}")
+                    audit_entries = _audit_log[:limit]  # Fallback to in-memory
+            else:
+                audit_entries = _audit_log[:limit]
+
+            filtered_log = audit_entries
 
             if action_filter:
-                filtered_log = [e for e in filtered_log if e["action"] == action_filter]
+                filtered_log = [e for e in filtered_log if e.get("action") == action_filter]
             if resource_filter:
                 filtered_log = [
-                    e for e in filtered_log if e["resource"] == resource_filter
+                    e for e in filtered_log if e.get("resource") == resource_filter
                 ]
 
             return (
