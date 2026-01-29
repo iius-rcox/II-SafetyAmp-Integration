@@ -24,6 +24,12 @@ spec:
         ports:
         - containerPort: 80
           name: http
+        env:
+        - name: DASHBOARD_API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: safety-amp-secrets
+              key: DASHBOARD_API_TOKEN
         resources:
           requests:
             memory: "64Mi"
@@ -78,15 +84,6 @@ spec:
   - host: ops-dashboard.ii-us.com
     http:
       paths:
-      # API routes to the safety-amp-agent backend
-      - path: /api
-        pathType: Prefix
-        backend:
-          service:
-            name: safety-amp-service
-            port:
-              number: 8080
-      # Static dashboard files
       - path: /
         pathType: Prefix
         backend:
