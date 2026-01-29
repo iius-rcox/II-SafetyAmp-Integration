@@ -5,6 +5,6 @@ resources:
   - ../../base
 images:
   - name: iiusacr.azurecr.io/safety-amp-agent
-    newTag: sha-27f8c4c
+    newTag: sha-cf19705
 patchesStrategicMerge:
   - patch-env.yaml
