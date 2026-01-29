@@ -490,6 +490,13 @@ spec:
                 secretKeyRef:
                   name: safety-amp-secrets
                   key: REDIS_DB
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "100m"
+              limits:
+                memory: "512Mi"
+                cpu: "500m"
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
