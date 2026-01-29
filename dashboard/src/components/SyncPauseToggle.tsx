@@ -46,7 +46,8 @@ export default function SyncPauseToggle() {
     setShowConfirm(false);
   };
 
-  if (isLoading) {
+  // Only show loading skeleton on initial load (no cached data yet)
+  if (isLoading && !pauseState) {
     return (
       <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700">
         <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
