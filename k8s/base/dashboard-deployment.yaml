@@ -78,6 +78,15 @@ spec:
   - host: ops-dashboard.ii-us.com
     http:
       paths:
+      # API routes to the safety-amp-agent backend
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: safety-amp-service
+            port:
+              number: 8080
+      # Static dashboard files
       - path: /
         pathType: Prefix
         backend:
