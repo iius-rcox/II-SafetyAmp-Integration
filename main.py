@@ -552,4 +552,10 @@ if __name__ == "__main__":
         )
 
     # Start Flask app
-    app.run(host=bind_address, port=app_port, threaded=True)
+    # SECURITY: Explicitly disable debug mode - never enable in production
+    flask_debug = os.getenv("FLASK_DEBUG", "false").lower() in ("true", "1", "yes")
+    if flask_debug:
+        logger.warning(
+            "FLASK_DEBUG is enabled - this should NEVER be used in production"
+        )
+    app.run(host=bind_address, port=app_port, threaded=True, debug=flask_debug)

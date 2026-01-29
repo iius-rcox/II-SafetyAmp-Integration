@@ -6,8 +6,9 @@ metadata:
   labels:
     app: safety-amp
   annotations:
-    azure.workload.identity/client-id: "a2bcb3ce-a89b-43af-804c-e8029e0bafb4"
-    azure.workload.identity/tenant-Id: "953922e6-5370-4a01-a3d5-773a30df726b"
+    # These values should be patched by environment-specific Kustomize overlays
+    azure.workload.identity/client-id: "REPLACE_WITH_AZURE_CLIENT_ID"
+    azure.workload.identity/tenant-Id: "REPLACE_WITH_AZURE_TENANT_ID"
 ---
 apiVersion: v1
 kind: Secret
@@ -18,7 +19,13 @@ metadata:
     app: safety-amp
 type: Opaque
 stringData:
+  # Azure identity - patch these via Kustomize overlay for each environment
+  AZURE_CLIENT_ID: "REPLACE_WITH_AZURE_CLIENT_ID"
+  AZURE_TENANT_ID: "REPLACE_WITH_AZURE_TENANT_ID"
   AZURE_KEY_VAULT_URL: "https://iius-akv.vault.azure.net/"
+  # Dashboard API authentication token - generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"
+  DASHBOARD_API_TOKEN: "REPLACE_WITH_SECURE_TOKEN"
+  # Redis configuration
   REDIS_HOST: "redis-service"
   REDIS_PORT: "6379"
   REDIS_PASSWORD: ""
@@ -164,7 +171,20 @@ spec:
           name: metrics
         env:
         - name: AZURE_CLIENT_ID
-          value: "a2bcb3ce-a89b-43af-804c-e8029e0bafb4"
+          valueFrom:
+            secretKeyRef:
+              name: safety-amp-secrets
+              key: AZURE_CLIENT_ID
+        - name: AZURE_TENANT_ID
+          valueFrom:
+            secretKeyRef:
+              name: safety-amp-secrets
+              key: AZURE_TENANT_ID
+        - name: DASHBOARD_API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: safety-amp-secrets
+              key: DASHBOARD_API_TOKEN
         - name: LOG_LEVEL
           valueFrom:
             configMapKeyRef:
@@ -403,16 +423,13 @@ metadata:
     app: safety-amp
     component: agent
 spec:
-  type: LoadBalancer
+  # SECURITY: Use ClusterIP for internal-only access. Expose via Ingress if external access needed.
+  type: ClusterIP
   ports:
   - port: 8080
     targetPort: 8080
     protocol: TCP
     name: health
-  - port: 9090
-    targetPort: 9090
-    protocol: TCP
-    name: metrics
   selector:
     app: safety-amp
     component: agent

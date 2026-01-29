@@ -1,0 +1,16 @@
+# DEV ENVIRONMENT ONLY - DO NOT USE IN PRODUCTION
+# For production deployments:
+# 1. Use External Secrets Operator with Azure Key Vault
+# 2. Or use Azure Key Vault CSI Driver
+# 3. Generate a secure DASHBOARD_API_TOKEN with: python -c "import secrets; print(secrets.token_urlsafe(32))"
+apiVersion: v1
+kind: Secret
+metadata:
+  name: safety-amp-secrets
+  namespace: safety-amp
+stringData:
+  # Dev environment Azure identity (these are non-sensitive identifiers)
+  AZURE_CLIENT_ID: "a2bcb3ce-a89b-43af-804c-e8029e0bafb4"
+  AZURE_TENANT_ID: "953922e6-5370-4a01-a3d5-773a30df726b"
+  # Dashboard API token - REPLACE with secure token in production!
+  DASHBOARD_API_TOKEN: "dev-dashboard-token-replace-in-prod"
