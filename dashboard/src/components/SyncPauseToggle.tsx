@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Pause, Play, Loader2, AlertCircle } from 'lucide-react';
 import { useSyncPause, useSyncPauseMutation } from '../hooks/useDashboardData';
 
@@ -12,46 +12,79 @@ export default function SyncPauseToggle() {
   const { data: pauseState, isLoading, isError } = useSyncPause();
   const mutation = useSyncPauseMutation();
   const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmVisible, setConfirmVisible] = useState(false);
   const [showError, setShowError] = useState(false);
+  const [errorVisible, setErrorVisible] = useState(false);
+  const errorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isPaused = pauseState?.paused ?? false;
   const isToggling = mutation.isPending;
 
-  // Show error message when mutation fails
+  // Animate dialog in/out
+  useEffect(() => {
+    if (showConfirm) {
+      // Small delay to trigger CSS transition
+      requestAnimationFrame(() => setConfirmVisible(true));
+    } else {
+      setConfirmVisible(false);
+    }
+  }, [showConfirm]);
+
+  // Show error message when mutation fails with fade animation
   useEffect(() => {
     if (mutation.isError) {
       setShowError(true);
-      // Auto-hide error after 5 seconds
-      const timer = setTimeout(() => setShowError(false), 5000);
-      return () => clearTimeout(timer);
+      requestAnimationFrame(() => setErrorVisible(true));
+
+      // Clear any existing timeout
+      if (errorTimeoutRef.current) {
+        clearTimeout(errorTimeoutRef.current);
+      }
+
+      // Start fade-out after 4.5 seconds, unmount after 5 seconds
+      errorTimeoutRef.current = setTimeout(() => {
+        setErrorVisible(false);
+        setTimeout(() => setShowError(false), 300); // Wait for fade animation
+      }, 4500);
     }
+
+    return () => {
+      if (errorTimeoutRef.current) {
+        clearTimeout(errorTimeoutRef.current);
+      }
+    };
   }, [mutation.isError]);
 
   const handleToggle = () => {
     if (isPaused) {
-      // Resume immediately without confirmation
       mutation.mutate(false);
     } else {
-      // Show confirmation before pausing
       setShowConfirm(true);
     }
   };
 
   const handleConfirmPause = () => {
     mutation.mutate(true);
-    setShowConfirm(false);
+    setConfirmVisible(false);
+    setTimeout(() => setShowConfirm(false), 200);
   };
 
   const handleCancelPause = () => {
-    setShowConfirm(false);
+    setConfirmVisible(false);
+    setTimeout(() => setShowConfirm(false), 200);
+  };
+
+  const handleDismissError = () => {
+    setErrorVisible(false);
+    setTimeout(() => setShowError(false), 300);
   };
 
   // Only show loading skeleton on initial load (no cached data yet)
   if (isLoading && !pauseState) {
     return (
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700">
-        <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
-        <span className="text-sm text-gray-500 dark:text-gray-400">Loading...</span>
+      <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 animate-pulse">
+        <div className="w-4 h-4 rounded bg-gray-300 dark:bg-gray-600" />
+        <div className="w-20 h-4 rounded bg-gray-300 dark:bg-gray-600" />
       </div>
     );
   }
@@ -95,10 +128,16 @@ export default function SyncPauseToggle() {
         </span>
       </button>
 
-      {/* Confirmation Dialog */}
+      {/* Confirmation Dialog with animation */}
       {showConfirm && (
         <div className="absolute right-0 top-full mt-2 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4 w-72">
+          <div
+            className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4 w-72 transition-all duration-200 ${
+              confirmVisible
+                ? 'opacity-100 scale-100 translate-y-0'
+                : 'opacity-0 scale-95 -translate-y-1'
+            }`}
+          >
             <h4 className="font-medium text-gray-900 dark:text-white mb-2">
               Pause Sync Operations?
             </h4>
@@ -120,9 +159,11 @@ export default function SyncPauseToggle() {
               </button>
             </div>
           </div>
-          {/* Backdrop */}
+          {/* Backdrop with fade */}
           <div
-            className="fixed inset-0 -z-10"
+            className={`fixed inset-0 -z-10 transition-opacity duration-200 ${
+              confirmVisible ? 'opacity-100' : 'opacity-0'
+            }`}
             onClick={handleCancelPause}
           />
         </div>
@@ -135,10 +176,16 @@ export default function SyncPauseToggle() {
         </div>
       )}
 
-      {/* Error Message */}
+      {/* Error Message with fade animation */}
       {showError && mutation.error && (
         <div className="absolute right-0 top-full mt-2 z-50">
-          <div className="flex items-center gap-2 px-3 py-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-400 shadow-lg">
+          <div
+            className={`flex items-center gap-2 px-3 py-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-400 shadow-lg transition-all duration-300 ${
+              errorVisible
+                ? 'opacity-100 translate-y-0'
+                : 'opacity-0 -translate-y-1'
+            }`}
+          >
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>
               {(mutation.error as Error).message?.includes('429')
@@ -146,7 +193,7 @@ export default function SyncPauseToggle() {
                 : 'Failed to update sync state. Please try again.'}
             </span>
             <button
-              onClick={() => setShowError(false)}
+              onClick={handleDismissError}
               className="ml-2 text-red-500 hover:text-red-700 dark:hover:text-red-300"
             >
               ×

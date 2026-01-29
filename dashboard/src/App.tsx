@@ -18,6 +18,7 @@ import {
 import { ThemeProvider } from './contexts/ThemeContext';
 import ThemeToggle from './components/ThemeToggle';
 import SyncPauseToggle from './components/SyncPauseToggle';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import ApiCallHistory from './components/ApiCallHistory';
 import SyncMetricsChart from './components/SyncMetricsChart';
 import ErrorSuggestions from './components/ErrorSuggestions';
@@ -111,95 +112,97 @@ function Dashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeTab === 'overview' && (
-          <div className="space-y-8">
-            {/* Top Row: Live Status + Health */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <LiveSyncStatus />
-              <DependencyHealth />
+        <ErrorBoundary>
+          {activeTab === 'overview' && (
+            <div className="space-y-8">
+              {/* Top Row: Live Status + Health */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <ErrorBoundary><LiveSyncStatus /></ErrorBoundary>
+                <ErrorBoundary><DependencyHealth /></ErrorBoundary>
+              </div>
+
+              {/* Sync Metrics Chart */}
+              <ErrorBoundary><SyncMetricsChart /></ErrorBoundary>
+
+              {/* Error Suggestions (limited view) */}
+              <ErrorBoundary><ErrorSuggestions /></ErrorBoundary>
             </div>
+          )}
 
-            {/* Sync Metrics Chart */}
-            <SyncMetricsChart />
+          {activeTab === 'api-calls' && (
+            <div className="space-y-8">
+              <ApiCallHistory />
+            </div>
+          )}
 
-            {/* Error Suggestions (limited view) */}
-            <ErrorSuggestions />
-          </div>
-        )}
+          {activeTab === 'errors' && (
+            <div className="space-y-8">
+              <ErrorSuggestions />
+            </div>
+          )}
 
-        {activeTab === 'api-calls' && (
-          <div className="space-y-8">
-            <ApiCallHistory />
-          </div>
-        )}
+          {activeTab === 'failed' && (
+            <div className="space-y-8">
+              <FailedRecordsQueue />
+            </div>
+          )}
 
-        {activeTab === 'errors' && (
-          <div className="space-y-8">
-            <ErrorSuggestions />
-          </div>
-        )}
+          {activeTab === 'vista' && (
+            <div className="space-y-8">
+              <VistaRecordsChart />
+            </div>
+          )}
 
-        {activeTab === 'failed' && (
-          <div className="space-y-8">
-            <FailedRecordsQueue />
-          </div>
-        )}
+          {activeTab === 'cache' && (
+            <div className="space-y-8">
+              <CacheMonitor />
+            </div>
+          )}
 
-        {activeTab === 'vista' && (
-          <div className="space-y-8">
-            <VistaRecordsChart />
-          </div>
-        )}
+          {activeTab === 'diff' && (
+            <div className="space-y-8">
+              <SyncDiffViewer />
+            </div>
+          )}
 
-        {activeTab === 'cache' && (
-          <div className="space-y-8">
-            <CacheMonitor />
-          </div>
-        )}
+          {activeTab === 'triggers' && (
+            <div className="space-y-8">
+              <SyncTriggers />
+              <LiveSyncStatus />
+            </div>
+          )}
 
-        {activeTab === 'diff' && (
-          <div className="space-y-8">
-            <SyncDiffViewer />
-          </div>
-        )}
+          {activeTab === 'notifications' && (
+            <div className="space-y-8">
+              <NotificationLog />
+            </div>
+          )}
 
-        {activeTab === 'triggers' && (
-          <div className="space-y-8">
-            <SyncTriggers />
-            <LiveSyncStatus />
-          </div>
-        )}
+          {activeTab === 'health' && (
+            <div className="space-y-8">
+              <DependencyHealth />
+              <LiveSyncStatus />
+            </div>
+          )}
 
-        {activeTab === 'notifications' && (
-          <div className="space-y-8">
-            <NotificationLog />
-          </div>
-        )}
+          {activeTab === 'config' && (
+            <div className="space-y-8">
+              <ConfigStatus />
+            </div>
+          )}
 
-        {activeTab === 'health' && (
-          <div className="space-y-8">
-            <DependencyHealth />
-            <LiveSyncStatus />
-          </div>
-        )}
+          {activeTab === 'export' && (
+            <div className="space-y-8">
+              <ExportReports />
+            </div>
+          )}
 
-        {activeTab === 'config' && (
-          <div className="space-y-8">
-            <ConfigStatus />
-          </div>
-        )}
-
-        {activeTab === 'export' && (
-          <div className="space-y-8">
-            <ExportReports />
-          </div>
-        )}
-
-        {activeTab === 'audit' && (
-          <div className="space-y-8">
-            <AuditLog />
-          </div>
-        )}
+          {activeTab === 'audit' && (
+            <div className="space-y-8">
+              <AuditLog />
+            </div>
+          )}
+        </ErrorBoundary>
       </main>
 
       {/* Footer */}

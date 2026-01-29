@@ -64,45 +64,51 @@ function SuggestionCard({ suggestion }: { suggestion: ErrorSuggestion }) {
             )}
           </button>
 
-          {expanded && (
-            <div className="mt-3 pt-3 border-t border-current/20 space-y-3">
-              {/* Recommended Action */}
-              <div className="bg-white/30 rounded p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <Lightbulb className="w-4 h-4" />
-                  <span className="text-sm font-medium">Recommended Action</span>
+          <div
+            className={`grid transition-all duration-200 ease-in-out ${
+              expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+            }`}
+          >
+            <div className="overflow-hidden">
+              <div className="mt-3 pt-3 border-t border-current/20 space-y-3">
+                {/* Recommended Action */}
+                <div className="bg-white/30 rounded p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Lightbulb className="w-4 h-4" />
+                    <span className="text-sm font-medium">Recommended Action</span>
+                  </div>
+                  <p className="text-sm">{suggestion.recommended_action}</p>
                 </div>
-                <p className="text-sm">{suggestion.recommended_action}</p>
-              </div>
 
-              {/* Affected Records */}
-              {suggestion.affected_records.length > 0 && (
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">Affected Records ({suggestion.affected_records.length})</span>
-                    <button
-                      onClick={() => copyToClipboard(suggestion.affected_records.join(', '))}
-                      className="text-xs flex items-center gap-1 hover:opacity-75"
-                    >
-                      <Copy className="w-3 h-3" /> Copy IDs
-                    </button>
+                {/* Affected Records */}
+                {suggestion.affected_records.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium">Affected Records ({suggestion.affected_records.length})</span>
+                      <button
+                        onClick={() => copyToClipboard(suggestion.affected_records.join(', '))}
+                        className="text-xs flex items-center gap-1 hover:opacity-75"
+                      >
+                        <Copy className="w-3 h-3" /> Copy IDs
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {suggestion.affected_records.slice(0, 10).map((id) => (
+                        <span key={id} className="inline-block px-2 py-0.5 text-xs bg-white/50 rounded font-mono">
+                          {id}
+                        </span>
+                      ))}
+                      {suggestion.affected_records.length > 10 && (
+                        <span className="inline-block px-2 py-0.5 text-xs bg-white/30 rounded">
+                          +{suggestion.affected_records.length - 10} more
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-1">
-                    {suggestion.affected_records.slice(0, 10).map((id) => (
-                      <span key={id} className="inline-block px-2 py-0.5 text-xs bg-white/50 rounded font-mono">
-                        {id}
-                      </span>
-                    ))}
-                    {suggestion.affected_records.length > 10 && (
-                      <span className="inline-block px-2 py-0.5 text-xs bg-white/30 rounded">
-                        +{suggestion.affected_records.length - 10} more
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

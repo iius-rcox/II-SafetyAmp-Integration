@@ -163,7 +163,7 @@ export function SyncMetricsChart() {
       {/* Chart */}
       <div className="p-6">
         {isLoading && !data ? (
-          <div className="h-80 flex items-center justify-center text-gray-500 dark:text-gray-400">Loading...</div>
+          <div className="h-80 bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse" />
         ) : data?.time_series && data.time_series.length > 0 ? (
           <ResponsiveContainer width="100%" height={320}>
             <LineChart data={data.time_series}>

@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { dashboardApi } from '../services/api';
 import { formatRelativeTime } from '../utils/formatters';
@@ -14,6 +15,8 @@ const SYNC_TYPES = [
 
 export function SyncTriggers() {
   const queryClient = useQueryClient();
+  const [showMessage, setShowMessage] = useState(false);
+  const [messageVisible, setMessageVisible] = useState(false);
 
   const { data: status, refetch: refetchStatus } = useQuery({
     queryKey: ['sync-trigger-status'],
@@ -29,6 +32,23 @@ export function SyncTriggers() {
   });
 
   const isDisabled = status?.pending || status?.running || triggerMutation.isPending;
+
+  // Show/hide mutation result message with animation
+  useEffect(() => {
+    if (triggerMutation.isSuccess || triggerMutation.isError) {
+      setShowMessage(true);
+      requestAnimationFrame(() => setMessageVisible(true));
+
+      // Auto-hide success message after 5 seconds
+      if (triggerMutation.isSuccess) {
+        const timer = setTimeout(() => {
+          setMessageVisible(false);
+          setTimeout(() => setShowMessage(false), 300);
+        }, 5000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [triggerMutation.isSuccess, triggerMutation.isError]);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
@@ -105,21 +125,26 @@ export function SyncTriggers() {
           })}
         </div>
 
-        {/* Mutation Status */}
-        {triggerMutation.isSuccess && (
-          <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/30 rounded-lg">
-            <p className="text-green-800 dark:text-green-300">
-              Sync triggered successfully! The operation is now running in the background.
-            </p>
-          </div>
-        )}
-        {triggerMutation.isError && (
-          <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/30 rounded-lg">
-            <p className="text-red-800 dark:text-red-300">
-              Failed to trigger sync. Please try again.
-            </p>
-          </div>
-        )}
+        {/* Mutation Status - fixed height to prevent layout shift */}
+        <div className="mt-4 h-14">
+          {showMessage && (
+            <div
+              className={`p-3 rounded-lg transition-all duration-300 ${
+                messageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1'
+              } ${
+                triggerMutation.isSuccess
+                  ? 'bg-green-50 dark:bg-green-900/30'
+                  : 'bg-red-50 dark:bg-red-900/30'
+              }`}
+            >
+              <p className={triggerMutation.isSuccess ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'}>
+                {triggerMutation.isSuccess
+                  ? 'Sync triggered successfully! The operation is now running in the background.'
+                  : 'Failed to trigger sync. Please try again.'}
+              </p>
+            </div>
+          )}
+        </div>
 
         {/* Help Text */}
         <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">

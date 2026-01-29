@@ -150,42 +150,48 @@ export function FailedRecordsQueue() {
                   </div>
                 </div>
 
-                {isExpanded && (
-                  <div className="px-6 pb-4 bg-gray-50 dark:bg-gray-700/50">
-                    <div className="space-y-3 text-sm">
-                      <div>
-                        <span className="font-medium text-gray-700 dark:text-gray-300">First Failed:</span>
-                        <span className="ml-2 text-gray-600 dark:text-gray-400">{formatRelativeTime(record.first_failed_at)}</span>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-700 dark:text-gray-300">HTTP Status:</span>
-                        <span className="ml-2 text-gray-600 dark:text-gray-400">{record.http_status}</span>
-                      </div>
-                      {record.last_error_message && (
+                <div
+                  className={`grid transition-all duration-200 ease-in-out ${
+                    isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="px-6 pb-4 bg-gray-50 dark:bg-gray-700/50">
+                      <div className="space-y-3 text-sm">
                         <div>
-                          <span className="font-medium text-gray-700 dark:text-gray-300">Error:</span>
-                          <p className="mt-1 text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-600 font-mono text-xs">
-                            {record.last_error_message}
-                          </p>
+                          <span className="font-medium text-gray-700 dark:text-gray-300">First Failed:</span>
+                          <span className="ml-2 text-gray-600 dark:text-gray-400">{formatRelativeTime(record.first_failed_at)}</span>
                         </div>
-                      )}
-                      {Object.keys(record.failed_fields || {}).length > 0 && (
                         <div>
-                          <span className="font-medium text-gray-700 dark:text-gray-300">Failed Fields:</span>
-                          <div className="mt-1 space-y-1">
-                            {Object.entries(record.failed_fields).map(([field, info]) => (
-                              <div key={field} className="flex items-center gap-2 text-xs">
-                                <span className="font-mono bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 px-1 rounded">{field}</span>
-                                <span className="text-gray-600 dark:text-gray-400">{info.error}</span>
-                                {info.value && <span className="text-gray-400 dark:text-gray-500">({info.value})</span>}
-                              </div>
-                            ))}
+                          <span className="font-medium text-gray-700 dark:text-gray-300">HTTP Status:</span>
+                          <span className="ml-2 text-gray-600 dark:text-gray-400">{record.http_status}</span>
+                        </div>
+                        {record.last_error_message && (
+                          <div>
+                            <span className="font-medium text-gray-700 dark:text-gray-300">Error:</span>
+                            <p className="mt-1 text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-600 font-mono text-xs">
+                              {record.last_error_message}
+                            </p>
                           </div>
-                        </div>
-                      )}
+                        )}
+                        {Object.keys(record.failed_fields || {}).length > 0 && (
+                          <div>
+                            <span className="font-medium text-gray-700 dark:text-gray-300">Failed Fields:</span>
+                            <div className="mt-1 space-y-1">
+                              {Object.entries(record.failed_fields).map(([field, info]) => (
+                                <div key={field} className="flex items-center gap-2 text-xs">
+                                  <span className="font-mono bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 px-1 rounded">{field}</span>
+                                  <span className="text-gray-600 dark:text-gray-400">{info.error}</span>
+                                  {info.value && <span className="text-gray-400 dark:text-gray-500">({info.value})</span>}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
             );
           })

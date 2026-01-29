@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { dashboardApi } from '../services/api';
 import { formatRelativeTime } from '../utils/formatters';
@@ -8,6 +8,8 @@ const ACTION_FILTERS = ['all', 'cache_invalidate', 'cache_refresh', 'retry_recor
 
 export function AuditLog() {
   const [actionFilter, setActionFilter] = useState<string>('all');
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrollPositionRef = useRef<number>(0);
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['audit-log', actionFilter],
@@ -16,6 +18,35 @@ export function AuditLog() {
       action: actionFilter === 'all' ? undefined : actionFilter,
     }),
   });
+
+  // Save scroll position before refetch
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      scrollPositionRef.current = container.scrollTop;
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Restore scroll position after data loads (only for refetches, not filter changes)
+  useEffect(() => {
+    if (data && scrollContainerRef.current && scrollPositionRef.current > 0) {
+      scrollContainerRef.current.scrollTop = scrollPositionRef.current;
+    }
+  }, [data]);
+
+  const handleFilterChange = (newFilter: string) => {
+    // Reset scroll position when filter changes
+    scrollPositionRef.current = 0;
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+    setActionFilter(newFilter);
+  };
 
   const getActionBadgeClass = (action: string) => {
     if (action.includes('invalidate') || action.includes('dismiss')) {
@@ -42,6 +73,10 @@ export function AuditLog() {
             <ClipboardList className="w-5 h-5 text-slate-600 dark:text-slate-400" />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Audit Log</h2>
             {data && <span className="text-sm text-gray-500 dark:text-gray-400">({data.total} entries)</span>}
+            {/* Refetch indicator */}
+            {isFetching && data && (
+              <span className="text-xs text-blue-500 dark:text-blue-400 animate-pulse">Updating...</span>
+            )}
           </div>
           <button
             onClick={() => refetch()}
@@ -60,7 +95,7 @@ export function AuditLog() {
           </div>
           <select
             value={actionFilter}
-            onChange={(e) => setActionFilter(e.target.value)}
+            onChange={(e) => handleFilterChange(e.target.value)}
             className="text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-slate-500"
           >
             {ACTION_FILTERS.map(action => (
@@ -73,12 +108,15 @@ export function AuditLog() {
       </div>
 
       {/* Audit Entries */}
-      <div className="divide-y divide-gray-200 dark:divide-gray-700 max-h-[600px] overflow-y-auto">
+      <div
+        ref={scrollContainerRef}
+        className="divide-y divide-gray-200 dark:divide-gray-700 max-h-[600px] overflow-y-auto"
+      >
         {isLoading && !data ? (
           <div className="p-8 text-center text-gray-500 dark:text-gray-400">Loading...</div>
         ) : data?.entries && data.entries.length > 0 ? (
           data.entries.map((entry) => (
-            <div key={entry.id} className="px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700">
+            <div key={entry.id} className="px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">

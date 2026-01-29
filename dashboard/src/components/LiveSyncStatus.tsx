@@ -3,10 +3,12 @@ import { formatRelativeTime, formatNumber } from '../utils/formatters';
 import { Activity, Clock, RefreshCw, Users, Briefcase, Building2, Car } from 'lucide-react';
 
 export function LiveSyncStatus() {
-  const { data: liveStatus, isLoading: statusLoading } = useLiveStatus();
-  const { data: entityCounts, isLoading: countsLoading } = useEntityCounts();
+  const { data: liveStatus, isLoading: statusLoading, isFetching: statusFetching } = useLiveStatus();
+  const { data: entityCounts, isLoading: countsLoading, isFetching: countsFetching } = useEntityCounts();
 
   const isLoading = statusLoading || countsLoading;
+  const isFetching = statusFetching || countsFetching;
+  const hasData = liveStatus || entityCounts;
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
@@ -15,6 +17,10 @@ export function LiveSyncStatus() {
           <div className="flex items-center gap-3">
             <Activity className="w-5 h-5 text-blue-600" />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Live Status</h2>
+            {/* Refetch indicator */}
+            {isFetching && hasData && !liveStatus?.sync_in_progress && (
+              <span className="text-xs text-blue-500 dark:text-blue-400 animate-pulse">Updating...</span>
+            )}
           </div>
           {liveStatus?.sync_in_progress && (
             <div className="flex items-center gap-2 text-blue-600">
@@ -27,7 +33,17 @@ export function LiveSyncStatus() {
 
       <div className="p-6">
         {isLoading && !liveStatus && !entityCounts ? (
-          <div className="text-center text-gray-500 dark:text-gray-400 py-4">Loading...</div>
+          <div className="space-y-6 animate-pulse">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-gray-100 dark:bg-gray-700 rounded-lg h-20" />
+              <div className="bg-gray-100 dark:bg-gray-700 rounded-lg h-20" />
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="bg-gray-100 dark:bg-gray-700 rounded-lg h-16" />
+              ))}
+            </div>
+          </div>
         ) : (
           <div className="space-y-6">
             {/* Sync Status */}
