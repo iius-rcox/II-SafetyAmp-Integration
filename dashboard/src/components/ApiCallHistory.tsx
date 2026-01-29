@@ -96,7 +96,7 @@ export function ApiCallHistory() {
 
       {/* Table */}
       <div className="overflow-x-auto">
-        {isLoading ? (
+        {isLoading && !data ? (
           <div className="p-8 text-center text-gray-500 dark:text-gray-400">Loading...</div>
         ) : (
           <table className="w-full">

@@ -26,7 +26,7 @@ export function LiveSyncStatus() {
       </div>
 
       <div className="p-6">
-        {isLoading ? (
+        {isLoading && !liveStatus && !entityCounts ? (
           <div className="text-center text-gray-500 dark:text-gray-400 py-4">Loading...</div>
         ) : (
           <div className="space-y-6">

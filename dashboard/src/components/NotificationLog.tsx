@@ -90,7 +90,7 @@ export function NotificationLog() {
 
       {/* Notification List */}
       <div className="divide-y divide-gray-200 dark:divide-gray-700">
-        {isLoading ? (
+        {isLoading && !data ? (
           <div className="p-8 text-center text-gray-500 dark:text-gray-400">Loading...</div>
         ) : data?.notifications && data.notifications.length > 0 ? (
           data.notifications.map((notification) => (

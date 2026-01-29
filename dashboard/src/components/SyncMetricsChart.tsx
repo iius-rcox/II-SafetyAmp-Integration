@@ -162,7 +162,7 @@ export function SyncMetricsChart() {
 
       {/* Chart */}
       <div className="p-6">
-        {isLoading ? (
+        {isLoading && !data ? (
           <div className="h-80 flex items-center justify-center text-gray-500 dark:text-gray-400">Loading...</div>
         ) : data?.time_series && data.time_series.length > 0 ? (
           <ResponsiveContainer width="100%" height={320}>

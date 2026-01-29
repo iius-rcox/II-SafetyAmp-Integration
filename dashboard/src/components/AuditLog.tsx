@@ -74,7 +74,7 @@ export function AuditLog() {
 
       {/* Audit Entries */}
       <div className="divide-y divide-gray-200 dark:divide-gray-700 max-h-[600px] overflow-y-auto">
-        {isLoading ? (
+        {isLoading && !data ? (
           <div className="p-8 text-center text-gray-500 dark:text-gray-400">Loading...</div>
         ) : data?.entries && data.entries.length > 0 ? (
           data.entries.map((entry) => (

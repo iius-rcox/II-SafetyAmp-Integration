@@ -147,7 +147,7 @@ export function VistaRecordsChart() {
 
       {/* Chart */}
       <div className="p-6">
-        {isLoading ? (
+        {isLoading && !data ? (
           <div className="h-80 flex items-center justify-center text-gray-500 dark:text-gray-400">Loading...</div>
         ) : data?.data_points && data.data_points.length > 0 ? (
           <ResponsiveContainer width="100%" height={320}>

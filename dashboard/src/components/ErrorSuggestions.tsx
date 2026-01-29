@@ -180,7 +180,7 @@ export function ErrorSuggestions() {
 
       {/* Suggestions List */}
       <div className="p-6">
-        {isLoading ? (
+        {isLoading && !data ? (
           <div className="text-center text-gray-500 dark:text-gray-400 py-8">Loading...</div>
         ) : data?.suggestions && data.suggestions.length > 0 ? (
           <div className="space-y-4">

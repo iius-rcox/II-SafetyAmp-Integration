@@ -101,7 +101,7 @@ export function DependencyHealth() {
       </div>
 
       <div className="p-6">
-        {isLoading ? (
+        {isLoading && !data ? (
           <div className="text-center text-gray-500 dark:text-gray-400 py-4">Loading...</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

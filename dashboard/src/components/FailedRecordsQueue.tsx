@@ -97,7 +97,7 @@ export function FailedRecordsQueue() {
 
       {/* Records List */}
       <div className="divide-y divide-gray-200 dark:divide-gray-700">
-        {isLoading ? (
+        {isLoading && !data ? (
           <div className="p-8 text-center text-gray-500 dark:text-gray-400">Loading...</div>
         ) : data?.records && data.records.length > 0 ? (
           data.records.map((record) => {
