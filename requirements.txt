@@ -4,6 +4,10 @@ gunicorn>=21.0.0
 python-dotenv>=1.0.0
 requests>=2.31.0
 
+# Dashboard security
+Flask-Limiter>=3.5.0
+Flask-Cors>=4.0.0
+
 # Database connectivity
 pyodbc>=4.0.39
 sqlalchemy>=2.0.0

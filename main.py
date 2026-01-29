@@ -5,6 +5,9 @@ import threading
 import time
 
 from flask import Flask, jsonify
+from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from prometheus_client import (
     CONTENT_TYPE_LATEST,
     generate_latest,
@@ -15,12 +18,16 @@ import structlog
 from config import config
 from services.data_manager import data_manager
 from services.event_manager import event_manager
+from services.api_call_tracker import initialize_api_call_tracker
+from services.error_analyzer import initialize_error_analyzer
+from utils.dashboard_data import initialize_dashboard_data
+from routes.dashboard import create_dashboard_blueprint
 from sync.sync_departments import DepartmentSyncer
 from sync.sync_employees import EmployeeSyncer
 from sync.sync_jobs import JobSyncer
 from sync.sync_titles import TitleSyncer
 from sync.sync_vehicles import VehicleSync
-from utils.failed_sync_tracker import initialize_tracker
+from utils.failed_sync_tracker import initialize_tracker, get_tracker
 from utils.health import run_health_checks
 from utils.logger import get_logger
 from utils.metrics import metrics
@@ -46,6 +53,23 @@ structlog.configure(
 
 app = Flask(__name__)
 logger = get_logger("main")
+
+# Initialize Flask-Limiter for rate limiting
+limiter = Limiter(
+    key_func=get_remote_address,
+    app=app,
+    default_limits=["200/minute"],
+    storage_uri=f"redis://{config.REDIS_HOST}:{config.REDIS_PORT}/{config.REDIS_DB}"
+    if config.REDIS_HOST
+    else "memory://",
+)
+
+# Enable CORS for dashboard frontend
+CORS(
+    app,
+    resources={r"/api/dashboard/*": {"origins": "*"}},
+    supports_credentials=True,
+)
 
 # Configuration from unified config manager
 DB_POOL_SIZE = config.DB_POOL_SIZE
@@ -424,6 +448,58 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(
             f"Failed to initialize sync tracker: {e}. Continuing without tracker."
+        )
+
+    # Initialize dashboard components
+    try:
+        # API call tracker for monitoring API calls
+        api_call_tracker = initialize_api_call_tracker(
+            redis_host=config.REDIS_HOST,
+            redis_port=config.REDIS_PORT,
+            redis_db=config.REDIS_DB,
+            redis_password=config.REDIS_PASSWORD,
+        )
+        logger.info("API call tracker initialized successfully")
+
+        # Error analyzer for pattern detection
+        error_analyzer = initialize_error_analyzer(
+            event_manager=event_manager,
+            failed_sync_tracker=get_tracker(),
+        )
+        logger.info("Error analyzer initialized successfully")
+
+        # Dashboard data aggregation
+        dashboard_data = initialize_dashboard_data(
+            event_manager=event_manager,
+            data_manager=data_manager,
+        )
+        logger.info("Dashboard data initialized successfully")
+
+        # Define sync trigger callback for manual sync
+        def trigger_manual_sync(sync_type: str) -> dict:
+            """Trigger a manual sync operation."""
+            logger.info(f"Manual sync triggered: {sync_type}")
+            # In production, this would queue the sync
+            # For now, return success
+            return {"triggered": True, "sync_type": sync_type}
+
+        # Register dashboard blueprint with all dependencies
+        dashboard_bp = create_dashboard_blueprint(
+            api_call_tracker=api_call_tracker,
+            error_analyzer=error_analyzer,
+            dashboard_data=dashboard_data,
+            failed_sync_tracker=get_tracker(),
+            limiter=limiter,
+            event_manager=event_manager,
+            config_manager=config,
+            data_manager=data_manager,
+            sync_trigger_callback=trigger_manual_sync,
+        )
+        app.register_blueprint(dashboard_bp)
+        logger.info("Dashboard blueprint registered at /api/dashboard")
+    except Exception as e:
+        logger.error(
+            f"Failed to initialize dashboard: {e}. Continuing without dashboard."
         )
 
     # Start sync worker in background

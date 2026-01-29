@@ -364,6 +364,169 @@ class FailedSyncTracker:
             "oldest_failure": oldest_timestamp,
         }
 
+    def get_failed_records(
+        self,
+        entity_type: Optional[str] = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> List[Dict[str, Any]]:
+        """
+        Get paginated list of failed records.
+
+        Args:
+            entity_type: Optional filter by entity type
+            limit: Maximum records to return
+            offset: Pagination offset
+
+        Returns:
+            List of failed record details
+        """
+        all_failures = self.data_manager.get_all_failed_records(entity_type=entity_type)
+
+        # Sort by last_failed_at descending
+        all_failures.sort(
+            key=lambda x: x.get("last_failed_at", ""),
+            reverse=True
+        )
+
+        # Apply pagination
+        return all_failures[offset : offset + limit]
+
+    def get_failed_count(self, entity_type: Optional[str] = None) -> int:
+        """
+        Get count of failed records.
+
+        Args:
+            entity_type: Optional filter by entity type
+
+        Returns:
+            Count of failed records
+        """
+        all_failures = self.data_manager.get_all_failed_records(entity_type=entity_type)
+        return len(all_failures)
+
+    def mark_for_retry(self, record_id: str) -> bool:
+        """
+        Mark a specific record for retry by clearing its failure status.
+
+        Args:
+            record_id: Record ID in format "entity_type:entity_id"
+
+        Returns:
+            True if successful, False if record not found
+        """
+        if not self.enabled:
+            return False
+
+        try:
+            # Parse record_id (format: "entity_type:entity_id")
+            if ":" in record_id:
+                entity_type, entity_id = record_id.split(":", 1)
+            else:
+                # Try to find the record by ID alone
+                all_failures = self.data_manager.get_all_failed_records()
+                for failure in all_failures:
+                    if failure.get("entity_id") == record_id:
+                        entity_type = failure.get("entity_type")
+                        entity_id = record_id
+                        break
+                else:
+                    return False
+
+            # Mark for retry by updating the record with retry flag
+            record = self.data_manager.get_failed_sync_record(entity_type, entity_id)
+            if not record:
+                return False
+
+            record["retry_requested"] = True
+            record["retry_requested_at"] = datetime.now(timezone.utc).isoformat()
+
+            self.data_manager.save_failed_sync_record(
+                entity_type=entity_type,
+                entity_id=entity_id,
+                metadata=record,
+                ttl_days=self.ttl_days,
+            )
+
+            logger.info(f"Marked {entity_type} {entity_id} for retry")
+            return True
+
+        except Exception as e:
+            logger.error(f"Error marking record for retry: {e}")
+            return False
+
+    def dismiss_record(self, record_id: str) -> bool:
+        """
+        Dismiss/remove a failed record from the queue.
+
+        Args:
+            record_id: Record ID in format "entity_type:entity_id"
+
+        Returns:
+            True if successful, False if record not found
+        """
+        if not self.enabled:
+            return False
+
+        try:
+            # Parse record_id (format: "entity_type:entity_id")
+            if ":" in record_id:
+                entity_type, entity_id = record_id.split(":", 1)
+            else:
+                # Try to find the record by ID alone
+                all_failures = self.data_manager.get_all_failed_records()
+                for failure in all_failures:
+                    if failure.get("entity_id") == record_id:
+                        entity_type = failure.get("entity_type")
+                        entity_id = record_id
+                        break
+                else:
+                    return False
+
+            success = self.data_manager.delete_failed_sync_record(entity_type, entity_id)
+
+            if success:
+                logger.info(f"Dismissed failed record for {entity_type} {entity_id}")
+
+            return success
+
+        except Exception as e:
+            logger.error(f"Error dismissing record: {e}")
+            return False
+
+    def mark_all_for_retry(self, entity_type: Optional[str] = None) -> int:
+        """
+        Mark all failed records for retry.
+
+        Args:
+            entity_type: Optional filter by entity type
+
+        Returns:
+            Count of records marked for retry
+        """
+        if not self.enabled:
+            return 0
+
+        all_failures = self.data_manager.get_all_failed_records(entity_type=entity_type)
+        count = 0
+
+        for failure in all_failures:
+            etype = failure.get("entity_type")
+            eid = failure.get("entity_id")
+            if etype and eid:
+                failure["retry_requested"] = True
+                failure["retry_requested_at"] = datetime.now(timezone.utc).isoformat()
+                self.data_manager.save_failed_sync_record(
+                    entity_type=etype,
+                    entity_id=eid,
+                    metadata=failure,
+                    ttl_days=self.ttl_days,
+                )
+                count += 1
+
+        logger.info(f"Marked {count} records for retry")
+        return count
+
 
 # Global singleton instance (will be initialized in main.py with data_manager)
 failed_sync_tracker: Optional[FailedSyncTracker] = None
@@ -386,4 +549,14 @@ def initialize_tracker(data_manager, config) -> FailedSyncTracker:
     logger.info(
         f"Failed sync tracker initialized ({enabled_status}, TTL: {config.FAILED_SYNC_TTL_DAYS} days)"
     )
+    return failed_sync_tracker
+
+
+def get_tracker() -> Optional[FailedSyncTracker]:
+    """
+    Get the global failed sync tracker instance.
+
+    Returns:
+        FailedSyncTracker instance or None if not initialized
+    """
     return failed_sync_tracker

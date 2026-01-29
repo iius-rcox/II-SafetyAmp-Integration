@@ -512,6 +512,32 @@ class EventManager:
     def send_hourly_notification(self) -> bool:
         return self.error_notifier.send_hourly_notification()
 
+    def get_notification_history(
+        self, limit: int = 50, status: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Get notification history.
+
+        Args:
+            limit: Maximum notifications to return
+            status: Filter by status (sent, failed, pending)
+
+        Returns:
+            List of notification records
+        """
+        try:
+            # Get from error notifier's history
+            history = self.error_notifier.get_notification_history(
+                limit=limit, status=status
+            )
+            return history
+        except AttributeError:
+            # If notifier doesn't have the method, return empty list
+            return []
+        except Exception as e:
+            logger.error(f"Error getting notification history: {e}")
+            return []
+
 
 # Global singleton
 event_manager = EventManager()
