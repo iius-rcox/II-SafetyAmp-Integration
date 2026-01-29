@@ -507,6 +507,22 @@ spec:
                 secretKeyRef:
                   name: safety-amp-secrets
                   key: REDIS_DB
+            # Azure Workload Identity configuration
+            - name: AZURE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: safety-amp-secrets
+                  key: AZURE_CLIENT_ID
+            - name: AZURE_TENANT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: safety-amp-secrets
+                  key: AZURE_TENANT_ID
+            - name: AZURE_KEY_VAULT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: safety-amp-secrets
+                  key: AZURE_KEY_VAULT_URL
             resources:
               requests:
                 memory: "256Mi"
