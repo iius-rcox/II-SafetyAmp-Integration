@@ -153,7 +153,9 @@ class TestDashboardRoutes:
                 get_live_sync_status=MagicMock(
                     return_value={"sync_in_progress": False}
                 ),
-                get_dependency_health=MagicMock(return_value={"database": {"status": "healthy"}}),
+                get_dependency_health=MagicMock(
+                    return_value={"database": {"status": "healthy"}}
+                ),
             ),
             failed_sync_tracker=mock_dependencies["failed_tracker"],
         )
@@ -406,7 +408,9 @@ class TestDashboardRoutesParameterValidation:
         mock_dashboard_data.get_entity_counts.return_value = {}
         mock_dashboard_data.get_cache_stats.return_value = {}
         mock_dashboard_data.get_sync_duration_trends.return_value = []
-        mock_dashboard_data.get_records_by_time_range.return_value = {"time_range": "1d"}
+        mock_dashboard_data.get_records_by_time_range.return_value = {
+            "time_range": "1d"
+        }
         mock_dashboard_data.get_live_sync_status.return_value = {}
         mock_dashboard_data.get_dependency_health.return_value = {}
 

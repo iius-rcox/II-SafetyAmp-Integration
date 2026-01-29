@@ -266,9 +266,7 @@ class TestErrorAnalyzer:
         if suggestions:
             assert "first_seen" in suggestions[0]
 
-    def test_suggestion_includes_recommended_action(
-        self, analyzer, mock_event_manager
-    ):
+    def test_suggestion_includes_recommended_action(self, analyzer, mock_event_manager):
         """Suggestions should include recommended action."""
         now = datetime.now(timezone.utc)
         mock_event_manager.error_notifier.errors = [
@@ -420,9 +418,7 @@ class TestErrorAnalyzerPatternMatching:
         )
         assert category == "rate_limit"
 
-        category2 = analyzer._categorize_error(
-            "429 Too Many Requests", "api_error"
-        )
+        category2 = analyzer._categorize_error("429 Too Many Requests", "api_error")
         assert category2 == "rate_limit"
 
     def test_categorize_validation_error(self, analyzer):

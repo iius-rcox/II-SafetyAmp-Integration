@@ -316,7 +316,10 @@ class TestDashboardDataAggregation:
         data_points = [
             {"timestamp": (now - timedelta(minutes=30)).isoformat(), "value": 10},
             {"timestamp": (now - timedelta(minutes=45)).isoformat(), "value": 20},
-            {"timestamp": (now - timedelta(hours=1, minutes=15)).isoformat(), "value": 30},
+            {
+                "timestamp": (now - timedelta(hours=1, minutes=15)).isoformat(),
+                "value": 30,
+            },
         ]
 
         aggregated = dashboard_data._aggregate_by_hour(data_points)

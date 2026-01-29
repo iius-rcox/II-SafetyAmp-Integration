@@ -59,9 +59,11 @@ limiter = Limiter(
     key_func=get_remote_address,
     app=app,
     default_limits=["200/minute"],
-    storage_uri=f"redis://{config.REDIS_HOST}:{config.REDIS_PORT}/{config.REDIS_DB}"
-    if config.REDIS_HOST
-    else "memory://",
+    storage_uri=(
+        f"redis://{config.REDIS_HOST}:{config.REDIS_PORT}/{config.REDIS_DB}"
+        if config.REDIS_HOST
+        else "memory://"
+    ),
 )
 
 # Enable CORS for dashboard frontend

@@ -74,13 +74,20 @@ class DashboardData:
             success_rate = self._calculate_success_rate(total_processed, total_errors)
 
             # Calculate average duration
-            durations = [s.get("duration_seconds", 0) for s in sessions if s.get("duration_seconds")]
+            durations = [
+                s.get("duration_seconds", 0)
+                for s in sessions
+                if s.get("duration_seconds")
+            ]
             avg_duration = sum(durations) / len(durations) if durations else 0
 
             return {
                 "total_syncs": total_syncs,
-                "successful_syncs": total_syncs - len([s for s in sessions if s.get("total_errors", 0) > 0]),
-                "failed_syncs": len([s for s in sessions if s.get("total_errors", 0) > 0]),
+                "successful_syncs": total_syncs
+                - len([s for s in sessions if s.get("total_errors", 0) > 0]),
+                "failed_syncs": len(
+                    [s for s in sessions if s.get("total_errors", 0) > 0]
+                ),
                 "total_records_processed": total_processed,
                 "total_created": total_created,
                 "total_updated": total_updated,
@@ -127,7 +134,9 @@ class DashboardData:
             return []
 
         try:
-            summary = self.event_manager.change_tracker.get_summary_report(hours=168)  # 7 days
+            summary = self.event_manager.change_tracker.get_summary_report(
+                hours=168
+            )  # 7 days
             sessions = summary.get("recent_sessions", [])
             return sessions[:limit]
 
@@ -213,12 +222,14 @@ class DashboardData:
                 start_time = session.get("start_time")
 
                 if start_time:
-                    trends.append({
-                        "timestamp": start_time,
-                        "duration_seconds": duration,
-                        "session_id": session.get("session_id"),
-                        "sync_type": session.get("sync_type"),
-                    })
+                    trends.append(
+                        {
+                            "timestamp": start_time,
+                            "duration_seconds": duration,
+                            "session_id": session.get("session_id"),
+                            "sync_type": session.get("sync_type"),
+                        }
+                    )
 
             # Sort by timestamp descending
             trends.sort(key=lambda x: x["timestamp"], reverse=True)
@@ -253,12 +264,14 @@ class DashboardData:
 
                 start_time = session.get("start_time")
                 if start_time:
-                    error_rates.append({
-                        "timestamp": start_time,
-                        "error_rate": round(rate, 2),
-                        "total_processed": total,
-                        "total_errors": errors,
-                    })
+                    error_rates.append(
+                        {
+                            "timestamp": start_time,
+                            "error_rate": round(rate, 2),
+                            "total_processed": total,
+                            "total_errors": errors,
+                        }
+                    )
 
             return error_rates
 
@@ -386,9 +399,7 @@ class DashboardData:
         for point in data_points:
             timestamp_str = point.get("timestamp", "")
             try:
-                timestamp = datetime.fromisoformat(
-                    timestamp_str.replace("Z", "+00:00")
-                )
+                timestamp = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
                 hour_key = timestamp.replace(minute=0, second=0, microsecond=0)
                 hourly[hour_key].append(point)
             except (ValueError, TypeError):
@@ -398,18 +409,18 @@ class DashboardData:
         for hour, points in sorted(hourly.items()):
             # Calculate aggregate for this hour
             values = [p.get("value", 0) for p in points]
-            aggregated.append({
-                "timestamp": hour.isoformat(),
-                "count": len(points),
-                "total": sum(values),
-                "avg": sum(values) / len(values) if values else 0,
-            })
+            aggregated.append(
+                {
+                    "timestamp": hour.isoformat(),
+                    "count": len(points),
+                    "total": sum(values),
+                    "avg": sum(values) / len(values) if values else 0,
+                }
+            )
 
         return aggregated
 
-    def get_entity_diff(
-        self, entity_type: str, entity_id: str
-    ) -> Dict[str, Any]:
+    def get_entity_diff(self, entity_type: str, entity_id: str) -> Dict[str, Any]:
         """
         Get diff between source and target data for an entity.
 
@@ -437,7 +448,9 @@ class DashboardData:
                     source_data = self.data_manager.get_job_by_id(entity_id)
 
                 # Try to get SafetyAmp data
-                target_data = self.data_manager.get_safetyamp_entity(entity_type, entity_id)
+                target_data = self.data_manager.get_safetyamp_entity(
+                    entity_type, entity_id
+                )
 
             # Compute diff
             diff = self._compute_diff(source_data, target_data)
@@ -476,10 +489,18 @@ class DashboardData:
             return {"status": "both_missing", "changed_fields": []}
 
         if not source:
-            return {"status": "source_missing", "changed_fields": [], "target_only": True}
+            return {
+                "status": "source_missing",
+                "changed_fields": [],
+                "target_only": True,
+            }
 
         if not target:
-            return {"status": "target_missing", "changed_fields": [], "source_only": True}
+            return {
+                "status": "target_missing",
+                "changed_fields": [],
+                "source_only": True,
+            }
 
         changed_fields = []
         all_keys = set(source.keys()) | set(target.keys())
@@ -489,11 +510,13 @@ class DashboardData:
             target_val = target.get(key)
 
             if source_val != target_val:
-                changed_fields.append({
-                    "field": key,
-                    "source_value": source_val,
-                    "target_value": target_val,
-                })
+                changed_fields.append(
+                    {
+                        "field": key,
+                        "source_value": source_val,
+                        "target_value": target_val,
+                    }
+                )
 
         return {
             "status": "different" if changed_fields else "in_sync",

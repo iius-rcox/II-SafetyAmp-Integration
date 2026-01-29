@@ -120,7 +120,9 @@ class TestApiCallTracker:
         )
 
         # Verify ltrim is called with correct range (0 to max_entries-1)
-        self.mock_redis_client.ltrim.assert_called_once_with("safetyamp:api_calls", 0, 99)
+        self.mock_redis_client.ltrim.assert_called_once_with(
+            "safetyamp:api_calls", 0, 99
+        )
 
     def test_get_recent_calls_returns_list(self, tracker):
         """get_recent_calls should return list of API call records."""
@@ -154,7 +156,9 @@ class TestApiCallTracker:
         assert len(calls) == 2
         assert calls[0]["service"] == "safetyamp"
         assert calls[1]["service"] == "samsara"
-        self.mock_redis_client.lrange.assert_called_once_with("safetyamp:api_calls", 0, 29)
+        self.mock_redis_client.lrange.assert_called_once_with(
+            "safetyamp:api_calls", 0, 29
+        )
 
     def test_get_recent_calls_with_service_filter(self, tracker):
         """get_recent_calls should filter by service when specified."""

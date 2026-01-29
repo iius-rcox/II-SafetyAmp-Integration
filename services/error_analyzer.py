@@ -68,7 +68,10 @@ CONNECTIVITY_PATTERNS = [
 
 # Field extraction patterns
 FIELD_PATTERNS = [
-    (r"the\s+([\w\s]+?)\s+has\s+already", 1),  # "The email has already..." or "The mobile phone has already..."
+    (
+        r"the\s+([\w\s]+?)\s+has\s+already",
+        1,
+    ),  # "The email has already..." or "The mobile phone has already..."
     (r"field:\s+(\w+)", 1),  # "Missing required field: last_name"
     (r"(\w+)\s+is\s+required", 1),  # "email is required"
 ]
@@ -234,9 +237,7 @@ class ErrorAnalyzer:
 
             # Track timestamps
             try:
-                timestamp = datetime.fromisoformat(
-                    timestamp_str.replace("Z", "+00:00")
-                )
+                timestamp = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
                 if (
                     groups[group_key]["first_seen"] is None
                     or timestamp < groups[group_key]["first_seen"]
@@ -413,9 +414,7 @@ class ErrorAnalyzer:
         hash_val = hashlib.sha256(content.encode()).hexdigest()[:8]
         return f"sug_{hash_val}"
 
-    def _generate_title(
-        self, category: str, field: Optional[str], count: int
-    ) -> str:
+    def _generate_title(self, category: str, field: Optional[str], count: int) -> str:
         """Generate a human-readable title for the suggestion."""
         titles = {
             CATEGORY_DUPLICATE_FIELD: f"Duplicate {field or 'field'} detected",

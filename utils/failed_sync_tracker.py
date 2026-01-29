@@ -384,10 +384,7 @@ class FailedSyncTracker:
         all_failures = self.data_manager.get_all_failed_records(entity_type=entity_type)
 
         # Sort by last_failed_at descending
-        all_failures.sort(
-            key=lambda x: x.get("last_failed_at", ""),
-            reverse=True
-        )
+        all_failures.sort(key=lambda x: x.get("last_failed_at", ""), reverse=True)
 
         # Apply pagination
         return all_failures[offset : offset + limit]
@@ -483,7 +480,9 @@ class FailedSyncTracker:
                 else:
                     return False
 
-            success = self.data_manager.delete_failed_sync_record(entity_type, entity_id)
+            success = self.data_manager.delete_failed_sync_record(
+                entity_type, entity_id
+            )
 
             if success:
                 logger.info(f"Dismissed failed record for {entity_type} {entity_id}")

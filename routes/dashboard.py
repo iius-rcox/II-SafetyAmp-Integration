@@ -83,6 +83,7 @@ def require_dashboard_auth(f: Callable) -> Callable:
     Checks for X-Dashboard-Token header or dashboard_token query param.
     If DASHBOARD_API_TOKEN is not set, authentication is bypassed (dev mode).
     """
+
     @wraps(f)
     def decorated(*args, **kwargs):
         expected_token = _get_dashboard_token()
@@ -105,6 +106,7 @@ def require_dashboard_auth(f: Callable) -> Callable:
             return jsonify({"error": "Invalid authentication token"}), 403
 
         return f(*args, **kwargs)
+
     return decorated
 
 
@@ -206,16 +208,21 @@ def create_dashboard_blueprint(
                 errors_only=errors_only,
             )
 
-            return jsonify({
-                "calls": calls,
-                "total": len(calls),
-                "filters": {
-                    "limit": limit,
-                    "service": service,
-                    "method": method,
-                    "errors_only": errors_only,
-                },
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "calls": calls,
+                        "total": len(calls),
+                        "filters": {
+                            "limit": limit,
+                            "service": service,
+                            "method": method,
+                            "errors_only": errors_only,
+                        },
+                    }
+                ),
+                200,
+            )
 
         except Exception as e:
             logger.error(f"Error getting API calls: {e}", exc_info=True)
@@ -272,15 +279,23 @@ def create_dashboard_blueprint(
 
             suggestions = error_analyzer.analyze(hours=hours)
 
-            return jsonify({
-                "suggestions": suggestions,
-                "total": len(suggestions),
-                "hours": hours,
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "suggestions": suggestions,
+                        "total": len(suggestions),
+                        "hours": hours,
+                    }
+                ),
+                200,
+            )
 
         except Exception as e:
             logger.error(f"Error getting error suggestions: {e}", exc_info=True)
-            return jsonify({"suggestions": [], "total": 0, "error": "Internal error"}), 200
+            return (
+                jsonify({"suggestions": [], "total": 0, "error": "Internal error"}),
+                200,
+            )
 
     # --- Sync History ---
 
@@ -306,10 +321,15 @@ def create_dashboard_blueprint(
 
             sessions = dashboard_data.get_sync_history(limit=limit)
 
-            return jsonify({
-                "sessions": sessions,
-                "total": len(sessions),
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "sessions": sessions,
+                        "total": len(sessions),
+                    }
+                ),
+                200,
+            )
 
         except Exception as e:
             logger.error(f"Error getting sync history: {e}", exc_info=True)
@@ -328,12 +348,17 @@ def create_dashboard_blueprint(
         """
         try:
             if not dashboard_data:
-                return jsonify({
-                    "employees": 0,
-                    "jobs": 0,
-                    "departments": 0,
-                    "vehicles": 0,
-                }), 200
+                return (
+                    jsonify(
+                        {
+                            "employees": 0,
+                            "jobs": 0,
+                            "departments": 0,
+                            "vehicles": 0,
+                        }
+                    ),
+                    200,
+                )
 
             counts = dashboard_data.get_entity_counts()
             return jsonify(counts), 200
@@ -355,11 +380,16 @@ def create_dashboard_blueprint(
         """
         try:
             if not dashboard_data:
-                return jsonify({
-                    "redis_connected": False,
-                    "cache_ttl_hours": 0,
-                    "caches": {},
-                }), 200
+                return (
+                    jsonify(
+                        {
+                            "redis_connected": False,
+                            "cache_ttl_hours": 0,
+                            "caches": {},
+                        }
+                    ),
+                    200,
+                )
 
             stats = dashboard_data.get_cache_stats()
             return jsonify(stats), 200
@@ -392,10 +422,15 @@ def create_dashboard_blueprint(
 
             trends = dashboard_data.get_sync_duration_trends(hours=hours)
 
-            return jsonify({
-                "trends": trends,
-                "hours": hours,
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "trends": trends,
+                        "hours": hours,
+                    }
+                ),
+                200,
+            )
 
         except Exception as e:
             logger.error(f"Error getting duration trends: {e}", exc_info=True)
@@ -422,12 +457,17 @@ def create_dashboard_blueprint(
                 time_range = "1d"
 
             if not dashboard_data:
-                return jsonify({
-                    "time_range": time_range,
-                    "total_records": 0,
-                    "by_entity_type": {},
-                    "data_points": [],
-                }), 200
+                return (
+                    jsonify(
+                        {
+                            "time_range": time_range,
+                            "total_records": 0,
+                            "by_entity_type": {},
+                            "data_points": [],
+                        }
+                    ),
+                    200,
+                )
 
             data = dashboard_data.get_records_by_time_range(time_range=time_range)
             return jsonify(data), 200
@@ -449,11 +489,16 @@ def create_dashboard_blueprint(
         """
         try:
             if not dashboard_data:
-                return jsonify({
-                    "sync_in_progress": False,
-                    "last_sync_time": None,
-                    "current_operation": None,
-                }), 200
+                return (
+                    jsonify(
+                        {
+                            "sync_in_progress": False,
+                            "last_sync_time": None,
+                            "current_operation": None,
+                        }
+                    ),
+                    200,
+                )
 
             status = dashboard_data.get_live_sync_status()
             return jsonify(status), 200
@@ -480,20 +525,30 @@ def create_dashboard_blueprint(
             entity_type = request.args.get("entity_type")
 
             if not failed_sync_tracker:
-                return jsonify({
-                    "stats": {
-                        "total": 0,
-                        "by_entity_type": {},
-                        "by_reason": {},
-                    },
-                    "records": [],
-                }), 200
+                return (
+                    jsonify(
+                        {
+                            "stats": {
+                                "total": 0,
+                                "by_entity_type": {},
+                                "by_reason": {},
+                            },
+                            "records": [],
+                        }
+                    ),
+                    200,
+                )
 
             stats = failed_sync_tracker.get_failure_stats(entity_type=entity_type)
 
-            return jsonify({
-                "stats": stats,
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "stats": stats,
+                    }
+                ),
+                200,
+            )
 
         except Exception as e:
             logger.error(f"Error getting failed records: {e}", exc_info=True)
@@ -512,10 +567,15 @@ def create_dashboard_blueprint(
         """
         try:
             if not dashboard_data:
-                return jsonify({
-                    "database": {"status": "unknown"},
-                    "services": {},
-                }), 200
+                return (
+                    jsonify(
+                        {
+                            "database": {"status": "unknown"},
+                            "services": {},
+                        }
+                    ),
+                    200,
+                )
 
             health = dashboard_data.get_dependency_health()
             return jsonify(health), 200
@@ -542,7 +602,9 @@ def create_dashboard_blueprint(
         """
         try:
             entity_type = request.args.get("entity_type")
-            limit = _parse_int_param(request.args.get("limit"), default=50, min_val=1, max_val=200)
+            limit = _parse_int_param(
+                request.args.get("limit"), default=50, min_val=1, max_val=200
+            )
             offset = _parse_int_param(request.args.get("offset"), default=0, min_val=0)
 
             if not failed_sync_tracker:
@@ -555,12 +617,17 @@ def create_dashboard_blueprint(
             )
             total = failed_sync_tracker.get_failed_count(entity_type=entity_type)
 
-            return jsonify({
-                "records": records,
-                "total": total,
-                "limit": limit,
-                "offset": offset,
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "records": records,
+                        "total": total,
+                        "limit": limit,
+                        "offset": offset,
+                    }
+                ),
+                200,
+            )
 
         except Exception as e:
             logger.error(f"Error listing failed records: {e}", exc_info=True)
@@ -575,7 +642,9 @@ def create_dashboard_blueprint(
                 return jsonify({"error": "Failed sync tracker not available"}), 503
 
             success = failed_sync_tracker.mark_for_retry(record_id)
-            _log_audit_event("retry", "failed_record", {"record_id": record_id, "success": success})
+            _log_audit_event(
+                "retry", "failed_record", {"record_id": record_id, "success": success}
+            )
 
             if success:
                 return jsonify({"status": "queued", "record_id": record_id}), 200
@@ -594,7 +663,9 @@ def create_dashboard_blueprint(
                 return jsonify({"error": "Failed sync tracker not available"}), 503
 
             success = failed_sync_tracker.dismiss_record(record_id)
-            _log_audit_event("dismiss", "failed_record", {"record_id": record_id, "success": success})
+            _log_audit_event(
+                "dismiss", "failed_record", {"record_id": record_id, "success": success}
+            )
 
             if success:
                 return jsonify({"status": "dismissed", "record_id": record_id}), 200
@@ -615,7 +686,11 @@ def create_dashboard_blueprint(
                 return jsonify({"error": "Failed sync tracker not available"}), 503
 
             count = failed_sync_tracker.mark_all_for_retry(entity_type=entity_type)
-            _log_audit_event("retry_all", "failed_records", {"entity_type": entity_type, "count": count})
+            _log_audit_event(
+                "retry_all",
+                "failed_records",
+                {"entity_type": entity_type, "count": count},
+            )
 
             return jsonify({"status": "queued", "count": count}), 200
 
@@ -633,9 +708,19 @@ def create_dashboard_blueprint(
             if not data_manager:
                 return jsonify({"error": "Data manager not available"}), 503
 
-            valid_caches = ["employees", "vehicles", "departments", "jobs", "titles", "all"]
+            valid_caches = [
+                "employees",
+                "vehicles",
+                "departments",
+                "jobs",
+                "titles",
+                "all",
+            ]
             if cache_name not in valid_caches:
-                return jsonify({"error": f"Invalid cache name. Valid: {valid_caches}"}), 400
+                return (
+                    jsonify({"error": f"Invalid cache name. Valid: {valid_caches}"}),
+                    400,
+                )
 
             if cache_name == "all":
                 data_manager.clear_all_caches()
@@ -660,7 +745,10 @@ def create_dashboard_blueprint(
 
             valid_caches = ["employees", "vehicles", "departments", "jobs", "titles"]
             if cache_name not in valid_caches:
-                return jsonify({"error": f"Invalid cache name. Valid: {valid_caches}"}), 400
+                return (
+                    jsonify({"error": f"Invalid cache name. Valid: {valid_caches}"}),
+                    400,
+                )
 
             # Invalidate and trigger refetch
             data_manager.clear_cache(cache_name)
@@ -690,7 +778,10 @@ def create_dashboard_blueprint(
         try:
             valid_types = ["employee", "vehicle", "department", "job", "title"]
             if entity_type not in valid_types:
-                return jsonify({"error": f"Invalid entity type. Valid: {valid_types}"}), 400
+                return (
+                    jsonify({"error": f"Invalid entity type. Valid: {valid_types}"}),
+                    400,
+                )
 
             if not dashboard_data:
                 return jsonify({"error": "Dashboard data not available"}), 503
@@ -718,22 +809,34 @@ def create_dashboard_blueprint(
             JSON with notification history
         """
         try:
-            limit = _parse_int_param(request.args.get("limit"), default=50, min_val=1, max_val=200)
+            limit = _parse_int_param(
+                request.args.get("limit"), default=50, min_val=1, max_val=200
+            )
             status = request.args.get("status")
 
             if not event_manager:
                 return jsonify({"notifications": [], "total": 0}), 200
 
-            notifications = event_manager.get_notification_history(limit=limit, status=status)
+            notifications = event_manager.get_notification_history(
+                limit=limit, status=status
+            )
 
-            return jsonify({
-                "notifications": notifications,
-                "total": len(notifications),
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "notifications": notifications,
+                        "total": len(notifications),
+                    }
+                ),
+                200,
+            )
 
         except Exception as e:
             logger.error(f"Error getting notification log: {e}", exc_info=True)
-            return jsonify({"notifications": [], "total": 0, "error": "Internal error"}), 200
+            return (
+                jsonify({"notifications": [], "total": 0, "error": "Internal error"}),
+                200,
+            )
 
     # --- Configuration Status (Feature 6) ---
 
@@ -748,10 +851,15 @@ def create_dashboard_blueprint(
         """
         try:
             if not config_manager:
-                return jsonify({
-                    "valid": False,
-                    "error": "Config manager not available",
-                }), 200
+                return (
+                    jsonify(
+                        {
+                            "valid": False,
+                            "error": "Config manager not available",
+                        }
+                    ),
+                    200,
+                )
 
             status = config_manager.get_configuration_status()
 
@@ -783,41 +891,61 @@ def create_dashboard_blueprint(
             File download
         """
         try:
-            valid_types = ["api-calls", "sync-history", "errors", "failed-records", "entity-counts"]
+            valid_types = [
+                "api-calls",
+                "sync-history",
+                "errors",
+                "failed-records",
+                "entity-counts",
+            ]
             if report_type not in valid_types:
-                return jsonify({"error": f"Invalid report type. Valid: {valid_types}"}), 400
+                return (
+                    jsonify({"error": f"Invalid report type. Valid: {valid_types}"}),
+                    400,
+                )
 
             output_format = request.args.get("format", "json").lower()
             if output_format not in ["csv", "json"]:
                 output_format = "json"
 
-            hours = _parse_int_param(request.args.get("hours"), default=24, min_val=1, max_val=MAX_HOURS)
+            hours = _parse_int_param(
+                request.args.get("hours"), default=24, min_val=1, max_val=MAX_HOURS
+            )
 
             # Get data based on report type
             data = _get_export_data(
-                report_type, hours,
+                report_type,
+                hours,
                 api_call_tracker=api_call_tracker,
                 dashboard_data=dashboard_data,
                 error_analyzer=error_analyzer,
                 failed_sync_tracker=failed_sync_tracker,
             )
 
-            _log_audit_event("export", report_type, {"format": output_format, "hours": hours})
+            _log_audit_event(
+                "export", report_type, {"format": output_format, "hours": hours}
+            )
 
-            filename = f"safetyamp_{report_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            filename = (
+                f"safetyamp_{report_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            )
 
             if output_format == "csv":
                 csv_content = _convert_to_csv(data)
                 return Response(
                     csv_content,
                     mimetype="text/csv",
-                    headers={"Content-Disposition": f"attachment; filename={filename}.csv"}
+                    headers={
+                        "Content-Disposition": f"attachment; filename={filename}.csv"
+                    },
                 )
             else:
                 return Response(
                     json.dumps(data, indent=2, default=str),
                     mimetype="application/json",
-                    headers={"Content-Disposition": f"attachment; filename={filename}.json"}
+                    headers={
+                        "Content-Disposition": f"attachment; filename={filename}.json"
+                    },
                 )
 
         except Exception as e:
@@ -842,22 +970,39 @@ def create_dashboard_blueprint(
             body = request.get_json() or {}
             sync_type = body.get("sync_type", "all")
 
-            valid_types = ["all", "employees", "vehicles", "departments", "jobs", "titles"]
+            valid_types = [
+                "all",
+                "employees",
+                "vehicles",
+                "departments",
+                "jobs",
+                "titles",
+            ]
             if sync_type not in valid_types:
-                return jsonify({"error": f"Invalid sync type. Valid: {valid_types}"}), 400
+                return (
+                    jsonify({"error": f"Invalid sync type. Valid: {valid_types}"}),
+                    400,
+                )
 
             if not sync_trigger_callback:
                 return jsonify({"error": "Sync trigger not available"}), 503
 
             # Trigger the sync
             result = sync_trigger_callback(sync_type)
-            _log_audit_event("trigger", "sync", {"sync_type": sync_type, "result": result})
+            _log_audit_event(
+                "trigger", "sync", {"sync_type": sync_type, "result": result}
+            )
 
-            return jsonify({
-                "status": "triggered",
-                "sync_type": sync_type,
-                "message": f"Manual {sync_type} sync has been triggered",
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "status": "triggered",
+                        "sync_type": sync_type,
+                        "message": f"Manual {sync_type} sync has been triggered",
+                    }
+                ),
+                200,
+            )
 
         except Exception as e:
             logger.error(f"Error triggering sync: {e}", exc_info=True)
@@ -869,11 +1014,16 @@ def create_dashboard_blueprint(
         """Get status of any pending or running manual sync."""
         try:
             if not dashboard_data:
-                return jsonify({
-                    "pending": False,
-                    "running": False,
-                    "last_manual_sync": None,
-                }), 200
+                return (
+                    jsonify(
+                        {
+                            "pending": False,
+                            "running": False,
+                            "last_manual_sync": None,
+                        }
+                    ),
+                    200,
+                )
 
             status = dashboard_data.get_manual_sync_status()
             return jsonify(status), 200
@@ -899,7 +1049,9 @@ def create_dashboard_blueprint(
             JSON with audit log entries
         """
         try:
-            limit = _parse_int_param(request.args.get("limit"), default=100, min_val=1, max_val=500)
+            limit = _parse_int_param(
+                request.args.get("limit"), default=100, min_val=1, max_val=500
+            )
             action_filter = request.args.get("action")
             resource_filter = request.args.get("resource")
 
@@ -908,12 +1060,19 @@ def create_dashboard_blueprint(
             if action_filter:
                 filtered_log = [e for e in filtered_log if e["action"] == action_filter]
             if resource_filter:
-                filtered_log = [e for e in filtered_log if e["resource"] == resource_filter]
+                filtered_log = [
+                    e for e in filtered_log if e["resource"] == resource_filter
+                ]
 
-            return jsonify({
-                "entries": filtered_log[:limit],
-                "total": len(filtered_log),
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "entries": filtered_log[:limit],
+                        "total": len(filtered_log),
+                    }
+                ),
+                200,
+            )
 
         except Exception as e:
             logger.error(f"Error getting audit log: {e}", exc_info=True)
@@ -977,8 +1136,15 @@ def _empty_api_stats() -> dict:
 def _mask_config_status(status: Dict[str, Any]) -> Dict[str, Any]:
     """Mask sensitive values in configuration status."""
     sensitive_keys = [
-        "token", "password", "secret", "key", "credential",
-        "api_key", "apikey", "auth", "bearer"
+        "token",
+        "password",
+        "secret",
+        "key",
+        "credential",
+        "api_key",
+        "apikey",
+        "auth",
+        "bearer",
     ]
 
     def mask_value(key: str, value: Any) -> Any:
