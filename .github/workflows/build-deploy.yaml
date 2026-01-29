@@ -155,6 +155,7 @@ jobs:
           cd k8s/overlays/dev
 
           # Create or update kustomization.yaml with both images
+          # Use full image names to match source YAML references
           cat > kustomization.yaml << EOF
           apiVersion: kustomize.config.k8s.io/v1beta1
           kind: Kustomization
@@ -162,11 +163,9 @@ jobs:
             - ../../base
           namespace: safety-amp-dev
           images:
-            - name: safety-amp-agent
-              newName: ${REGISTRY}/${IMAGE_NAME}
+            - name: ${REGISTRY}/${IMAGE_NAME}
               newTag: sha-${SHORT_SHA}
-            - name: ops-dashboard
-              newName: ${REGISTRY}/${DASHBOARD_IMAGE_NAME}
+            - name: ${REGISTRY}/${DASHBOARD_IMAGE_NAME}
               newTag: sha-${SHORT_SHA}
           EOF
 
