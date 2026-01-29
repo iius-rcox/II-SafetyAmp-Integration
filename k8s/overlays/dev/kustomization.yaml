@@ -8,3 +8,8 @@ images:
     newTag: sha-23a5821
   - name: iiusacr.azurecr.io/ops-dashboard
     newTag: sha-23a5821
+patches:
+  # Environment-specific Azure identity and secrets
+  # NOTE: For production, use External Secrets Operator or Azure Key Vault CSI driver
+  - path: azure-identity-patch.yaml
+  - path: serviceaccount-patch.yaml

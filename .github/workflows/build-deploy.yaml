@@ -156,6 +156,7 @@ jobs:
 
           # Create or update kustomization.yaml with both images
           # Use full image names to match source YAML references
+          # IMPORTANT: Preserve patches for Azure identity and service account
           cat > kustomization.yaml << EOF
           apiVersion: kustomize.config.k8s.io/v1beta1
           kind: Kustomization
@@ -167,6 +168,11 @@ jobs:
               newTag: sha-${SHORT_SHA}
             - name: ${REGISTRY}/${DASHBOARD_IMAGE_NAME}
               newTag: sha-${SHORT_SHA}
+          patches:
+            # Environment-specific Azure identity and secrets
+            # NOTE: For production, use External Secrets Operator or Azure Key Vault CSI driver
+            - path: azure-identity-patch.yaml
+            - path: serviceaccount-patch.yaml
           EOF
 
           cat kustomization.yaml
