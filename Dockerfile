@@ -33,6 +33,9 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Upgrade system Python packages to fix CVE-2026-24049 (wheel) and CVE-2026-23949 (jaraco.context in setuptools)
+RUN pip install --no-cache-dir --upgrade "pip>=24.0" "setuptools>=79.0.0" "wheel>=0.46.2"
+
 COPY --from=builder /opt/venv /opt/venv
 WORKDIR /app
 COPY . .
