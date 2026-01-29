@@ -5,6 +5,6 @@ resources:
 namespace: safety-amp-dev
 images:
   - name: iiusacr.azurecr.io/safety-amp-agent
-    newTag: sha-f2f74fb
+    newTag: sha-1c603f3
   - name: iiusacr.azurecr.io/ops-dashboard
-    newTag: sha-f2f74fb
+    newTag: sha-1c603f3
