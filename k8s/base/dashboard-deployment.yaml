@@ -67,8 +67,7 @@ metadata:
   name: ops-dashboard-ingress
   namespace: safety-amp
   annotations:
-    kubernetes.io/ingress.class: webapprouting.kubernetes.azure.com
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   ingressClassName: webapprouting.kubernetes.azure.com
   tls:
