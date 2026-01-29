@@ -7,6 +7,5 @@ images:
   - name: safety-amp-agent
     newName: iiusacr.azurecr.io/safety-amp-agent
     newTag: sha-fc35a88
-  - name: ops-dashboard
-    newName: iiusacr.azurecr.io/ops-dashboard
+  - name: iiusacr.azurecr.io/ops-dashboard
     newTag: sha-fc35a88
