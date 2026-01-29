@@ -24,6 +24,7 @@ import csv
 import io
 import json
 import os
+import secrets
 import time
 from datetime import datetime, timezone
 from functools import wraps
@@ -80,28 +81,35 @@ def require_dashboard_auth(f: Callable) -> Callable:
     """
     Decorator to require dashboard authentication.
 
-    Checks for X-Dashboard-Token header or dashboard_token query param.
-    If DASHBOARD_API_TOKEN is not set, authentication is bypassed (dev mode).
+    Checks for X-Dashboard-Token header only (query params removed for security).
+    SECURITY: Fails closed - denies access when DASHBOARD_API_TOKEN not configured.
     """
 
     @wraps(f)
     def decorated(*args, **kwargs):
         expected_token = _get_dashboard_token()
 
-        # If no token configured, allow access (dev mode)
+        # SECURITY: Fail closed - deny access if no token configured
         if not expected_token:
-            return f(*args, **kwargs)
+            logger.error(
+                "DASHBOARD_API_TOKEN not configured - denying access for security"
+            )
+            return (
+                jsonify(
+                    {"error": "Dashboard not configured. Set DASHBOARD_API_TOKEN."}
+                ),
+                503,
+            )
 
-        # Check header first, then query param
+        # Only accept token via header (not query params to avoid logging exposure)
         provided_token = request.headers.get("X-Dashboard-Token")
-        if not provided_token:
-            provided_token = request.args.get("dashboard_token")
 
         if not provided_token:
             logger.warning("Dashboard access denied: no token provided")
             return jsonify({"error": "Authentication required"}), 401
 
-        if provided_token != expected_token:
+        # SECURITY: Use constant-time comparison to prevent timing attacks
+        if not secrets.compare_digest(provided_token, expected_token):
             logger.warning("Dashboard access denied: invalid token")
             return jsonify({"error": "Invalid authentication token"}), 403
 

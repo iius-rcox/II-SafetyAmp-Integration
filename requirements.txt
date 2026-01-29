@@ -26,6 +26,9 @@ redis[hiredis]>=5.0.0
 azure-identity>=1.16.0
 azure-keyvault-secrets>=4.7.0
 
+# SECURITY: Pin aiohttp to fix CVE-2025-69223, CVE-2025-69224, CVE-2025-69228, CVE-2025-69229
+aiohttp>=3.11.0
+
 # Monitoring
 prometheus-client>=0.17.0
 structlog>=23.1.0

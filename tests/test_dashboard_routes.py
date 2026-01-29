@@ -8,6 +8,7 @@ Tests cover:
 - Error handling
 """
 
+import os
 import pytest
 import json
 import sys
@@ -17,6 +18,10 @@ from datetime import datetime, timezone
 # Mock redis before imports
 mock_redis_module = MagicMock()
 sys.modules["redis"] = mock_redis_module
+
+# Set test token for dashboard authentication
+TEST_DASHBOARD_TOKEN = "test-dashboard-token-for-testing"
+os.environ["DASHBOARD_API_TOKEN"] = TEST_DASHBOARD_TOKEN
 
 
 class TestDashboardRoutes:
@@ -162,8 +167,29 @@ class TestDashboardRoutes:
 
         app.register_blueprint(bp)
 
-        with app.test_client() as client:
-            yield client
+        with app.test_client() as test_client:
+            # Create a wrapper that adds auth header to all requests
+            class AuthenticatedClient:
+                def __init__(self, client):
+                    self._client = client
+                    self._headers = {"X-Dashboard-Token": TEST_DASHBOARD_TOKEN}
+
+                def get(self, *args, **kwargs):
+                    headers = kwargs.pop("headers", {})
+                    headers.update(self._headers)
+                    return self._client.get(*args, headers=headers, **kwargs)
+
+                def post(self, *args, **kwargs):
+                    headers = kwargs.pop("headers", {})
+                    headers.update(self._headers)
+                    return self._client.post(*args, headers=headers, **kwargs)
+
+                def delete(self, *args, **kwargs):
+                    headers = kwargs.pop("headers", {})
+                    headers.update(self._headers)
+                    return self._client.delete(*args, headers=headers, **kwargs)
+
+            yield AuthenticatedClient(test_client)
 
     # --- Sync Metrics Tests ---
 
@@ -368,8 +394,19 @@ class TestDashboardRoutesErrorHandling:
 
         app.register_blueprint(bp)
 
-        with app.test_client() as client:
-            yield client
+        with app.test_client() as test_client:
+            # Create a wrapper that adds auth header to all requests
+            class AuthenticatedClient:
+                def __init__(self, client):
+                    self._client = client
+                    self._headers = {"X-Dashboard-Token": TEST_DASHBOARD_TOKEN}
+
+                def get(self, *args, **kwargs):
+                    headers = kwargs.pop("headers", {})
+                    headers.update(self._headers)
+                    return self._client.get(*args, headers=headers, **kwargs)
+
+            yield AuthenticatedClient(test_client)
 
     def test_api_calls_handles_error_gracefully(self, client_with_failing_deps):
         """API calls endpoint should handle errors gracefully."""
@@ -426,8 +463,19 @@ class TestDashboardRoutesParameterValidation:
 
         app.register_blueprint(bp)
 
-        with app.test_client() as client:
-            yield client
+        with app.test_client() as test_client:
+            # Create a wrapper that adds auth header to all requests
+            class AuthenticatedClient:
+                def __init__(self, client):
+                    self._client = client
+                    self._headers = {"X-Dashboard-Token": TEST_DASHBOARD_TOKEN}
+
+                def get(self, *args, **kwargs):
+                    headers = kwargs.pop("headers", {})
+                    headers.update(self._headers)
+                    return self._client.get(*args, headers=headers, **kwargs)
+
+            yield AuthenticatedClient(test_client)
 
     def test_invalid_limit_uses_default(self, client):
         """Invalid limit parameter should use default."""

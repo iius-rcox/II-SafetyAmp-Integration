@@ -54,6 +54,9 @@ structlog.configure(
 app = Flask(__name__)
 logger = get_logger("main")
 
+# SECURITY: Limit request body size to prevent DoS attacks
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB max
+
 # Initialize Flask-Limiter for rate limiting
 limiter = Limiter(
     key_func=get_remote_address,
@@ -67,11 +70,36 @@ limiter = Limiter(
 )
 
 # Enable CORS for dashboard frontend
+# SECURITY: Restrict origins in production via CORS_ALLOWED_ORIGINS env var
+_cors_origins = os.getenv("CORS_ALLOWED_ORIGINS", "").strip()
+if _cors_origins:
+    _allowed_origins = [o.strip() for o in _cors_origins.split(",") if o.strip()]
+else:
+    # Default to localhost for development
+    _allowed_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
+
 CORS(
     app,
-    resources={r"/api/dashboard/*": {"origins": "*"}},
+    resources={r"/api/dashboard/*": {"origins": _allowed_origins}},
     supports_credentials=True,
 )
+
+
+@app.after_request
+def set_security_headers(response):
+    """Add security headers to all responses."""
+    # Prevent MIME-type sniffing
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    # Prevent clickjacking
+    response.headers["X-Frame-Options"] = "DENY"
+    # XSS protection for older browsers
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    # Referrer policy
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    # Permissions policy (restrict browser features)
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    return response
+
 
 # Configuration from unified config manager
 DB_POOL_SIZE = config.DB_POOL_SIZE
