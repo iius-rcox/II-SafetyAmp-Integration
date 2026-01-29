@@ -24,6 +24,7 @@ permissions:
 env:
   REGISTRY: iiusacr.azurecr.io
   IMAGE_NAME: safety-amp-agent
+  DASHBOARD_IMAGE_NAME: ops-dashboard
   PYTHON_VERSION: "3.11"
 
 jobs:
@@ -93,10 +94,54 @@ jobs:
         with:
           sarif_file: "trivy-results.sarif"
 
+  build-dashboard:
+    name: Build Dashboard Image
+    runs-on: ubuntu-latest
+    outputs:
+      short_sha: ${{ steps.vars.outputs.short_sha }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set build variables
+        id: vars
+        run: |
+          echo "short_sha=$(echo ${GITHUB_SHA} | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.DASHBOARD_IMAGE_NAME }}
+          tags: |
+            type=raw,value=sha-${{ steps.vars.outputs.short_sha }}
+            type=raw,value=dev
+            type=sha,prefix=
+
+      - name: Build and push Dashboard image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./dashboard
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
   update-manifests:
     name: Update Kubernetes Manifests
     runs-on: ubuntu-latest
-    needs: build-and-push
+    needs: [build-and-push, build-dashboard]
     env:
       SHORT_SHA: ${{ needs.build-and-push.outputs.short_sha }}
     steps:
@@ -105,21 +150,25 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update dev kustomization with new image tag
+      - name: Update dev kustomization with new image tags
         run: |
           cd k8s/overlays/dev
 
-          # Check if images section exists, if not create it
-          if ! grep -q "^images:" kustomization.yaml; then
-            echo "" >> kustomization.yaml
-            echo "images:" >> kustomization.yaml
-            echo "  - name: safety-amp-agent" >> kustomization.yaml
-            echo "    newName: ${REGISTRY}/${IMAGE_NAME}" >> kustomization.yaml
-            echo "    newTag: sha-${SHORT_SHA}" >> kustomization.yaml
-          else
-            # Update existing image tag using sed
-            sed -i "s/newTag:.*/newTag: sha-${SHORT_SHA}/" kustomization.yaml
-          fi
+          # Create or update kustomization.yaml with both images
+          cat > kustomization.yaml << EOF
+          apiVersion: kustomize.config.k8s.io/v1beta1
+          kind: Kustomization
+          resources:
+            - ../../base
+          namespace: safety-amp-dev
+          images:
+            - name: safety-amp-agent
+              newName: ${REGISTRY}/${IMAGE_NAME}
+              newTag: sha-${SHORT_SHA}
+            - name: ops-dashboard
+              newName: ${REGISTRY}/${DASHBOARD_IMAGE_NAME}
+              newTag: sha-${SHORT_SHA}
+          EOF
 
           cat kustomization.yaml
 
