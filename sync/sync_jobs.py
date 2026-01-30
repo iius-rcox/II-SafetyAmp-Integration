@@ -50,7 +50,7 @@ class JobSyncer:
                 patch_data["cluster_id"] = cluster_id
             if existing_site.get("zip_code") != zip_code:
                 patch_data["zip_code"] = zip_code
-                patch_data["ext_id"] = job["Job"]
+                patch_data["external_code"] = job["Job"]
             if patch_data:
                 patch_data["name"] = name
                 self.api_client.put(f"/api/sites/{existing_site['id']}", patch_data)
@@ -67,7 +67,7 @@ class JobSyncer:
 
         site_data = {
             "name": name,
-            "ext_id": job["Job"],
+            "external_code": job["Job"],
             "street": job.get("ShipAddress") or "Unknown",
             "city": job.get("ShipCity") or "Unknown",
             "state": job.get("ShipState") or "LA",
