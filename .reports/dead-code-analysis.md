@@ -1,124 +1,199 @@
 # Dead Code Analysis Report
 
-**Generated:** 2026-01-27
-**Tool:** vulture (Python dead code finder)
-**Confidence Threshold:** 60%+
+**Generated:** 2026-01-30 (Updated)
+**Previous Analysis:** 2026-01-27
+**Analysis Method:** Manual static analysis with ripgrep
+
+---
 
 ## Summary
 
-| Category | Count | Action |
-|----------|-------|--------|
-| Unused Imports | 2 | SAFE to remove |
-| Unused Variables | 7 | Review needed |
-| Unused Functions/Methods | 45+ | Mostly FALSE POSITIVES |
-| Unused Dependencies | 4 | Review needed |
+| Severity | Count | Description |
+|----------|-------|-------------|
+| SAFE     | 5     | utils/ modules not imported anywhere |
+| CAUTION  | 2     | Operational scripts (keep for debugging) |
+| DANGER   | 0     | - |
 
-## Findings by Severity
+**Total dead files identified:** 5 Python modules
+**Estimated reduction:** ~525 lines of Python code
 
-### 🟢 SAFE: High Confidence (90-100%)
+---
 
-These are definitely unused and safe to remove:
+## 🟢 SAFE: Completely Unused Modules
 
-| File | Line | Issue | Confidence |
-|------|------|-------|------------|
-| `main.py` | 289 | `frame` - unused signal handler arg | 100% |
-| `services/viewpoint_api.py` | 2 | `import pyodbc` - SQLAlchemy handles it | 90% |
-| `services/viewpoint_api.py` | 7 | `import Engine` - unused type hint | 90% |
+These files exist but are never imported by any production or test code.
 
-### 🟡 CAUTION: False Positives (60%)
+### 1. `utils/error_manager.py` (~53 lines)
 
-These are flagged but are actually USED - vulture can't detect:
-- Flask route decorators (`@app.route`)
-- Dynamic method calls
-- Methods called through base class
+**Status:** DEAD CODE
+**Reason:** Never imported anywhere in the codebase
 
-**Flask Routes (NOT dead code):**
-- `main.py:88` - `health()` - used by `/health` route
-- `main.py:118` - `ready()` - used by `/ready` route
-- `main.py:136` - `live()` - used by `/live` route
-- `main.py:146` - `metrics_endpoint()` - used by `/metrics` route
+```bash
+$ rg -l "error_manager" . --type py
+./utils/error_manager.py  # Only the file itself
+```
 
-**API Client Methods (likely used dynamically):**
-- `services/safetyamp_api.py` - convenience methods like `get_sites()`, `get_users()`
-- `services/data_manager.py` - cache methods for flexible data access
+**Contains:**
+- `ErrorManager` class with `log_error()`, `get_recent_errors()`, `clear_errors()`, `has_recent_errors()`
+- Global `error_manager` instance
 
-**Base Class Methods (inherited):**
-- `sync/base_sync.py` - methods designed for subclass use
+**Safe to delete:** YES
 
-### 🔴 DANGER: Do Not Delete
+---
 
-- `config/__init__.py:393` - `get_config()` - public API for config access
-- `utils/logger.py:11` - `format()` - logging.Formatter override
+### 2. `utils/error_notifier.py` (~291 lines)
 
-## Unused Dependencies
+**Status:** DEAD CODE (superseded by services/event_manager.py)
+**Reason:** Functionality was migrated to `services/event_manager.py::_ErrorNotifier` class
 
-These packages are in `requirements.txt` but not imported:
+```python
+# In services/event_manager.py:
+class _ErrorNotifier:
+    """Internal notifier (migrated from utils.error_notifier)."""
+```
 
-| Package | Status | Recommendation |
-|---------|--------|----------------|
-| `pydantic` | Not imported | **REMOVE** - not used |
-| `tenacity` | Not imported | **REMOVE** - not used |
-| `opentelemetry-api` | Not imported | **KEEP** - marked optional |
-| `opentelemetry-sdk` | Not imported | **KEEP** - marked optional |
-| `black` | Dev tool | **KEEP** - linting |
-| `flake8` | Dev tool | **KEEP** - linting |
+**Contains:**
+- `ErrorNotifier` class with error logging, notification sending, cleanup
+- Global `error_notifier` instance
+- Imports `utils/emailer.py`
+
+**Safe to delete:** YES - Replaced by internal class
+
+---
+
+### 3. `utils/notification_manager.py` (~75 lines)
+
+**Status:** DEAD CODE
+**Reason:** Never imported anywhere in the codebase
+
+```bash
+$ rg -l "notification_manager" . --type py
+./utils/notification_manager.py  # Only the file itself
+```
+
+**Contains:**
+- `NotificationManager` class for sync failure notifications
+- Imports from `utils/circuit_breaker.py`
+
+**Safe to delete:** YES
+
+---
+
+### 4. `utils/circuit_breaker.py` (~82 lines)
+
+**Status:** DEAD CODE
+**Reason:** Only imported by `utils/notification_manager.py` which is also dead
+
+```bash
+$ rg -l "circuit_breaker" . --type py
+./utils/notification_manager.py  # Dead code
+./utils/circuit_breaker.py       # Self
+```
+
+**Contains:**
+- `RateLimitError` exception class
+- `TemporaryAPIError` exception class
+- `sync_with_circuit_breaker()` decorator
+- `SmartRateLimiter` class
+
+**Safe to delete:** YES
+
+---
+
+### 5. `utils/emailer.py` (~24 lines)
+
+**Status:** DEAD CODE
+**Reason:** Only imported by `utils/error_notifier.py` which is dead code
+
+```bash
+$ rg "from utils.emailer" . --type py
+services/event_manager.py:  # No-op email body here; integrate with utils.emailer if desired (comment only)
+utils/error_notifier.py:from utils.emailer import send_error_email  # Dead code importer
+```
+
+**Contains:**
+- `send_error_email()` function using SMTP
+
+**Safe to delete:** YES
+
+---
+
+## 🟡 CAUTION: Operational Scripts
+
+These are standalone scripts, not modules. Consider keeping for debugging:
+
+| File | Purpose | Recommendation |
+|------|---------|----------------|
+| `test-connections.py` | Manual connectivity test via /health | KEEP - useful for debugging |
+| `test-db-connection.py` | Manual database health check | KEEP - useful for debugging |
+
+---
+
+## ✅ TypeScript Dashboard Analysis
+
+The dashboard (`dashboard/src/`) was analyzed:
+
+- **All components in `components/`**: Used in `App.tsx`
+- **All exports in `utils/formatters.ts`**: Used across components
+- **All types in `types/dashboard.ts`**: Used by components and hooks
+
+**No unused TypeScript code found.**
+
+---
 
 ## Recommended Actions
 
-### Phase 1: Safe Removals (No Risk)
+### Phase 1: Run Baseline Tests
 
-1. **Remove unused import in viewpoint_api.py**
-   ```python
-   # Line 2: Remove direct pyodbc import (SQLAlchemy handles connection)
-   import pyodbc  # DELETE THIS LINE
-   ```
-
-2. **Remove unused Engine import**
-   ```python
-   # Line 7: Not used for type hints
-   from sqlalchemy.engine import Engine  # DELETE THIS LINE
-   ```
-
-3. **Fix signal handler signature**
-   ```python
-   # Line 289: Use _ for unused argument
-   def signal_handler(signum, frame):  # Change to: def signal_handler(signum, _):
-   ```
-
-### Phase 2: Dependency Cleanup
-
-1. **Remove from requirements.txt:**
-   - `pydantic>=2.6` - Not imported anywhere
-   - `tenacity>=8.2` - Not imported anywhere
-
-### Phase 3: Review for Future Cleanup
-
-These methods appear unused but may be:
-- Part of public API
-- Called dynamically
-- Planned for future use
-
-Consider adding `# noqa: vulture` comments or actually removing if confirmed unused:
-
-- `utils/data_validator.py:203` - `_generate_email()` - helper not called
-- `utils/circuit_breaker.py:36` - `SmartRateLimiter` class - appears unused
-- `utils/notification_manager.py:9` - entire `NotificationManager` class
-
-## Test Verification Required
-
-Before any deletion:
 ```bash
-# Run full test suite
 python3 -m pytest tests/ -v
-
-# Run with coverage to verify impact
-python3 -m pytest tests/ --cov=. --cov-report=term-missing
 ```
 
-## Files to Skip
+### Phase 2: Delete Dead Files
 
-These files were excluded from analysis:
-- `tests/` - Test code
-- `output/` - Generated output
-- `deploy/` - Deployment scripts
-- `k8s/` - Kubernetes manifests
+```bash
+rm utils/error_manager.py
+rm utils/error_notifier.py
+rm utils/notification_manager.py
+rm utils/circuit_breaker.py
+rm utils/emailer.py
+```
+
+### Phase 3: Verify Tests Still Pass
+
+```bash
+python3 -m pytest tests/ -v
+```
+
+### Phase 4: Commit
+
+```bash
+git add -A
+git commit -m "refactor: remove dead code in utils/"
+```
+
+---
+
+## Deletion Verification Checklist
+
+- [ ] Run `python3 -m pytest tests/ -v` (baseline)
+- [ ] Delete files one at a time
+- [ ] Verify tests pass after each deletion
+- [ ] If tests fail, rollback and investigate
+
+---
+
+## Code Savings Summary
+
+| File | Lines | Can Delete? |
+|------|-------|-------------|
+| `utils/error_manager.py` | ~53 | YES |
+| `utils/error_notifier.py` | ~291 | YES |
+| `utils/notification_manager.py` | ~75 | YES |
+| `utils/circuit_breaker.py` | ~82 | YES |
+| `utils/emailer.py` | ~24 | YES |
+| **Total** | **~525** | - |
+
+---
+
+*Report generated by Claude Code refactor-clean analysis*
