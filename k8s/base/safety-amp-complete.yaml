@@ -481,6 +481,11 @@ spec:
                 configMapKeyRef:
                   name: safety-amp-config
                   key: ENVIRONMENT
+            - name: SQL_AUTH_MODE
+              valueFrom:
+                configMapKeyRef:
+                  name: safety-amp-config
+                  key: SQL_AUTH_MODE
             - name: DB_POOL_SIZE
               value: "2"
             - name: DB_MAX_OVERFLOW
