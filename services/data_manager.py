@@ -100,10 +100,22 @@ class DataManager:
                     if not key.endswith(":metadata"):
                         cache_name = key.replace("safetyamp:", "")
                         ttl = self.redis_client.ttl(key)
-                        size = len(self.redis_client.get(key) or "")
+                        # Check key type to use appropriate size calculation
+                        key_type = self.redis_client.type(key)
+                        if key_type == "string":
+                            size = len(self.redis_client.get(key) or "")
+                        elif key_type == "list":
+                            size = self.redis_client.llen(key)
+                        elif key_type == "set":
+                            size = self.redis_client.scard(key)
+                        elif key_type == "hash":
+                            size = self.redis_client.hlen(key)
+                        else:
+                            size = 0
                         cache_info["caches"][cache_name] = {
                             "ttl_seconds": ttl,
                             "size_bytes": size,
+                            "key_type": key_type,
                             "expires_in": (
                                 f"{ttl//3600}h {(ttl%3600)//60}m"
                                 if ttl and ttl > 0
@@ -357,10 +369,22 @@ class DataManager:
                     if not key.endswith(":metadata"):
                         cache_name = key.replace("safetyamp:", "")
                         ttl = self.redis_client.ttl(key)
-                        data = self.redis_client.get(key)
-                        size = len(data) if data else 0
+                        # Check key type to use appropriate size calculation
+                        key_type = self.redis_client.type(key)
+                        if key_type == "string":
+                            data = self.redis_client.get(key)
+                            size = len(data) if data else 0
+                        elif key_type == "list":
+                            size = self.redis_client.llen(key)
+                        elif key_type == "set":
+                            size = self.redis_client.scard(key)
+                        elif key_type == "hash":
+                            size = self.redis_client.hlen(key)
+                        else:
+                            size = 0
                         stats["caches"][cache_name] = {
                             "type": "redis",
+                            "key_type": key_type,
                             "ttl_seconds": ttl,
                             "size_bytes": size,
                             "valid": ttl > 0,
