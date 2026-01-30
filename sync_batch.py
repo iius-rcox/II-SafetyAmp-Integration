@@ -14,6 +14,7 @@ from sync.sync_jobs import JobSyncer
 from sync.sync_employees import EmployeeSyncer
 from sync.sync_titles import TitleSyncer
 from sync.sync_vehicles import VehicleSync
+from services.data_manager import DataManager
 from utils.logger import get_logger
 
 logger = get_logger("sync_batch")
@@ -78,6 +79,12 @@ def run_sync_operations():
 
 if __name__ == "__main__":
     logger.info("Starting SafetyAmp batch sync")
+
+    # Check if sync is paused via dashboard
+    data_manager = DataManager()
+    if data_manager.get_sync_paused():
+        logger.info("Sync is paused via dashboard, skipping batch sync")
+        sys.exit(0)
 
     # Run sync operations
     success, results = run_sync_operations()
