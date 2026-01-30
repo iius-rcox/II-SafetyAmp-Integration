@@ -128,9 +128,12 @@ export interface CacheStats {
   redis_connected: boolean;
   cache_ttl_hours: number;
   caches: Record<string, {
-    size: number;
+    size?: number;
+    size_bytes?: number;
     ttl_remaining?: number;
+    ttl_seconds?: number;
     last_updated?: string;
+    key_type?: string;
   }>;
 }
 
