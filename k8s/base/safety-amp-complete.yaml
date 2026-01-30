@@ -631,6 +631,14 @@ spec:
       port: 8080
     - protocol: TCP
       port: 9090
+  # Allow ops-dashboard to reach backend API
+  - from:
+    - podSelector:
+        matchLabels:
+          app: ops-dashboard
+    ports:
+    - protocol: TCP
+      port: 8080
   egress:
   - to: []
     ports:
