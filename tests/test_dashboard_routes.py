@@ -494,3 +494,169 @@ class TestDashboardRoutesParameterValidation:
         response = client.get("/api/dashboard/vista-records?time_range=invalid")
 
         assert response.status_code == 200
+
+
+class TestSyncTriggerEndpoint:
+    """Tests for the manual sync trigger endpoint."""
+
+    @pytest.fixture
+    def client_with_sync_trigger(self):
+        """Create Flask test client with sync trigger callback."""
+        from flask import Flask
+        from routes.dashboard import create_dashboard_blueprint
+
+        app = Flask(__name__)
+        app.config["TESTING"] = True
+
+        mock_api_tracker = MagicMock()
+        mock_api_tracker.get_recent_calls.return_value = []
+        mock_api_tracker.get_call_stats.return_value = {}
+
+        mock_dashboard_data = MagicMock()
+        mock_dashboard_data.get_sync_metrics.return_value = {}
+        mock_dashboard_data.get_sync_history.return_value = []
+        mock_dashboard_data.get_live_sync_status.return_value = {}
+        mock_dashboard_data.get_dependency_health.return_value = {}
+
+        mock_error_analyzer = MagicMock()
+        mock_error_analyzer.analyze.return_value = []
+
+        # Mock sync trigger callback
+        mock_sync_trigger = MagicMock(return_value={"triggered": True, "sync_type": "employees"})
+
+        bp = create_dashboard_blueprint(
+            api_call_tracker=mock_api_tracker,
+            error_analyzer=mock_error_analyzer,
+            dashboard_data=mock_dashboard_data,
+            failed_sync_tracker=None,
+            sync_trigger_callback=mock_sync_trigger,
+        )
+
+        app.register_blueprint(bp)
+
+        with app.test_client() as test_client:
+            class AuthenticatedClient:
+                def __init__(self, client, sync_callback):
+                    self._client = client
+                    self._headers = {"X-Dashboard-Token": TEST_DASHBOARD_TOKEN}
+                    self.sync_trigger = sync_callback
+
+                def get(self, *args, **kwargs):
+                    headers = kwargs.pop("headers", {})
+                    headers.update(self._headers)
+                    return self._client.get(*args, headers=headers, **kwargs)
+
+                def post(self, *args, **kwargs):
+                    headers = kwargs.pop("headers", {})
+                    headers.update(self._headers)
+                    return self._client.post(*args, headers=headers, **kwargs)
+
+            yield AuthenticatedClient(test_client, mock_sync_trigger)
+
+    def test_trigger_sync_success(self, client_with_sync_trigger):
+        """POST /api/dashboard/trigger-sync should trigger sync."""
+        response = client_with_sync_trigger.post(
+            "/api/dashboard/trigger-sync",
+            json={"sync_type": "employees"},
+            content_type="application/json",
+        )
+
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert data["status"] == "triggered"
+        assert data["sync_type"] == "employees"
+        client_with_sync_trigger.sync_trigger.assert_called_once_with("employees")
+
+    def test_trigger_sync_all_types(self, client_with_sync_trigger):
+        """Should accept all valid sync types."""
+        valid_types = ["all", "employees", "vehicles", "departments", "jobs", "titles"]
+
+        for sync_type in valid_types:
+            client_with_sync_trigger.sync_trigger.reset_mock()
+            response = client_with_sync_trigger.post(
+                "/api/dashboard/trigger-sync",
+                json={"sync_type": sync_type},
+                content_type="application/json",
+            )
+
+            assert response.status_code == 200, f"Failed for sync_type={sync_type}"
+            client_with_sync_trigger.sync_trigger.assert_called_once_with(sync_type)
+
+    def test_trigger_sync_invalid_type(self, client_with_sync_trigger):
+        """Should reject invalid sync types."""
+        response = client_with_sync_trigger.post(
+            "/api/dashboard/trigger-sync",
+            json={"sync_type": "invalid_type"},
+            content_type="application/json",
+        )
+
+        assert response.status_code == 400
+        data = json.loads(response.data)
+        assert "error" in data
+        assert "Invalid sync type" in data["error"]
+
+    def test_trigger_sync_default_to_all(self, client_with_sync_trigger):
+        """Should default to 'all' sync type if not specified."""
+        response = client_with_sync_trigger.post(
+            "/api/dashboard/trigger-sync",
+            json={},
+            content_type="application/json",
+        )
+
+        assert response.status_code == 200
+        client_with_sync_trigger.sync_trigger.assert_called_once_with("all")
+
+    def test_trigger_sync_requires_auth(self):
+        """Should require authentication."""
+        from flask import Flask
+        from routes.dashboard import create_dashboard_blueprint
+
+        app = Flask(__name__)
+        app.config["TESTING"] = True
+
+        bp = create_dashboard_blueprint(
+            api_call_tracker=MagicMock(),
+            error_analyzer=MagicMock(),
+            dashboard_data=MagicMock(),
+            failed_sync_tracker=None,
+            sync_trigger_callback=MagicMock(),
+        )
+        app.register_blueprint(bp)
+
+        with app.test_client() as client:
+            response = client.post(
+                "/api/dashboard/trigger-sync",
+                json={"sync_type": "employees"},
+                content_type="application/json",
+            )
+
+            assert response.status_code == 401
+
+    def test_trigger_sync_callback_not_available(self):
+        """Should return 503 when sync trigger callback is not configured."""
+        from flask import Flask
+        from routes.dashboard import create_dashboard_blueprint
+
+        app = Flask(__name__)
+        app.config["TESTING"] = True
+
+        bp = create_dashboard_blueprint(
+            api_call_tracker=MagicMock(),
+            error_analyzer=MagicMock(),
+            dashboard_data=MagicMock(),
+            failed_sync_tracker=None,
+            sync_trigger_callback=None,  # No callback configured
+        )
+        app.register_blueprint(bp)
+
+        with app.test_client() as client:
+            response = client.post(
+                "/api/dashboard/trigger-sync",
+                json={"sync_type": "employees"},
+                content_type="application/json",
+                headers={"X-Dashboard-Token": TEST_DASHBOARD_TOKEN},
+            )
+
+            assert response.status_code == 503
+            data = json.loads(response.data)
+            assert "error" in data
