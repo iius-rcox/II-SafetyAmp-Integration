@@ -10,7 +10,7 @@ const SYNC_TYPES = [
   { id: 'departments', label: 'Departments', icon: Building2, description: 'Sync department data' },
   { id: 'jobs', label: 'Jobs', icon: Briefcase, description: 'Sync job/project data' },
   { id: 'titles', label: 'Titles', icon: Tag, description: 'Sync title data' },
-  { id: 'full', label: 'Full Sync', icon: RefreshCw, description: 'Run complete sync of all entities' },
+  { id: 'all', label: 'Full Sync', icon: RefreshCw, description: 'Run complete sync of all entities' },
 ];
 
 export function SyncTriggers() {
@@ -94,7 +94,7 @@ export function SyncTriggers() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {SYNC_TYPES.map((syncType) => {
             const Icon = syncType.icon;
-            const isFullSync = syncType.id === 'full';
+            const isFullSync = syncType.id === 'all';
 
             return (
               <button
