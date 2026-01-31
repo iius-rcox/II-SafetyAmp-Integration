@@ -6,6 +6,7 @@ from utils.logger import get_logger
 from services.viewpoint_api import ViewpointAPI
 from services.safetyamp_api import SafetyAmpAPI
 from services.samsara_api import SamsaraAPI
+from services.graph_api import MSGraphAPI
 from services.data_manager import data_manager
 from utils import failed_sync_tracker
 from config import config
@@ -63,6 +64,23 @@ def check_samsara() -> Dict[str, Any]:
         return {"status": "healthy", "latency_ms": (time.time() - start) * 1000}
     except Exception as e:
         logger.warning(f"Samsara health check failed: {e}")
+        return {
+            "status": "degraded",
+            "error": str(e),
+            "latency_ms": (time.time() - start) * 1000,
+        }
+
+
+def check_msgraph() -> Dict[str, Any]:
+    """Check Microsoft Graph API connectivity."""
+    start = time.time()
+    try:
+        api = MSGraphAPI()
+        # Just acquire a token to validate credentials
+        api._get_access_token()
+        return {"status": "healthy", "latency_ms": (time.time() - start) * 1000}
+    except Exception as e:
+        logger.warning(f"MS Graph health check failed: {e}")
         return {
             "status": "degraded",
             "error": str(e),

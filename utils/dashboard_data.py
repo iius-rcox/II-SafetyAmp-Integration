@@ -13,6 +13,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, List, Optional
 
 from utils.logger import get_logger
+from utils.health import check_database, check_cache, check_safetyamp, check_samsara, check_msgraph
 
 logger = get_logger("dashboard_data")
 
@@ -349,19 +350,39 @@ class DashboardData:
         Returns:
             Dictionary with dependency health information
         """
+        db_health = check_database()
+        cache_health = check_cache()
+        safetyamp_health = check_safetyamp()
+        samsara_health = check_samsara()
+        msgraph_health = check_msgraph()
+
         return {
             "database": {
-                "status": "unknown",
-                "latency_ms": 0,
+                "status": db_health.get("status", "unknown"),
+                "latency_ms": db_health.get("latency_ms", 0),
+                "error": db_health.get("error"),
             },
             "redis": {
-                "status": "unknown",
-                "latency_ms": 0,
+                "status": cache_health.get("status", "unknown"),
+                "latency_ms": cache_health.get("latency_ms", 0),
+                "error": cache_health.get("error"),
             },
             "services": {
-                "safetyamp": {"status": "unknown"},
-                "samsara": {"status": "unknown"},
-                "msgraph": {"status": "unknown"},
+                "safetyamp": {
+                    "status": safetyamp_health.get("status", "unknown"),
+                    "latency_ms": safetyamp_health.get("latency_ms", 0),
+                    "error": safetyamp_health.get("error"),
+                },
+                "samsara": {
+                    "status": samsara_health.get("status", "unknown"),
+                    "latency_ms": samsara_health.get("latency_ms", 0),
+                    "error": samsara_health.get("error"),
+                },
+                "msgraph": {
+                    "status": msgraph_health.get("status", "unknown"),
+                    "latency_ms": msgraph_health.get("latency_ms", 0),
+                    "error": msgraph_health.get("error"),
+                },
             },
         }
 
