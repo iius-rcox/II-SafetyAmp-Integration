@@ -1,4 +1,5 @@
 import os
+import queue
 import signal
 import sys
 import threading
@@ -148,6 +149,69 @@ health_status = {
 
 # Shutdown flag for graceful termination
 shutdown_requested = False
+
+# Manual sync queue and event for triggering syncs from dashboard
+manual_sync_queue = queue.Queue()
+manual_sync_event = threading.Event()
+
+
+def run_single_sync(sync_type: str) -> dict:
+    """Run a single sync operation by type.
+
+    Args:
+        sync_type: One of 'employees', 'vehicles', 'departments', 'jobs', 'titles', 'all'
+
+    Returns:
+        Dictionary with sync results
+    """
+    logger.info(f"Running manual sync: {sync_type}")
+    results = {}
+
+    try:
+        if sync_type in ("all", "employees"):
+            with metrics.sync_duration_seconds.labels(operation="employees").time():
+                ee_syncer = EmployeeSyncer()
+                result = ee_syncer.sync()
+                results["employees"] = result
+                metrics.sync_operations_total.labels(operation="employees", status="success").inc()
+
+        if sync_type in ("all", "departments"):
+            with metrics.sync_duration_seconds.labels(operation="departments").time():
+                dept_syncer = DepartmentSyncer()
+                result = dept_syncer.sync()
+                results["departments"] = result
+                metrics.sync_operations_total.labels(operation="departments", status="success").inc()
+
+        if sync_type in ("all", "jobs"):
+            with metrics.sync_duration_seconds.labels(operation="jobs").time():
+                job_syncer = JobSyncer()
+                result = job_syncer.sync()
+                results["jobs"] = result
+                metrics.sync_operations_total.labels(operation="jobs", status="success").inc()
+
+        if sync_type in ("all", "titles"):
+            with metrics.sync_duration_seconds.labels(operation="titles").time():
+                title_syncer = TitleSyncer()
+                result = title_syncer.sync()
+                results["titles"] = result
+                metrics.sync_operations_total.labels(operation="titles", status="success").inc()
+
+        if sync_type in ("all", "vehicles"):
+            with metrics.sync_duration_seconds.labels(operation="vehicles").time():
+                vehicle_syncer = VehicleSync()
+                result = vehicle_syncer.sync()
+                results["vehicles"] = result
+                metrics.sync_operations_total.labels(operation="vehicles", status="success").inc()
+
+        health_status["last_sync"] = time.time()
+        metrics.last_sync_timestamp_seconds.set(health_status["last_sync"])
+        logger.info(f"Manual sync completed: {sync_type}", extra={"results": results})
+
+    except Exception as e:
+        logger.error(f"Manual sync error ({sync_type}): {e}", exc_info=True)
+        results["error"] = str(e)
+
+    return results
 
 
 def get_sync_status() -> dict:
@@ -399,11 +463,30 @@ def run_sync_worker():
             except Exception as e:
                 logger.error(f"Error sending hourly notification: {e}")
 
-            # Sleep for sync interval
+            # Sleep for sync interval, but check for manual sync requests
             logger.info(f"Sleeping for {SYNC_INTERVAL} seconds until next sync")
             for i in range(SYNC_INTERVAL):
                 if shutdown_requested:
                     break
+
+                # Check for manual sync request
+                if manual_sync_event.is_set():
+                    manual_sync_event.clear()
+                    try:
+                        sync_type = manual_sync_queue.get_nowait()
+                        logger.info(f"Processing manual sync request: {sync_type}")
+                        health_status["sync_in_progress"] = True
+                        metrics.sync_in_progress_gauge.set(1)
+                        run_single_sync(sync_type)
+                        health_status["sync_in_progress"] = False
+                        metrics.sync_in_progress_gauge.set(0)
+                    except queue.Empty:
+                        pass
+                    except Exception as e:
+                        logger.error(f"Error processing manual sync: {e}", exc_info=True)
+                        health_status["sync_in_progress"] = False
+                        metrics.sync_in_progress_gauge.set(0)
+
                 time.sleep(1)
 
         except Exception as e:
@@ -549,8 +632,15 @@ if __name__ == "__main__":
         def trigger_manual_sync(sync_type: str) -> dict:
             """Trigger a manual sync operation."""
             logger.info(f"Manual sync triggered: {sync_type}")
-            # In production, this would queue the sync
-            # For now, return success
+
+            # Check if sync is already in progress
+            if health_status.get("sync_in_progress"):
+                return {"triggered": False, "error": "Sync already in progress", "sync_type": sync_type}
+
+            # Queue the sync request and signal the worker
+            manual_sync_queue.put(sync_type)
+            manual_sync_event.set()
+
             return {"triggered": True, "sync_type": sync_type}
 
         # Register dashboard blueprint with all dependencies
