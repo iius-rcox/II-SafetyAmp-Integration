@@ -171,6 +171,11 @@ export interface DependencyHealth {
     latency_ms?: number;
     error?: string;
   };
+  redis?: {
+    status: HealthStatus;
+    latency_ms?: number;
+    error?: string;
+  };
   services: Record<string, {
     status: HealthStatus;
     latency_ms?: number;

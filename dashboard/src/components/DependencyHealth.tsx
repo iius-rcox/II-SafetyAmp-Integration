@@ -17,6 +17,14 @@ const SERVICE_ICONS: Record<string, typeof Cloud> = {
   redis: Database,
 };
 
+const SERVICE_DISPLAY_NAMES: Record<string, string> = {
+  safetyamp: 'SafetyAmp',
+  samsara: 'Samsara',
+  msgraph: 'MS Graph',
+  redis: 'Redis',
+  database: 'Database',
+};
+
 interface HealthCardProps {
   name: string;
   status: HealthStatus;
@@ -28,13 +36,14 @@ interface HealthCardProps {
 function HealthCard({ name, status, latency_ms, last_check, error }: HealthCardProps) {
   const StatusIcon = STATUS_ICONS[status];
   const ServiceIcon = SERVICE_ICONS[name.toLowerCase()] || Server;
+  const displayName = SERVICE_DISPLAY_NAMES[name.toLowerCase()] || name;
 
   return (
     <div className={`rounded-lg p-4 ${getHealthStatusColor(status)}`}>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <ServiceIcon className="w-5 h-5" />
-          <span className="font-medium capitalize">{name}</span>
+          <span className="font-medium">{displayName}</span>
         </div>
         <StatusIcon className="w-5 h-5" />
       </div>
@@ -78,6 +87,7 @@ export function DependencyHealth() {
 
   const allHealthy =
     data?.database?.status === 'healthy' &&
+    (!data?.redis || data.redis.status === 'healthy') &&
     Object.values(data?.services || {}).every((s) => s.status === 'healthy');
 
   return (
@@ -108,10 +118,20 @@ export function DependencyHealth() {
             {/* Database */}
             {data?.database && (
               <HealthCard
-                name="Database"
+                name="database"
                 status={data.database.status}
                 latency_ms={data.database.latency_ms}
                 error={data.database.error}
+              />
+            )}
+
+            {/* Redis Cache */}
+            {data?.redis && (
+              <HealthCard
+                name="redis"
+                status={data.redis.status}
+                latency_ms={data.redis.latency_ms}
+                error={data.redis.error}
               />
             )}
 

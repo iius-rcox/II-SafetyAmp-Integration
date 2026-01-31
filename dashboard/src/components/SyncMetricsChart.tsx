@@ -222,8 +222,8 @@ export function SyncMetricsChart() {
               <div key={op} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                 <p className="text-sm font-medium text-gray-900 dark:text-white capitalize">{op}</p>
                 <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  <span className="text-green-600">{stats.successful}</span> ok /
-                  <span className="text-red-600 ml-1">{stats.failed}</span> fail
+                  <span className="text-green-600">{stats.successful ?? 0}</span> ok /
+                  <span className="text-red-600 ml-1">{stats.failed ?? 0}</span> fail
                 </div>
               </div>
             ))}

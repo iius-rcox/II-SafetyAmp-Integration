@@ -150,6 +150,27 @@ health_status = {
 shutdown_requested = False
 
 
+def get_sync_status() -> dict:
+    """Get current sync status for dashboard.
+
+    Returns:
+        Dictionary with sync_in_progress, last_sync, and sync_paused
+    """
+    from datetime import datetime, timezone
+
+    last_sync_time = None
+    if health_status.get("last_sync"):
+        last_sync_time = datetime.fromtimestamp(
+            health_status["last_sync"], tz=timezone.utc
+        ).isoformat()
+
+    return {
+        "sync_in_progress": health_status.get("sync_in_progress", False),
+        "last_sync_time": last_sync_time,
+        "sync_paused": health_status.get("sync_paused", False),
+    }
+
+
 @app.route("/health")
 def health():
     """Unified comprehensive health endpoint"""

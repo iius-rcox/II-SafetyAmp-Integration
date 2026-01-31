@@ -336,12 +336,24 @@ class DashboardData:
         Returns:
             Dictionary with current sync state
         """
-        return {
-            "sync_in_progress": False,
-            "last_sync_time": None,
-            "current_operation": None,
-            "progress_percent": 0,
-        }
+        try:
+            from main import get_sync_status
+
+            status = get_sync_status()
+            return {
+                "sync_in_progress": status.get("sync_in_progress", False),
+                "last_sync_time": status.get("last_sync_time"),
+                "current_operation": None,  # TODO: track current operation
+                "progress_percent": 0,  # TODO: track progress
+            }
+        except ImportError:
+            # Fallback for testing or standalone usage
+            return {
+                "sync_in_progress": False,
+                "last_sync_time": None,
+                "current_operation": None,
+                "progress_percent": 0,
+            }
 
     def get_dependency_health(self) -> Dict[str, Any]:
         """
