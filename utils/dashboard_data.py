@@ -147,7 +147,7 @@ class DashboardData:
 
     def get_entity_counts(self) -> Dict[str, int]:
         """
-        Get current entity counts from in-memory data.
+        Get current entity counts from in-memory data and SafetyAmp API.
 
         Returns:
             Dictionary mapping entity type to count
@@ -172,7 +172,38 @@ class DashboardData:
                 counts["jobs"] = len(self.data_manager._job_data)
 
         except Exception as e:
-            logger.error(f"Error getting entity counts: {e}")
+            logger.error(f"Error getting entity counts from data manager: {e}")
+
+        # Get department and vehicle counts from SafetyAmp API
+        try:
+            from services.safetyamp_api import SafetyAmpAPI
+            api = SafetyAmpAPI()
+
+            # Get departments (clusters) count
+            try:
+                clusters = api.get_site_clusters()
+                counts["departments"] = len(clusters) if clusters else 0
+            except Exception as e:
+                logger.warning(f"Could not get department count from SafetyAmp: {e}")
+
+            # Get vehicles (assets) count
+            try:
+                assets = api.get_assets()
+                counts["vehicles"] = len(assets) if assets else 0
+            except Exception as e:
+                logger.warning(f"Could not get vehicle count from SafetyAmp: {e}")
+
+            # Get titles count
+            try:
+                titles = api.get_titles()
+                counts["titles"] = len(titles) if titles else 0
+            except Exception as e:
+                logger.warning(f"Could not get title count from SafetyAmp: {e}")
+
+        except ImportError:
+            logger.warning("SafetyAmpAPI not available for entity counts")
+        except Exception as e:
+            logger.error(f"Error getting entity counts from SafetyAmp API: {e}")
 
         return counts
 

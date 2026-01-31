@@ -271,6 +271,10 @@ class SafetyAmpAPI:
     def get_asset_types(self):
         return self.get_all_paginated("/api/asset_types", key_field="id")
 
+    def get_assets(self):
+        """Get all assets from SafetyAmp"""
+        return self.get_all_paginated("/api/assets", key_field="id")
+
     def create_title(self, title_data: dict):
         return self.post("/api/user_titles", title_data)
 
