@@ -288,7 +288,7 @@ class DashboardData:
             time_range: Time range string (1d, 7d, 30d, 6mo)
 
         Returns:
-            Dictionary with time range data
+            Dictionary with time range data including time-series data_points
         """
         hours_map = {
             "1d": 24,
@@ -310,13 +310,17 @@ class DashboardData:
 
         try:
             summary = self.event_manager.change_tracker.get_summary_report(hours)
+            changes = self.event_manager.change_tracker.get_recent_changes(hours)
+
+            # Generate time-series data points by aggregating changes into buckets
+            data_points = self._aggregate_changes_to_time_buckets(changes, time_range, hours)
 
             return {
                 "time_range": time_range,
                 "hours": hours,
                 "total_records": summary.get("total_changes", 0),
                 "by_entity_type": summary.get("by_entity_type", {}),
-                "data_points": [],  # Would be populated with aggregated time series data
+                "data_points": data_points,
             }
 
         except Exception as e:
@@ -328,6 +332,84 @@ class DashboardData:
                 "by_entity_type": {},
                 "data_points": [],
             }
+
+    def _aggregate_changes_to_time_buckets(
+        self, changes: List[Dict[str, Any]], time_range: str, hours: int
+    ) -> List[Dict[str, Any]]:
+        """
+        Aggregate change records into time buckets for chart visualization.
+
+        Args:
+            changes: List of change records with timestamps
+            time_range: Time range string (1d, 7d, 30d, 6mo)
+            hours: Time window in hours
+
+        Returns:
+            List of data points with timestamp and count for charting
+        """
+        # Determine bucket size based on time range
+        if time_range == "1d":
+            bucket_hours = 1  # Hourly buckets
+        elif time_range == "7d":
+            bucket_hours = 24  # Daily buckets
+        elif time_range == "30d":
+            bucket_hours = 24  # Daily buckets
+        else:  # 6mo
+            bucket_hours = 168  # Weekly buckets
+
+        # Calculate time range boundaries
+        now = datetime.now(timezone.utc)
+        start_time = now - timedelta(hours=hours)
+
+        # Initialize buckets
+        buckets: Dict[str, int] = {}
+        bucket_delta = timedelta(hours=bucket_hours)
+
+        # Create empty buckets for the entire time range
+        current_bucket = start_time.replace(minute=0, second=0, microsecond=0)
+        if bucket_hours >= 24:
+            # For daily/weekly, align to start of day
+            current_bucket = current_bucket.replace(hour=0)
+        while current_bucket <= now:
+            bucket_key = current_bucket.isoformat()
+            buckets[bucket_key] = 0
+            current_bucket += bucket_delta
+
+        # Aggregate changes into buckets
+        for change in changes:
+            timestamp_str = change.get("timestamp", "")
+            if not timestamp_str:
+                continue
+
+            try:
+                # Parse timestamp
+                ts = datetime.fromisoformat(str(timestamp_str).replace("Z", "+00:00"))
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
+
+                # Find the appropriate bucket
+                bucket_start = ts.replace(minute=0, second=0, microsecond=0)
+                if bucket_hours >= 24:
+                    bucket_start = bucket_start.replace(hour=0)
+                    # Align to bucket boundary
+                    days_since_start = (bucket_start - start_time.replace(hour=0, minute=0, second=0, microsecond=0)).days
+                    bucket_days = bucket_hours // 24
+                    aligned_days = (days_since_start // bucket_days) * bucket_days
+                    bucket_start = start_time.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=aligned_days)
+
+                bucket_key = bucket_start.isoformat()
+                if bucket_key in buckets:
+                    buckets[bucket_key] += 1
+            except (ValueError, TypeError):
+                continue
+
+        # Convert to list sorted by timestamp
+        data_points = [
+            {"timestamp": ts, "count": count}
+            for ts, count in sorted(buckets.items())
+        ]
+
+        return data_points
 
     def get_live_sync_status(self) -> Dict[str, Any]:
         """
