@@ -5,9 +5,9 @@ resources:
 namespace: safety-amp-dev
 images:
   - name: iiusacr.azurecr.io/safety-amp-agent
-    newTag: sha-d330dbc
+    newTag: sha-e77aff3
   - name: iiusacr.azurecr.io/ops-dashboard
-    newTag: sha-d330dbc
+    newTag: sha-e77aff3
 patches:
   # Environment-specific Azure identity and secrets
   # NOTE: For production, use External Secrets Operator or Azure Key Vault CSI driver
