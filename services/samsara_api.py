@@ -3,6 +3,7 @@ import time
 from ratelimit import limits, sleep_and_retry
 from config import config
 from utils.logger import get_logger
+from services.api_call_tracker import get_api_call_tracker
 
 logger = get_logger("samsara")
 
@@ -56,6 +57,19 @@ class SamsaraAPI:
             logger.error(f"{method} {url} unexpected error: {err}")
         return {}
 
+    def _track_call(self, method: str, endpoint: str, status_code: int, duration_ms: int, error: str = None):
+        """Record API call to tracker if available."""
+        tracker = get_api_call_tracker()
+        if tracker:
+            tracker.record_call(
+                service="samsara",
+                method=method,
+                endpoint=endpoint,
+                status_code=status_code,
+                duration_ms=duration_ms,
+                error_message=error,
+            )
+
     def get_all_vehicles(self):
         logger.info("Fetching all vehicles from Samsara API...")
         endpoint = f"{self.base_url}/fleet/vehicles"
@@ -67,9 +81,18 @@ class SamsaraAPI:
             if cursor:
                 params["after"] = cursor
 
-            response = self._exponential_retry(
-                self._rate_limited_request, requests.get, endpoint, params=params
-            )
+            start_time = time.time()
+            try:
+                response = self._exponential_retry(
+                    self._rate_limited_request, requests.get, endpoint, params=params
+                )
+                duration_ms = int((time.time() - start_time) * 1000)
+                self._track_call("GET", "/fleet/vehicles", response.status_code, duration_ms)
+            except requests.RequestException as e:
+                duration_ms = int((time.time() - start_time) * 1000)
+                self._track_call("GET", "/fleet/vehicles", 0, duration_ms, str(e))
+                raise
+
             data = self._handle_response(response, "GET", endpoint)
 
             batch = data.get("data", [])

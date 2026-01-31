@@ -1,7 +1,9 @@
+import time
 import requests
 from msal import ConfidentialClientApplication
 from config import config
 from utils.logger import get_logger
+from services.api_call_tracker import get_api_call_tracker
 
 logger = get_logger("msgraph_api")
 
@@ -29,6 +31,19 @@ class MSGraphAPI:
             )
             raise Exception("Failed to acquire access token")
 
+    def _track_call(self, method: str, endpoint: str, status_code: int, duration_ms: int, error: str = None):
+        """Record API call to tracker if available."""
+        tracker = get_api_call_tracker()
+        if tracker:
+            tracker.record_call(
+                service="msgraph",
+                method=method,
+                endpoint=endpoint,
+                status_code=status_code,
+                duration_ms=duration_ms,
+                error_message=error,
+            )
+
     def get_active_users(self):
         access_token = self._get_access_token()
         headers = {
@@ -39,9 +54,13 @@ class MSGraphAPI:
         users = {}
 
         while endpoint:
+            start_time = time.time()
             response = requests.get(
                 endpoint, headers=headers, timeout=config.HTTP_REQUEST_TIMEOUT
             )
+            duration_ms = int((time.time() - start_time) * 1000)
+            self._track_call("GET", "/v1.0/users", response.status_code, duration_ms)
+
             if response.status_code == 200:
                 data = response.json()
                 for user in data.get("value", []):
