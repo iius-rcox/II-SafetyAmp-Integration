@@ -422,20 +422,61 @@ class DashboardData:
             from main import get_sync_status
 
             status = get_sync_status()
+            last_sync_time = status.get("last_sync_time")
+
+            # If no in-memory last_sync_time, try to get from persisted session files
+            if not last_sync_time and self.event_manager:
+                last_sync_time = self._get_last_sync_from_sessions()
+
             return {
                 "sync_in_progress": status.get("sync_in_progress", False),
-                "last_sync_time": status.get("last_sync_time"),
+                "last_sync_time": last_sync_time,
                 "current_operation": None,  # TODO: track current operation
                 "progress_percent": 0,  # TODO: track progress
             }
         except ImportError:
             # Fallback for testing or standalone usage
+            last_sync_time = None
+            if self.event_manager:
+                last_sync_time = self._get_last_sync_from_sessions()
+
             return {
                 "sync_in_progress": False,
-                "last_sync_time": None,
+                "last_sync_time": last_sync_time,
                 "current_operation": None,
                 "progress_percent": 0,
             }
+
+    def _get_last_sync_from_sessions(self) -> Optional[str]:
+        """
+        Get the last sync time from persisted session files.
+
+        Reads the most recent session's end_time from the change tracker.
+
+        Returns:
+            ISO format timestamp string or None
+        """
+        try:
+            if not self.event_manager or not hasattr(self.event_manager, "change_tracker"):
+                return None
+
+            # Get summary which includes recent sessions
+            summary = self.event_manager.change_tracker.get_summary_report(hours=168)
+            sessions = summary.get("recent_sessions", [])
+
+            if not sessions:
+                return None
+
+            # Sessions are sorted newest first, get the most recent end_time
+            for session in sessions:
+                end_time = session.get("end_time")
+                if end_time:
+                    return end_time
+
+            return None
+        except Exception as e:
+            logger.warning(f"Error reading last sync from sessions: {e}")
+            return None
 
     def get_dependency_health(self) -> Dict[str, Any]:
         """
