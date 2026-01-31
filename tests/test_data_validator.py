@@ -82,6 +82,32 @@ class TestEmailValidation:
         assert v._validate_email("@nodomain.com") is False
         assert v._validate_email("spaces in@email.com") is False
 
+    def test_clean_email_removes_spaces(self):
+        """Email cleaning should remove internal whitespace."""
+        v = DataValidator()
+        # Space after @ (like the failed record case)
+        assert v._clean_email("user@ gmail.com") == "user@gmail.com"
+        # Space before @
+        assert v._clean_email("user @gmail.com") == "user@gmail.com"
+        # Multiple spaces
+        assert v._clean_email("user @ gmail . com") == "user@gmail.com"
+        # Leading/trailing spaces
+        assert v._clean_email("  user@gmail.com  ") == "user@gmail.com"
+
+    def test_clean_email_lowercases(self):
+        """Email cleaning should convert to lowercase."""
+        v = DataValidator()
+        assert v._clean_email("User@GMAIL.COM") == "user@gmail.com"
+        assert v._clean_email("USER@Example.Com") == "user@example.com"
+
+    def test_clean_email_returns_none_for_invalid(self):
+        """Email cleaning should return None for unfixable emails."""
+        v = DataValidator()
+        assert v._clean_email("") is None
+        assert v._clean_email(None) is None
+        assert v._clean_email("not-an-email") is None
+        assert v._clean_email("@nodomain.com") is None
+
 
 class TestGenderNormalization:
     """Tests for gender value normalization."""
@@ -218,6 +244,24 @@ class TestEmployeeValidation:
         assert is_valid is False
         assert "Invalid email format: not-valid-email" in errors
         assert "email" not in cleaned
+
+    def test_validate_employee_email_with_space_cleaned(self):
+        """Email with internal spaces should be cleaned and kept."""
+        v = DataValidator()
+        # This is the exact case from the failed record: "saldivarana2017@ gmail.com"
+        payload = {
+            "first_name": "John",
+            "last_name": "Doe",
+            "email": "saldivarana2017@ gmail.com",
+        }
+        is_valid, errors, cleaned = v.validate_employee_data(
+            payload, "219268", "John Doe"
+        )
+
+        # Email should be cleaned (space removed) and kept
+        assert is_valid is True
+        assert len(errors) == 0
+        assert cleaned.get("email") == "saldivarana2017@gmail.com"
 
     def test_validate_employee_invalid_phone_removed(self):
         """Invalid phone should be removed from payload."""

@@ -70,10 +70,13 @@ class DataValidator:
                 validation_errors.append(f"Missing required field: {field_name}")
                 # Do not attempt to synthesize placeholders or emails; skip upstream
 
-        # Validate email format if present; remove invalid emails to avoid API 422
+        # Clean and validate email format if present; remove invalid emails to avoid API 422
         email = cleaned_payload.get("email")
         if email:
-            if not self._validate_email(email):
+            cleaned_email = self._clean_email(email)
+            if cleaned_email:
+                cleaned_payload["email"] = cleaned_email
+            else:
                 validation_errors.append(f"Invalid email format: {email}")
                 cleaned_payload.pop("email", None)
 
@@ -243,6 +246,27 @@ class DataValidator:
         if not email:
             return False
         return bool(re.match(self.validation_patterns["email"], email))
+
+    def _clean_email(self, email: str) -> Optional[str]:
+        """Clean and normalize email address.
+
+        Rules:
+        - Remove internal whitespace (e.g., "user@ gmail.com" -> "user@gmail.com")
+        - Convert to lowercase
+        - Validate against email pattern
+        - Return cleaned email if valid, None otherwise
+        """
+        if not email:
+            return None
+
+        # Remove all whitespace and convert to lowercase
+        cleaned = "".join(email.split()).lower()
+
+        # Validate the cleaned email
+        if self._validate_email(cleaned):
+            return cleaned
+
+        return None
 
     def _clean_phone(self, phone: str) -> Optional[str]:
         """Clean and normalize phone to E.164. Defaults to +1 for 10-digit US numbers.
