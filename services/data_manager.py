@@ -564,17 +564,50 @@ class DataManager:
         logger.info(f"Loaded {len(job_data)} jobs into memory")
 
     def get_employee_by_id(self, employee_id) -> Optional[Dict[str, Any]]:
-        """Get employee by ID, handling both string and integer IDs."""
+        """Get employee by ID, handling both string and integer IDs.
+
+        If in-memory data is empty, attempts to load from Viewpoint API.
+        """
         # Convert to int for comparison if needed
         try:
             emp_id_int = int(employee_id)
         except (ValueError, TypeError):
             return None
 
-        return next(
+        # First, check in-memory cache
+        result = next(
             (emp for emp in self._employee_data if emp.get("Employee") == emp_id_int),
             None,
         )
+
+        if result:
+            return result
+
+        # If not found and in-memory data is empty, try loading from Viewpoint
+        if not self._employee_data:
+            logger.info(
+                f"In-memory employee data empty, loading from Viewpoint for ID {employee_id}"
+            )
+            try:
+                from services.viewpoint_api import ViewpointAPI
+
+                vp_api = ViewpointAPI()
+                vp_api.get_employees()  # This populates self._employee_data
+
+                # Now try again with freshly loaded data
+                return next(
+                    (
+                        emp
+                        for emp in self._employee_data
+                        if emp.get("Employee") == emp_id_int
+                    ),
+                    None,
+                )
+            except Exception as e:
+                logger.error(f"Error loading employee data from Viewpoint: {e}")
+                return None
+
+        return None
 
     def get_employees_by_department(self, department: str) -> List[Dict[str, Any]]:
         return [emp for emp in self._employee_data if emp.get("PRDept") == department]
