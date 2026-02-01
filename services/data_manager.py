@@ -621,13 +621,21 @@ class DataManager:
             logger.warning(f"Unknown entity type for SafetyAmp lookup: {entity_type}")
             return None
 
-        # Try Redis cache first (fast path - O(1) lookup)
+        # Try Redis cache first (fast path)
         cached_data = self.get_cached_data(cache_name)
         if cached_data:
-            entity = cached_data.get(str(entity_id))
-            if entity:
-                logger.debug(f"Found {entity_type}/{entity_id} in Redis cache")
-                return entity
+            if entity_type == "employee":
+                # Employee cache is keyed by SafetyAmp ID, but we search by emp_id (Viewpoint ID)
+                for user in cached_data.values():
+                    if str(user.get("emp_id", "")) == str(entity_id):
+                        logger.debug(f"Found employee {entity_id} in Redis cache")
+                        return user
+            else:
+                # Other entities use direct key lookup
+                entity = cached_data.get(str(entity_id))
+                if entity:
+                    logger.debug(f"Found {entity_type}/{entity_id} in Redis cache")
+                    return entity
 
         # Cache miss or entity not found - fall back to API (slow path)
         logger.info(f"Cache miss for {entity_type}/{entity_id}, fetching from API")
