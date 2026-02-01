@@ -598,7 +598,7 @@ class DataManager:
         self, entity_type: str, entity_id: str
     ) -> Optional[Dict[str, Any]]:
         """
-        Get entity data from SafetyAmp API.
+        Get entity data from SafetyAmp, using Redis cache first for performance.
 
         Args:
             entity_type: Type of entity (employee, vehicle, department, job, title)
@@ -607,38 +607,56 @@ class DataManager:
         Returns:
             Entity data from SafetyAmp or None if not found
         """
+        # Map entity types to their cache names
+        cache_map = {
+            "employee": "safetyamp_users_by_id",
+            "vehicle": "safetyamp_assets",
+            "department": "safetyamp_clusters",
+            "job": "safetyamp_sites",
+            "title": "safetyamp_titles",
+        }
+
+        cache_name = cache_map.get(entity_type)
+        if not cache_name:
+            logger.warning(f"Unknown entity type for SafetyAmp lookup: {entity_type}")
+            return None
+
+        # Try Redis cache first (fast path - O(1) lookup)
+        cached_data = self.get_cached_data(cache_name)
+        if cached_data:
+            entity = cached_data.get(str(entity_id))
+            if entity:
+                logger.debug(f"Found {entity_type}/{entity_id} in Redis cache")
+                return entity
+
+        # Cache miss or entity not found - fall back to API (slow path)
+        logger.info(f"Cache miss for {entity_type}/{entity_id}, fetching from API")
         try:
             from services.safetyamp_api import SafetyAmpAPI
 
             api = SafetyAmpAPI()
 
             if entity_type == "employee":
-                # Get users and find by emp_id
                 users = api.get_users()
                 return users.get(str(entity_id))
             elif entity_type == "vehicle":
-                # Get assets and find by ID
                 assets = api.get_assets()
                 return assets.get(str(entity_id))
             elif entity_type == "department":
-                # Get clusters and find by ID
                 clusters = api.get_site_clusters()
                 return clusters.get(str(entity_id))
             elif entity_type == "job":
-                # Get sites and find by ID
                 sites = api.get_sites()
                 return sites.get(str(entity_id))
             elif entity_type == "title":
-                # Get titles and find by ID
                 titles = api.get_titles()
                 return titles.get(str(entity_id))
-            else:
-                logger.warning(f"Unknown entity type for SafetyAmp lookup: {entity_type}")
-                return None
 
         except Exception as e:
             logger.error(f"Error getting SafetyAmp entity {entity_type}/{entity_id}: {e}")
             return None
+
+        return None
 
     def _should_refresh_employees(self) -> bool:
         return (
