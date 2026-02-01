@@ -13,7 +13,13 @@ from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, List, Optional
 
 from utils.logger import get_logger
-from utils.health import check_database, check_cache, check_safetyamp, check_samsara, check_msgraph
+from utils.health import (
+    check_database,
+    check_cache,
+    check_safetyamp,
+    check_samsara,
+    check_msgraph,
+)
 
 logger = get_logger("dashboard_data")
 
@@ -177,6 +183,7 @@ class DashboardData:
         # Get department and vehicle counts from SafetyAmp API
         try:
             from services.safetyamp_api import SafetyAmpAPI
+
             api = SafetyAmpAPI()
 
             # Get departments (clusters) count
@@ -344,7 +351,9 @@ class DashboardData:
             changes = self.event_manager.change_tracker.get_recent_changes(hours)
 
             # Generate time-series data points by aggregating changes into buckets
-            data_points = self._aggregate_changes_to_time_buckets(changes, time_range, hours)
+            data_points = self._aggregate_changes_to_time_buckets(
+                changes, time_range, hours
+            )
 
             return {
                 "time_range": time_range,
@@ -423,10 +432,15 @@ class DashboardData:
                 if bucket_hours >= 24:
                     bucket_start = bucket_start.replace(hour=0)
                     # Align to bucket boundary
-                    days_since_start = (bucket_start - start_time.replace(hour=0, minute=0, second=0, microsecond=0)).days
+                    days_since_start = (
+                        bucket_start
+                        - start_time.replace(hour=0, minute=0, second=0, microsecond=0)
+                    ).days
                     bucket_days = bucket_hours // 24
                     aligned_days = (days_since_start // bucket_days) * bucket_days
-                    bucket_start = start_time.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=aligned_days)
+                    bucket_start = start_time.replace(
+                        hour=0, minute=0, second=0, microsecond=0
+                    ) + timedelta(days=aligned_days)
 
                 bucket_key = bucket_start.isoformat()
                 if bucket_key in buckets:
@@ -436,8 +450,7 @@ class DashboardData:
 
         # Convert to list sorted by timestamp
         data_points = [
-            {"timestamp": ts, "count": count}
-            for ts, count in sorted(buckets.items())
+            {"timestamp": ts, "count": count} for ts, count in sorted(buckets.items())
         ]
 
         return data_points
@@ -488,7 +501,9 @@ class DashboardData:
             ISO format timestamp string or None
         """
         try:
-            if not self.event_manager or not hasattr(self.event_manager, "change_tracker"):
+            if not self.event_manager or not hasattr(
+                self.event_manager, "change_tracker"
+            ):
                 return None
 
             # Get summary which includes recent sessions
@@ -625,9 +640,7 @@ class DashboardData:
         "udEmpTitle": "current_title",
     }
 
-    def _normalize_source_data(
-        self, source: Dict, entity_type: str
-    ) -> Dict[str, Any]:
+    def _normalize_source_data(self, source: Dict, entity_type: str) -> Dict[str, Any]:
         """
         Normalize source data field names and values to match SafetyAmp format.
 
@@ -718,7 +731,9 @@ class DashboardData:
             # Normalize source data to match SafetyAmp field names
             normalized_source = None
             if source_data:
-                normalized_source = self._normalize_source_data(source_data, entity_type)
+                normalized_source = self._normalize_source_data(
+                    source_data, entity_type
+                )
 
             # Compute diff using normalized source
             diff = self._compute_diff(normalized_source, target_data, entity_type)
