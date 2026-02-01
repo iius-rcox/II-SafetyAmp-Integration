@@ -607,6 +607,82 @@ class DashboardData:
 
         return aggregated
 
+    # Field mappings from Viewpoint to SafetyAmp
+    EMPLOYEE_FIELD_MAP = {
+        "FirstName": "first_name",
+        "MidName": "middle_name",
+        "LastName": "last_name",
+        "Email": "email",
+        "Sex": "gender",
+        "BirthDate": "date_of_birth",
+        "HireDate": "current_hire_date",
+        "Address": "street",
+        "City": "city",
+        "State": "state",
+        "Zip": "zip_code",
+        "Phone": "mobile_phone",
+        "Employee": "emp_id",
+        "udEmpTitle": "current_title",
+    }
+
+    def _normalize_source_data(
+        self, source: Dict, entity_type: str
+    ) -> Dict[str, Any]:
+        """
+        Normalize source data field names and values to match SafetyAmp format.
+
+        Args:
+            source: Raw source data from Viewpoint
+            entity_type: Type of entity
+
+        Returns:
+            Normalized dictionary with SafetyAmp-compatible field names and values
+        """
+        if entity_type != "employee":
+            return source  # Only employee mapping implemented for now
+
+        normalized = {}
+        for vp_field, sa_field in self.EMPLOYEE_FIELD_MAP.items():
+            if vp_field in source:
+                value = source[vp_field]
+
+                # Transform values to match SafetyAmp format
+                if sa_field == "gender":
+                    # Normalize gender: F/Female -> 0, M/Male -> 1
+                    if value:
+                        value = 0 if str(value).upper() in ("F", "FEMALE") else 1
+                elif sa_field in ("date_of_birth", "current_hire_date"):
+                    # Normalize date format to YYYY-MM-DD
+                    if value:
+                        try:
+                            from datetime import datetime
+
+                            if isinstance(value, str):
+                                # Handle "Tue, 13 Jul 1982 00:00:00 GMT" format
+                                for fmt in [
+                                    "%a, %d %b %Y %H:%M:%S %Z",
+                                    "%Y-%m-%d",
+                                    "%Y-%m-%dT%H:%M:%S",
+                                ]:
+                                    try:
+                                        dt = datetime.strptime(value, fmt)
+                                        value = dt.strftime("%Y-%m-%d")
+                                        break
+                                    except ValueError:
+                                        continue
+                        except Exception:
+                            pass
+                elif sa_field == "current_title":
+                    # Title in SafetyAmp is an object with name, source is just name
+                    value = {"name": value} if value else None
+                elif sa_field == "emp_id":
+                    # emp_id is a string in SafetyAmp
+                    value = str(value) if value else None
+
+                normalized[sa_field] = value
+
+        return normalized
+
     def get_entity_diff(self, entity_type: str, entity_id: str) -> Dict[str, Any]:
         """
         Get diff between source and target data for an entity.
@@ -639,13 +715,18 @@ class DashboardData:
                     entity_type, entity_id
                 )
 
-            # Compute diff
-            diff = self._compute_diff(source_data, target_data)
+            # Normalize source data to match SafetyAmp field names
+            normalized_source = None
+            if source_data:
+                normalized_source = self._normalize_source_data(source_data, entity_type)
+
+            # Compute diff using normalized source
+            diff = self._compute_diff(normalized_source, target_data, entity_type)
 
             return {
                 "entity_type": entity_type,
                 "entity_id": entity_id,
-                "source_data": source_data,
+                "source_data": source_data,  # Return original for display
                 "target_data": target_data,
                 "diff": diff,
                 "has_differences": len(diff.get("changed_fields", [])) > 0,
@@ -660,14 +741,18 @@ class DashboardData:
             }
 
     def _compute_diff(
-        self, source: Optional[Dict], target: Optional[Dict]
+        self,
+        source: Optional[Dict],
+        target: Optional[Dict],
+        entity_type: str = "employee",
     ) -> Dict[str, Any]:
         """
         Compute differences between source and target data.
 
         Args:
-            source: Source data dictionary
+            source: Normalized source data dictionary
             target: Target data dictionary
+            entity_type: Type of entity for field selection
 
         Returns:
             Dictionary describing the differences
@@ -690,16 +775,22 @@ class DashboardData:
             }
 
         changed_fields = []
-        all_keys = set(source.keys()) | set(target.keys())
 
-        for key in all_keys:
-            source_val = source.get(key)
-            target_val = target.get(key)
+        # For employees, only compare mapped fields
+        if entity_type == "employee":
+            fields_to_compare = list(self.EMPLOYEE_FIELD_MAP.values())
+        else:
+            fields_to_compare = list(set(source.keys()) | set(target.keys()))
 
-            if source_val != target_val:
+        for field in fields_to_compare:
+            source_val = source.get(field)
+            target_val = target.get(field)
+
+            # Normalize for comparison
+            if not self._values_equal(source_val, target_val, field):
                 changed_fields.append(
                     {
-                        "field": key,
+                        "field": field,
                         "source_value": source_val,
                         "target_value": target_val,
                     }
@@ -708,8 +799,44 @@ class DashboardData:
         return {
             "status": "different" if changed_fields else "in_sync",
             "changed_fields": changed_fields,
-            "total_fields": len(all_keys),
+            "total_fields": len(fields_to_compare),
         }
+
+    def _values_equal(self, source_val: Any, target_val: Any, field: str) -> bool:
+        """
+        Compare values with special handling for certain field types.
+
+        Args:
+            source_val: Value from source
+            target_val: Value from target
+            field: Field name for type-specific comparison
+
+        Returns:
+            True if values are considered equal
+        """
+        # Handle None/empty equivalence
+        if source_val is None and target_val is None:
+            return True
+        if source_val in (None, "", []) and target_val in (None, "", []):
+            return True
+
+        # Handle current_title comparison (compare name only)
+        if field == "current_title":
+            source_name = (
+                source_val.get("name") if isinstance(source_val, dict) else source_val
+            )
+            target_name = (
+                target_val.get("name") if isinstance(target_val, dict) else target_val
+            )
+            return source_name == target_name
+
+        # Handle string/number type differences
+        if source_val is not None and target_val is not None:
+            # Compare as strings for emp_id and similar fields
+            if str(source_val) == str(target_val):
+                return True
+
+        return source_val == target_val
 
     def get_manual_sync_status(self) -> Dict[str, Any]:
         """
